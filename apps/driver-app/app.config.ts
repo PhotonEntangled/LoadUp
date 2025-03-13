@@ -28,6 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.loadup.driver'
   },
   extra: {
-    CLERK_PUBLISHABLE_KEY: process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+    CLERK_PUBLISHABLE_KEY: process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    API_URL: process.env.EXPO_PUBLIC_API_URL
   }
 }); 
