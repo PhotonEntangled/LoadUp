@@ -1,50 +1,56 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
+import React from 'react';
+import { cn } from '../../lib/utils.js';
 
-interface DataTableProps<TData> {
+interface DataTableProps<T> {
+  data: T[];
   columns: {
-    accessorKey: string;
     header: string;
-    cell: ({ row }: { row: { original: TData } }) => React.ReactNode;
+    accessorKey?: keyof T;
+    cell?: ({ row }: { row: { original: T } }) => React.ReactNode;
   }[];
-  data: TData[];
-  loading?: boolean;
+  className?: string;
 }
 
-export function DataTable<TData>({
-  columns,
-  data,
-  loading = false,
-}: DataTableProps<TData>) {
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-      </div>
-    );
-  }
-
+export function DataTable<T>({ data, columns, className }: DataTableProps<T>) {
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHead key={column.accessorKey}>{column.header}</TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((row, i) => (
-            <TableRow key={i}>
-              {columns.map((column) => (
-                <TableCell key={column.accessorKey}>
-                  {column.cell({ row: { original: row } })}
-                </TableCell>
+    <div className={cn('rounded-md border', className)}>
+      <div className="overflow-x-auto">
+        <table className="w-full caption-bottom text-sm">
+          <thead className="border-b bg-muted/50">
+            <tr>
+              {columns.map((column, index) => (
+                <th
+                  key={index}
+                  className="h-12 px-4 text-left align-middle font-medium text-muted-foreground"
+                >
+                  {column.header}
+                </th>
               ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, rowIndex) => (
+              <tr
+                key={rowIndex}
+                className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+              >
+                {columns.map((column, colIndex) => (
+                  <td
+                    key={colIndex}
+                    className="p-4 align-middle"
+                  >
+                    {column.cell
+                      ? column.cell({ row: { original: row } })
+                      : column.accessorKey
+                      ? String(row[column.accessorKey])
+                      : null}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 } 

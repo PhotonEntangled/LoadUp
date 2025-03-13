@@ -1,100 +1,166 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs';
 import { db } from '@loadup/database';
-import { shipments, deliveryStops } from '@loadup/database/schema';
-import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
-import { canManageShipments } from '@loadup/shared/src/utils/auth';
+import { and, eq } from 'drizzle-orm';
+import { shipments, drivers } from '@loadup/database/schema';
+import { z } from 'zod';
 
-export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || !canManageShipments(session.user)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+// Validation schemas
+const createShipmentSchema = z.object({
+  pickupAddress: z.string(),
+  deliveryAddress: z.string(),
+  status: z.enum(['PENDING', 'ASSIGNED', 'IN_TRANSIT', 'DELIVERED']),
+  driverId: z.string().optional(),
+});
 
+const updateShipmentSchema = createShipmentSchema.partial();
+
+export async function GET(req: Request) {
   try {
-    const allShipments = await db.query.shipments.findMany({
-      with: {
-        deliveryStops: true,
-        driver: true,
-      },
+    const { userId, sessionClaims } = auth();
+    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
+
+    const role = sessionClaims?.role as string;
+    const url = new URL(req.url);
+    const status = url.searchParams.get('status');
+
+    let query = db.select().from(shipments);
+
+    // Filter by role
+    if (role === 'driver') {
+      query = query.where(eq(shipments.driverId, userId));
+    }
+
+    // Filter by status if provided
+    if (status) {
+      query = query.where(eq(shipments.status, status));
+    }
+
+    const results = await query;
+    return NextResponse.json(results);
+  } catch (error) {
+    console.error('Error fetching shipments:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const { userId, sessionClaims } = auth();
+    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
+    if (sessionClaims?.role !== 'admin') {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+
+    const body = await req.json();
+    const validatedData = createShipmentSchema.parse(body);
+
+    const result = await db.insert(shipments).values({
+      ...validatedData,
+      createdBy: userId,
+      updatedAt: new Date(),
     });
-    return NextResponse.json(allShipments);
+
+    return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch shipments' }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ errors: error.errors }, { status: 400 });
+    }
+    console.error('Error creating shipment:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || !canManageShipments(session.user)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function PATCH(req: Request) {
   try {
-    const body = await request.json();
-    const { trackingCode, status, assignedDriverId, deliveryStops: stops } = body;
+    const { userId, sessionClaims } = auth();
+    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
 
-    const newShipment = await db.insert(shipments).values({
-      trackingCode,
-      status,
-      assignedDriverId,
-    }).returning();
-
-    if (stops && stops.length > 0) {
-      await db.insert(deliveryStops).values(
-        stops.map((stop: any) => ({
-          shipmentId: newShipment[0].id,
-          ...stop,
-        }))
-      );
+    const url = new URL(req.url);
+    const shipmentId = url.searchParams.get('id');
+    if (!shipmentId) {
+      return new NextResponse('Shipment ID is required', { status: 400 });
     }
 
-    return NextResponse.json(newShipment[0]);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create shipment' }, { status: 500 });
-  }
-}
+    const body = await req.json();
+    const validatedData = updateShipmentSchema.parse(body);
 
-export async function PUT(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || !canManageShipments(session.user)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+    // Check if user has permission to update
+    const shipment = await db.query.shipments.findFirst({
+      where: eq(shipments.id, shipmentId),
+    });
 
-  try {
-    const body = await request.json();
-    const { id, ...updateData } = body;
-
-    const updatedShipment = await db
-      .update(shipments)
-      .set(updateData)
-      .where(eq(shipments.id, id))
-      .returning();
-
-    return NextResponse.json(updatedShipment[0]);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update shipment' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || !canManageShipments(session.user)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'Shipment ID is required' }, { status: 400 });
+    if (!shipment) {
+      return new NextResponse('Shipment not found', { status: 404 });
     }
 
-    await db.delete(shipments).where(eq(shipments.id, id));
-    return NextResponse.json({ message: 'Shipment deleted successfully' });
+    const role = sessionClaims?.role as string;
+    if (role !== 'admin' && shipment.driverId !== userId) {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+
+    // If driver is updating, they can only update status
+    if (role === 'driver') {
+      const { status } = validatedData;
+      if (!status) {
+        return new NextResponse('Status is required', { status: 400 });
+      }
+      await db.update(shipments)
+        .set({ 
+          status,
+          updatedAt: new Date(),
+          updatedBy: userId
+        })
+        .where(eq(shipments.id, shipmentId));
+    } else {
+      // Admins can update all fields
+      await db.update(shipments)
+        .set({ 
+          ...validatedData,
+          updatedAt: new Date(),
+          updatedBy: userId
+        })
+        .where(eq(shipments.id, shipmentId));
+    }
+
+    // Log the update in shipment history
+    await db.insert(shipments.history).values({
+      shipmentId,
+      status: validatedData.status || shipment.status,
+      updatedBy: userId,
+      timestamp: new Date(),
+    });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete shipment' }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ errors: error.errors }, { status: 400 });
+    }
+    console.error('Error updating shipment:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { userId, sessionClaims } = auth();
+    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
+    if (sessionClaims?.role !== 'admin') {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+
+    const url = new URL(req.url);
+    const shipmentId = url.searchParams.get('id');
+    if (!shipmentId) {
+      return new NextResponse('Shipment ID is required', { status: 400 });
+    }
+
+    await db.delete(shipments)
+      .where(eq(shipments.id, shipmentId));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting shipment:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 } 

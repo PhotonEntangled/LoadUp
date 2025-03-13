@@ -1,123 +1,207 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Select } from '../ui/select';
+import { Badge } from '../ui/badge';
 import { useAuth } from '@loadup/shared/src/hooks/useAuth';
+import { formatDistance } from 'date-fns';
 
-interface Shipment {
+type Shipment = {
   id: string;
   trackingNumber: string;
-  status: 'pending' | 'in_transit' | 'delivered' | 'delayed';
-  pickupAddress: string;
-  deliveryAddress: string;
-  driverName?: string;
-  estimatedDelivery: string;
-}
+  pickupAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  deliveryAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  status: 'PENDING' | 'ASSIGNED' | 'IN_TRANSIT' | 'DELIVERED';
+  customerName: string;
+  driverId?: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
-export default function ShipmentsTable() {
-  const { isAdmin } = useAuth();
+type Driver = {
+  id: string;
+  name: string;
+  status: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+};
+
+export function ShipmentsTable() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAuth();
 
-  const getStatusColor = (status: Shipment['status']) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      in_transit: 'bg-blue-100 text-blue-800',
-      delivered: 'bg-green-100 text-green-800',
-      delayed: 'bg-red-100 text-red-800',
-    };
-    return colors[status];
+  const fetchShipments = async () => {
+    try {
+      const url = statusFilter 
+        ? `http://localhost:3002/api/shipments?status=${statusFilter}`
+        : 'http://localhost:3002/api/shipments';
+      const res = await fetch(url);
+      const data = await res.json();
+      setShipments(data.data || data);
+    } catch (error) {
+      console.error('Error fetching shipments:', error);
+    }
   };
 
-  return (
-    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-      <div className="p-6 border-b">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Active Shipments</h2>
-          {isAdmin() && (
-            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-              New Shipment
-            </button>
-          )}
-        </div>
-      </div>
+  const fetchDrivers = async () => {
+    try {
+      const res = await fetch('http://localhost:3002/api/drivers');
+      const data = await res.json();
+      setDrivers(data.data || data);
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    }
+  };
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tracking #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Pickup
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Delivery
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Driver
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Est. Delivery
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {isLoading ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-4 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto" />
-                </td>
-              </tr>
-            ) : shipments.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                  No active shipments found
-                </td>
-              </tr>
-            ) : (
-              shipments.map((shipment) => (
-                <tr key={shipment.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {shipment.trackingNumber}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 py-1 rounded-full ${getStatusColor(shipment.status)}`}>
-                      {shipment.status.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {shipment.pickupAddress}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {shipment.deliveryAddress}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {shipment.driverName || 'Unassigned'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {shipment.estimatedDelivery}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button className="text-blue-600 hover:text-blue-900 mr-4">
-                      Edit
-                    </button>
-                    {isAdmin() && (
-                      <button className="text-red-600 hover:text-red-900">
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchShipments(), fetchDrivers()]);
+      setLoading(false);
+    };
+    loadData();
+  }, [statusFilter]);
+
+  const handleAssignDriver = async (shipmentId: string, driverId: string) => {
+    try {
+      const res = await fetch(`http://localhost:3002/api/shipments?id=${shipmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId,
+          status: 'ASSIGNED',
+        }),
+      });
+
+      if (res.ok) {
+        fetchShipments();
+      }
+    } catch (error) {
+      console.error('Error assigning driver:', error);
+    }
+  };
+
+  const getStatusBadgeColor = (status: Shipment['status']) => {
+    const colors = {
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      ASSIGNED: 'bg-blue-100 text-blue-800',
+      IN_TRANSIT: 'bg-purple-100 text-purple-800',
+      DELIVERED: 'bg-green-100 text-green-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Shipments</span>
+          <Select
+            value={statusFilter}
+            onValueChange={setStatusFilter}
+            className="w-48"
+          >
+            <option value="">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="ASSIGNED">Assigned</option>
+            <option value="IN_TRANSIT">In Transit</option>
+            <option value="DELIVERED">Delivered</option>
+          </Select>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Pickup</TableHead>
+              <TableHead>Delivery</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Driver</TableHead>
+              <TableHead>Last Update</TableHead>
+              {isAdmin && <TableHead>Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {shipments.map((shipment) => (
+              <TableRow key={shipment.id}>
+                <TableCell>
+                  {shipment.pickupAddress ? 
+                    `${shipment.pickupAddress.street}, ${shipment.pickupAddress.city}, ${shipment.pickupAddress.state} ${shipment.pickupAddress.zipCode}` : 
+                    'No address provided'}
+                </TableCell>
+                <TableCell>
+                  {shipment.deliveryAddress ? 
+                    `${shipment.deliveryAddress.street}, ${shipment.deliveryAddress.city}, ${shipment.deliveryAddress.state} ${shipment.deliveryAddress.zipCode}` : 
+                    'No address provided'}
+                </TableCell>
+                <TableCell>
+                  <Badge className={getStatusBadgeColor(shipment.status)}>
+                    {shipment.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {isAdmin && shipment.status === 'PENDING' ? (
+                    <Select
+                      value={shipment.driverId || ''}
+                      onValueChange={(driverId) => handleAssignDriver(shipment.id, driverId)}
+                    >
+                      <option value="">Assign Driver</option>
+                      {drivers
+                        .filter((d) => d.status === 'AVAILABLE')
+                        .map((driver) => (
+                          <option key={driver.id} value={driver.id}>
+                            {driver.name}
+                          </option>
+                        ))}
+                    </Select>
+                  ) : (
+                    drivers.find((d) => d.id === shipment.driverId)?.name || 'Unassigned'
+                  )}
+                </TableCell>
+                <TableCell>
+                  {formatDistance(new Date(shipment.updatedAt), new Date(), { addSuffix: true })}
+                </TableCell>
+                {isAdmin && (
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Open shipment details/edit modal
+                      }}
+                    >
+                      Details
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 } 

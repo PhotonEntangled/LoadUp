@@ -12,17 +12,4 @@ export async function GET() {
     userId,
     role: sessionClaims?.role || 'user',
   });
-}
-
-export async function POST() {
-  const { userId, sessionClaims } = auth();
-  
-  if (!userId) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
-
-  return NextResponse.json({
-    userId,
-    role: sessionClaims?.role || 'user',
-  });
 } 
