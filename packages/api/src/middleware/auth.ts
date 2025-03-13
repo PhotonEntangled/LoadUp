@@ -1,73 +1,123 @@
-import NextAuth from "next-auth";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { db } from "@/database/drizzle";
-import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
-import { users } from "@/database/schema";
-import { z } from "zod";
+import { Request, Response, NextFunction } from 'express';
+import { Clerk } from '@clerk/clerk-sdk-node';
+import { FEATURES } from '../config/features.js';
+import env from '../config/env.js';
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
+// Initialize Clerk if secret key is available
+// Use type assertion for the entire expression to fix TypeScript error
+const clerk = env.clerkSecretKey 
+  ? (new Clerk({ apiKey: env.clerkSecretKey }) as any) 
+  : null;
 
-export const {
-  handlers: { GET, POST },
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
-  adapter: DrizzleAdapter(db),
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-  },
-  providers: [
-    Credentials({
-      async authorize(credentials) {
-        const parsedCredentials = loginSchema.safeParse(credentials);
+// Define custom request type with auth
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: {
+        userId: string;
+        sessionId: string;
+        isAdmin: boolean;
+      };
+    }
+  }
+}
 
-        if (!parsedCredentials.success) {
-          return null;
+// Basic auth middleware with feature flag
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Skip authentication in development if feature flag is disabled
+    if (env.isDevelopment && !FEATURES.AUTHENTICATION) {
+      req.auth = {
+        userId: 'dev-user',
+        sessionId: 'dev-session',
+        isAdmin: true
+      };
+      return next();
+    }
+
+    // Get token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Unauthorized'
         }
+      });
+    }
 
-        const { email, password } = parsedCredentials.data;
-        const user = await db.query.users.findFirst({
-          where: eq(users.email, email),
-        });
-
-        if (!user) {
-          return null;
-        }
-
-        const passwordsMatch = await bcrypt.compare(password, user.password);
-
-        if (!passwordsMatch) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.fullName,
-          role: user.role,
+    const token = authHeader.split(' ')[1];
+    
+    // Verify token with Clerk if available
+    if (clerk) {
+      try {
+        const session = await clerk.sessions.verifyToken(token);
+        req.auth = {
+          userId: session.subject,
+          sessionId: session.sid,
+          isAdmin: false // Simplified - we'll enhance this post-deployment
         };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
+        next();
+      } catch (error) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'Invalid token'
+          }
+        });
       }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user && token.role) {
-        session.user.role = token.role;
+    } else {
+      // Fallback for development without Clerk
+      if (env.isDevelopment) {
+        // Simple token validation for development
+        if (token === 'dev-token') {
+          req.auth = {
+            userId: 'dev-user',
+            sessionId: 'dev-session',
+            isAdmin: true
+          };
+          return next();
+        }
       }
-      return session;
-    },
-  },
-}); 
+      
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'AUTH_NOT_CONFIGURED',
+          message: 'Authentication not properly configured'
+        }
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Simplified admin check - to be enhanced post-deployment
+export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.auth) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Unauthorized'
+      }
+    });
+  }
+  
+  // For beta, we'll use a simplified admin check
+  // This will be enhanced post-deployment with proper role checks
+  if (!req.auth.isAdmin) {
+    return res.status(403).json({
+      success: false,
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Forbidden'
+      }
+    });
+  }
+  
+  next();
+}; 
