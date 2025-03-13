@@ -1,4 +1,4 @@
-import { TruckDriver } from '../types';
+import { TruckDriver } from '../types/index.js';
 
 export type UserRole = 'admin' | 'driver';
 

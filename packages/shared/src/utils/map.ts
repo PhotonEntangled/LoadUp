@@ -1,6 +1,21 @@
-import { Shipment, TruckDriver, DeliveryStop, MapRegion } from '../types';
+import { Shipment, TruckDriver, DeliveryStop, MapRegion } from '../types/index.js';
+import { Marker } from 'react-native-maps';
+import type { Region, LatLng } from 'react-native-maps';
 
 const MAPBOX_API_KEY = process.env.NEXT_PUBLIC_MAPBOX_API_KEY;
+
+export interface MapMarker extends LatLng {
+  id: string;
+  title?: string;
+  description?: string;
+  markerType: 'shipment' | 'driver' | 'destination';
+  status?: string;
+  estimatedArrival?: Date;
+}
+
+const DEFAULT_DELTA = 0.02;
+const MIN_DELTA = 0.01;
+const MAX_DELTA = 0.2;
 
 /**
  * Generates markers for active shipments and their assigned trucks
@@ -18,12 +33,14 @@ export const generateShipmentMarkers = ({
   shipments.forEach((shipment) => {
     shipment.stops.forEach((stop) => {
       markers.push({
+        id: `${shipment.trackingCode}-${stop.id}`,
         latitude: stop.latitude,
         longitude: stop.longitude,
         title: `Delivery: ${shipment.trackingCode}`,
-        type: 'delivery',
+        description: `Status: ${stop.status}`,
+        markerType: 'shipment',
         status: stop.status,
-        estimatedArrival: stop.estimatedArrival,
+        estimatedArrival: stop.estimatedArrival
       });
     });
   });
@@ -32,12 +49,12 @@ export const generateShipmentMarkers = ({
   drivers.forEach((driver) => {
     if (driver.currentLocation) {
       markers.push({
+        id: `driver-${driver.id}`,
         latitude: driver.currentLocation.latitude,
         longitude: driver.currentLocation.longitude,
         title: `${driver.firstName} ${driver.lastName}`,
-        type: 'truck',
-        truckType: driver.truckType,
-        currentShipment: driver.currentShipment,
+        description: `Current Shipment: ${driver.currentShipment || 'None'}`,
+        markerType: 'driver'
       });
     }
   });
@@ -48,36 +65,39 @@ export const generateShipmentMarkers = ({
 /**
  * Calculates the optimal map region to show all delivery stops
  */
-export const calculateShipmentRegion = ({
-  stops,
-}: {
-  stops: DeliveryStop[];
-}): MapRegion => {
-  if (!stops.length) {
+export const calculateRegion = (markers: MapMarker[]): Region => {
+  if (!markers.length) {
+    // Default to US center if no markers
     return {
-      latitude: 37.78825,
-      longitude: -122.4324,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
+      latitude: 39.8283,
+      longitude: -98.5795,
+      latitudeDelta: MAX_DELTA,
+      longitudeDelta: MAX_DELTA
     };
   }
 
-  const lats = stops.map(stop => stop.latitude);
-  const lngs = stops.map(stop => stop.longitude);
-
+  // Calculate bounds
+  const lats = markers.map(m => m.latitude);
+  const lngs = markers.map(m => m.longitude);
+  
   const minLat = Math.min(...lats);
   const maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs);
   const maxLng = Math.max(...lngs);
 
-  const latitudeDelta = (maxLat - minLat) * 1.3; // Adding padding
-  const longitudeDelta = (maxLng - minLng) * 1.3; // Adding padding
+  // Calculate center
+  const latitude = (minLat + maxLat) / 2;
+  const longitude = (minLng + maxLng) / 2;
+
+  // Calculate appropriate zoom level (delta)
+  const latDelta = Math.max(Math.abs(maxLat - minLat) * 1.5, MIN_DELTA);
+  const lngDelta = Math.max(Math.abs(maxLng - minLng) * 1.5, MIN_DELTA);
 
   return {
-    latitude: (minLat + maxLat) / 2,
-    longitude: (minLng + maxLng) / 2,
-    latitudeDelta,
-    longitudeDelta,
+    latitude,
+    longitude,
+    latitudeDelta: Math.min(latDelta, MAX_DELTA),
+    longitudeDelta: Math.min(lngDelta, MAX_DELTA)
   };
 };
 
@@ -128,7 +148,7 @@ export const calculateDeliveryTimes = async ({
 };
 
 /**
- * Optimizes the route order for multiple delivery stops
+ * Optimizes the delivery route to minimize travel time
  */
 export const optimizeRoute = async ({
   stops,
@@ -137,27 +157,88 @@ export const optimizeRoute = async ({
   stops: DeliveryStop[];
   driverLocation: { latitude: number; longitude: number };
 }): Promise<DeliveryStop[]> => {
+  if (stops.length <= 1) {
+    return stops;
+  }
+
   try {
-    // Convert stops to Mapbox coordinates format
-    const coordinates = stops.map(stop => 
-      `${stop.longitude},${stop.latitude}`
-    ).join(';');
-
-    // Call Mapbox Optimization API
-    const response = await fetch(
-      `https://api.mapbox.com/optimized-trips/v1/mapbox/driving/${driverLocation.longitude},${driverLocation.latitude};${coordinates}?access_token=${MAPBOX_API_KEY}`
-    );
-
-    const data = await response.json();
+    // In a real implementation, this would call a routing service API
+    // For now, implement a simple nearest-neighbor algorithm
     
-    // Reorder stops based on optimization
-    const optimizedStops = data.waypoints.map((waypoint: any) => 
-      stops[waypoint.waypoint_index - 1]
-    );
+    let currentLocation = driverLocation;
+    const unvisited = [...stops];
+    const optimizedRoute: DeliveryStop[] = [];
 
-    return optimizedStops;
+    // Simple nearest neighbor algorithm
+    while (unvisited.length > 0) {
+      // Find the closest unvisited stop
+      let closestIdx = 0;
+      let closestDistance = calculateDistance(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        unvisited[0].latitude,
+        unvisited[0].longitude
+      );
+
+      for (let i = 1; i < unvisited.length; i++) {
+        const distance = calculateDistance(
+          currentLocation.latitude,
+          currentLocation.longitude,
+          unvisited[i].latitude,
+          unvisited[i].longitude
+        );
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIdx = i;
+        }
+      }
+
+      // Add the closest stop to the route
+      const nextStop = unvisited.splice(closestIdx, 1)[0];
+      optimizedRoute.push(nextStop);
+
+      // Update current location
+      currentLocation = {
+        latitude: nextStop.latitude,
+        longitude: nextStop.longitude,
+      };
+    }
+
+    return optimizedRoute;
   } catch (error) {
     console.error('Error optimizing route:', error);
     return stops;
   }
+};
+
+/**
+ * Calculates the distance between two points using the Haversine formula
+ */
+const calculateDistance = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
+  
+  return distance;
+};
+
+/**
+ * Converts degrees to radians
+ */
+const toRadians = (degrees: number): number => {
+  return degrees * (Math.PI / 180);
 }; 

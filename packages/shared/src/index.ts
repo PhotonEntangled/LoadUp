@@ -1,13 +1,15 @@
 // Components
-export { Map } from './components/Map';
+export { Map } from './components/Map.js';
 
 // Types
-export * from './types';
+export * from './types/index.js';
 
 // Utils
 export {
   generateShipmentMarkers,
-  calculateShipmentRegion,
+  calculateRegion,
   calculateDeliveryTimes,
   optimizeRoute,
-} from './utils/map'; 
+} from './utils/map.js';
+
+export * from './logger.js'; 

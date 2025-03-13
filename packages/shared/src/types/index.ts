@@ -34,14 +34,14 @@ export interface TruckDriver {
 }
 
 export interface MapMarker {
+  id: string;
   latitude: number;
   longitude: number;
-  title: string;
-  type: 'delivery' | 'truck';
-  status?: DeliveryStop['status'];
+  title?: string;
+  description?: string;
+  markerType: 'shipment' | 'driver' | 'destination';
+  status?: string;
   estimatedArrival?: Date;
-  truckType?: TruckDriver['truckType'];
-  currentShipment?: string;
 }
 
 export interface MapRegion {

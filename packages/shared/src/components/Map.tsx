@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
-import { MapMarker, DeliveryStop, MapRegion } from '../types';
-import { calculateShipmentRegion, calculateDeliveryTimes, optimizeRoute } from '../utils/map';
+import { MapMarker, DeliveryStop, MapRegion } from '../types/index.js';
+import { calculateRegion, calculateDeliveryTimes, optimizeRoute } from '../utils/map.js';
+
+// Add type assertion for MapView
+const MapViewComponent = MapView as unknown as React.ComponentType<any>;
 
 interface MapProps {
   markers: MapMarker[];
@@ -19,7 +22,7 @@ export const Map: React.FC<MapProps> = ({
   onMarkerPress,
   onRegionChange,
 }) => {
-  const [region, setRegion] = useState<MapRegion>(calculateShipmentRegion({ stops }));
+  const [region, setRegion] = useState<MapRegion>(calculateRegion(markers));
   const [optimizedStops, setOptimizedStops] = useState<DeliveryStop[]>(stops);
   const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number; }[]>([]);
 
@@ -58,18 +61,18 @@ export const Map: React.FC<MapProps> = ({
   };
 
   const renderMarker = (marker: MapMarker) => {
-    const markerColor = marker.type === 'truck' ? '#4CAF50' : '#2196F3';
-    const markerSize = marker.type === 'truck' ? 40 : 30;
+    const markerColor = marker.markerType === 'driver' ? '#4CAF50' : '#2196F3';
+    const markerSize = marker.markerType === 'driver' ? 40 : 30;
 
     return (
       <Marker
-        key={`${marker.latitude}-${marker.longitude}-${marker.title}`}
+        key={`${marker.id}`}
         coordinate={{
           latitude: marker.latitude,
           longitude: marker.longitude,
         }}
         title={marker.title}
-        description={marker.type === 'delivery' ? `ETA: ${marker.estimatedArrival?.toLocaleTimeString()}` : undefined}
+        description={marker.markerType === 'shipment' ? `ETA: ${marker.estimatedArrival?.toLocaleTimeString()}` : marker.description}
         pinColor={markerColor}
         onPress={() => onMarkerPress?.(marker)}
       >
@@ -90,7 +93,7 @@ export const Map: React.FC<MapProps> = ({
   };
 
   return (
-    <MapView
+    <MapViewComponent
       style={{ width: '100%', height: '100%' }}
       region={region}
       onRegionChange={handleRegionChange}
@@ -109,6 +112,6 @@ export const Map: React.FC<MapProps> = ({
           lineDashPattern={[1]}
         />
       )}
-    </MapView>
+    </MapViewComponent>
   );
 }; 

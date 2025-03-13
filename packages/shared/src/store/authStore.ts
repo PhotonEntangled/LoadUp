@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export type UserRole = 'admin' | 'driver';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   role: UserRole;
