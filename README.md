@@ -16,6 +16,12 @@ LoadUp is a full-stack logistics platform built with modern technologies, design
   - Status Management
   - Customer Communication
 
+- **API Server**
+  - RESTful Endpoints
+  - Authentication
+  - Shipment Management
+  - Driver Tracking
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -28,6 +34,7 @@ LoadUp is a full-stack logistics platform built with modern technologies, design
 - Node.js with TypeScript
 - PostgreSQL with Drizzle ORM
 - Authentication: Clerk.js
+- API Server: Express.js
 
 ### Infrastructure
 - Monorepo with Turborepo
@@ -42,6 +49,7 @@ loadup/
 │   ├── admin-dashboard/    # Next.js admin panel
 │   └── driver-app/         # React Native driver app
 ├── packages/
+│   ├── api/               # Express.js API server
 │   ├── database/          # Drizzle ORM schemas
 │   └── shared/            # Shared utilities and types
 └── package.json
@@ -69,9 +77,11 @@ loadup/
    NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+   NEXT_PUBLIC_API_URL=http://localhost:3001
 
    # Driver App (.env)
    EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=
+   EXPO_PUBLIC_API_URL=http://localhost:3001
    ```
 
 4. **Start development servers**
@@ -82,6 +92,10 @@ loadup/
    # Start specific app
    npm run dev --filter=admin-dashboard
    npm run dev --filter=driver-app
+   
+   # Start API server
+   cd packages/api
+   node server.js
    ```
 
 ## 🧪 Testing
@@ -118,6 +132,14 @@ vercel deploy
 cd apps/driver-app
 expo publish
 ```
+
+### API Server
+```bash
+# From the root directory
+node deploy.js
+```
+
+For more detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## 📝 License
 

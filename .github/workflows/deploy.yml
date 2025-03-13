@@ -1,0 +1,191 @@
+name: LoadUp Beta Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18.x'
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: loadup_test
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/loadup_test
+  RAILWAY_PROJECT: loadup-beta
+  API_URL: https://api.loadup.app
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Verify Repository Structure
+      run: |
+        if [ ! -f "turbo.json" ]; then
+          echo "Error: turbo.json not found"
+          exit 1
+        fi
+        if [ ! -d "packages/database" ]; then
+          echo "Error: database package not found"
+          exit 1
+        fi
+
+  test:
+    needs: validate
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install Dependencies
+      run: |
+        npm ci
+        npm install -g jest typescript ts-node
+    
+    - name: Type Check
+      run: npx tsc --noEmit
+    
+    - name: Run Linting
+      run: npm run lint
+      
+    - name: Run Database Migrations
+      run: |
+        echo "Running database migrations..."
+        npm run migrate
+        echo "Verifying migrations..."
+        npx ts-node scripts/verify-migrations.ts
+      env:
+        DATABASE_URL: ${{ env.DATABASE_URL }}
+      
+    - name: Run Tests
+      run: npm run test -- --coverage
+      env:
+        DATABASE_URL: ${{ env.DATABASE_URL }}
+        NODE_ENV: test
+
+    - name: Upload Test Coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage/
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install Dependencies
+      run: npm ci
+    
+    - name: Build
+      run: |
+        echo "Building application..."
+        npm run build
+        echo "Verifying build artifacts..."
+        if [ ! -d "apps/admin-dashboard/.next" ]; then
+          echo "Error: Admin dashboard build failed"
+          exit 1
+        fi
+      
+    - name: Setup Railway CLI
+      run: |
+        curl -fsSL https://railway.app/install.sh | sh
+        railway version
+        
+    - name: Deploy to Railway
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      run: |
+        echo "Starting deployment to Railway..."
+        railway link ${{ env.RAILWAY_PROJECT }}
+        railway up --service ${{ env.RAILWAY_PROJECT }}
+        echo "Deployment completed."
+        
+    - name: Verify Deployment
+      run: |
+        echo "Waiting for deployment to stabilize..."
+        sleep 45
+        
+        MAX_RETRIES=5
+        RETRY_COUNT=0
+        
+        until curl -f ${{ env.API_URL }}/health || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+          echo "Health check failed. Retrying in 30 seconds..."
+          sleep 30
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+        done
+        
+        if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+          echo "Health check failed after $MAX_RETRIES attempts"
+          exit 1
+        fi
+        
+    - name: Monitor Deployment
+      run: |
+        echo "Starting deployment monitoring..."
+        mkdir -p monitoring
+        
+        for i in {1..10}; do
+          timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "[$timestamp] Collecting metrics..."
+          
+          # Health metrics
+          curl -s ${{ env.API_URL }}/health > monitoring/health_$i.json
+          
+          # Performance metrics
+          curl -s ${{ env.API_URL }}/metrics > monitoring/metrics_$i.json
+          
+          # Error logs
+          curl -s ${{ env.API_URL }}/logs?level=error > monitoring/errors_$i.json
+          
+          sleep 30
+        done
+      
+    - name: Upload Deployment Metrics
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-metrics
+        path: monitoring/
+        
+    - name: Notify Deployment Status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "✅ Deployment successful!"
+          echo "API Health: $(curl -s ${{ env.API_URL }}/health)"
+        else
+          echo "❌ Deployment failed!"
+          echo "Check the logs for more details."
+          exit 1 

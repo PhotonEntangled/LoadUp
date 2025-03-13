@@ -6,60 +6,69 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  NODE_VERSION: '18.x'
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-
 jobs:
   test:
     runs-on: ubuntu-latest
+    environment: production
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Repository
+      uses: actions/checkout@v3
     
-    - name: Use Node.js ${{ env.NODE_VERSION }}
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: 18.x
         cache: 'npm'
     
-    - name: Install dependencies
+    - name: Install Dependencies
       run: npm install
       
-    - name: Run tests
+    - name: Run Tests
       run: npm test
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
       
-    - name: Run linting
+    - name: Run Linting
       run: npm run lint
 
   deploy-admin:
     needs: test
     runs-on: ubuntu-latest
+    environment: production
     if: github.ref == 'refs/heads/main'
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Repository
+      uses: actions/checkout@v3
     
-    - name: Use Node.js ${{ env.NODE_VERSION }}
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: 18.x
         cache: 'npm'
     
-    - name: Install dependencies
+    - name: Install Dependencies
       run: npm install
+    
+    - name: Setup Build Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          .next/cache
+          .turbo
+        key: ${{ runner.os }}-nextjs-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-nextjs-
     
     - name: Build Admin Dashboard
       run: npm run build --filter=admin-dashboard
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
         CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-        NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+        NEXT_PUBLIC_MAPBOX_TOKEN: ${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
     
     - name: Deploy to Vercel
       run: |
@@ -70,15 +79,17 @@ jobs:
   deploy-driver-app:
     needs: test
     runs-on: ubuntu-latest
+    environment: production
     if: github.ref == 'refs/heads/main'
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Repository
+      uses: actions/checkout@v3
     
-    - name: Use Node.js ${{ env.NODE_VERSION }}
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: 18.x
         cache: 'npm'
     
     - name: Setup Expo
@@ -87,16 +98,16 @@ jobs:
         expo-version: latest
         token: ${{ secrets.EXPO_ACCESS_TOKEN }}
     
-    - name: Install dependencies
+    - name: Install Dependencies
       run: |
         cd apps/driver-app
         npm install
     
-    - name: Build and publish
+    - name: Build and Publish
       run: |
         cd apps/driver-app
         expo publish --non-interactive
       env:
-        EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-        EXPO_PUBLIC_CLERK_JWT_KEY: ${{ secrets.EXPO_PUBLIC_CLERK_JWT_KEY }}
-        EXPO_PUBLIC_MAPBOX_TOKEN: ${{ secrets.EXPO_PUBLIC_MAPBOX_TOKEN }}
+        EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+        EXPO_PUBLIC_CLERK_JWT_KEY: ${{ vars.EXPO_PUBLIC_CLERK_JWT_KEY }}
+        EXPO_PUBLIC_MAPBOX_TOKEN: ${{ vars.EXPO_PUBLIC_MAPBOX_TOKEN }}
