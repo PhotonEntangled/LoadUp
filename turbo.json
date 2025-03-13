@@ -1,18 +1,22 @@
 ﻿{
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [
+        "dist/**",
+        "apps/admin-dashboard/.next/**",
+        "apps/driver-app/.expo/**"
+      ]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["coverage/**"]
     },
     "lint": {
       "outputs": []
-    },
-    "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
-      "inputs": ["src/**/*.tsx", "src/**/*.ts", "test/**/*.ts", "test/**/*.tsx"]
     },
     "dev": {
       "cache": false,
