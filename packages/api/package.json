@@ -1,0 +1,10 @@
+﻿{
+  "name": "@loadup/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node-dev src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  }
+}

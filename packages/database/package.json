@@ -1,0 +1,26 @@
+{
+  "name": "@loadup/database",
+  "version": "1.0.0",
+  "description": "Database layer for LoadUp",
+  "main": "index.ts",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "generate": "drizzle-kit generate:pg",
+    "migrate": "ts-node scripts/migrate.ts",
+    "push": "drizzle-kit push:pg",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@types/pg": "^8.10.0",
+    "drizzle-orm": "^0.29.3",
+    "pg": "^8.11.0",
+    "postgres": "^3.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "drizzle-kit": "^0.20.13",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

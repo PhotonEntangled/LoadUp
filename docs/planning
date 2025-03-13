@@ -1,0 +1,158 @@
+# LoadUp Code Extraction Plan
+> Analysis of University Library codebase for LoadUp logistics platform adaptation
+
+## 1. Project Structure Analysis
+
+### Core Infrastructure Files
+
+| File/Directory | Status | Purpose | Modifications Needed |
+|---------------|---------|---------|---------------------|
+| `package.json` | 🔄 Adapt | Dependencies & Scripts | - Add logistics-specific packages (Mapbox, OCR) |
+| `tsconfig.json` | ✅ Reuse | TypeScript Config | None - Solid base configuration |
+| `next.config.ts` | 🔄 Adapt | Next.js Config | - Add Mapbox & image optimization configs |
+| `middleware.ts` | 🔄 Adapt | Auth Protection | - Add logistics-specific route protection |
+| `drizzle.config.ts` | ✅ Reuse | Database Config | None - Good Drizzle setup |
+
+### Database Layer (`/database`)
+
+| File | Status | Purpose | Modifications |
+|------|---------|---------|--------------|
+| `schema.ts` | 🔄 Adapt | Data Models | - Replace with logistics schemas (shipments, drivers, routes) |
+| `drizzle.ts` | ✅ Reuse | DB Connection | None - Solid PostgreSQL setup |
+| `redis.ts` | ✅ Reuse | Caching Setup | None - Useful for real-time tracking |
+| `seed.ts` | ❌ Skip | Library Seeding | Not relevant for logistics |
+
+### Authentication (`/auth`)
+
+| File | Status | Purpose | Modifications |
+|------|---------|---------|--------------|
+| `auth.ts` | 🔄 Adapt | NextAuth Config | - Add driver/admin role management |
+| `middleware.ts` | 🔄 Adapt | Route Protection | - Add logistics-specific middleware |
+
+### Components (`/components`)
+
+#### Admin Components
+| Component | Status | Purpose | Modifications |
+|-----------|---------|---------|--------------|
+| `DataTable` | ✅ Reuse | Data Display | None - Perfect for shipment lists |
+| `Sidebar` | 🔄 Adapt | Navigation | - Update for logistics navigation |
+| `SearchBar` | ✅ Reuse | Search UI | None - Works for shipment search |
+| `StatusBadge` | 🔄 Adapt | Status Display | - Modify for shipment statuses |
+| `FilterBar` | ✅ Reuse | Data Filtering | None - Works for logistics filtering |
+
+#### Form Components
+| Component | Status | Purpose | Modifications |
+|-----------|---------|---------|--------------|
+| `Form` | ✅ Reuse | Form Handling | None - Good with react-hook-form |
+| `Input` | ✅ Reuse | Input Fields | None - Reusable design |
+| `Select` | ✅ Reuse | Dropdowns | None - Works for status selection |
+| `DatePicker` | ✅ Reuse | Date Selection | None - Useful for scheduling |
+
+### Hooks (`/hooks`)
+
+| Hook | Status | Purpose | Modifications |
+|------|---------|---------|--------------|
+| `useAuth` | ✅ Reuse | Auth Management | None - Solid authentication hook |
+| `useForm` | ✅ Reuse | Form Management | None - Works with our forms |
+| `useToast` | ✅ Reuse | Notifications | None - Good for status updates |
+| `useSearch` | 🔄 Adapt | Search Logic | - Modify for shipment search |
+
+### API Routes (`/app/api`)
+
+| Route | Status | Purpose | Modifications |
+|-------|---------|---------|--------------|
+| `auth/*` | ✅ Reuse | Authentication | None - Solid auth implementation |
+| `users/*` | 🔄 Adapt | User Management | - Modify for driver/admin management |
+| `[model]/*` | 🔄 Adapt | CRUD Operations | - Adapt for shipment/route operations |
+
+## 2. Implementation Plan
+
+### Phase 1: Core Infrastructure
+1. Copy and adapt core configuration files
+2. Set up database connection and Redis caching
+3. Implement authentication with role management
+
+### Phase 2: Database Schema
+1. Create logistics-specific schemas:
+   - Shipments
+   - Drivers
+   - Routes
+   - Tracking
+   - Documents
+
+### Phase 3: Component Integration
+1. Implement admin dashboard layout
+2. Adapt data tables for shipment management
+3. Create logistics-specific forms
+4. Set up real-time tracking components
+
+### Phase 4: API Implementation
+1. Set up shipment management endpoints
+2. Implement driver management APIs
+3. Create tracking and analytics endpoints
+
+## 3. Additional Features to Implement
+
+1. **OCR Integration**
+   - Add Google Cloud Vision API setup
+   - Create document processing components
+
+2. **Real-time Tracking**
+   - Implement Mapbox integration
+   - Add real-time location updates
+   - Create tracking visualization components
+
+3. **Payment Processing**
+   - Integrate Stripe payment components
+   - Add billing management interfaces
+
+## 4. File Structure for LoadUp
+
+```
+loadup/
+├── app/
+│   ├── admin/           # Admin dashboard routes
+│   ├── driver/          # Driver app routes
+│   └── api/            # Backend API routes
+├── components/
+│   ├── admin/          # Admin interface components
+│   ├── driver/         # Driver app components
+│   ├── shared/         # Shared UI components
+│   └── tracking/       # Tracking-specific components
+├── database/
+│   ├── schema/         # Logistics data models
+│   ├── migrations/     # Database migrations
+│   └── seed/          # Initial data setup
+├── lib/
+│   ├── auth/          # Authentication logic
+│   ├── api/           # API utilities
+│   └── tracking/      # Tracking utilities
+└── hooks/             # Custom React hooks
+```
+
+## 5. Next Steps
+
+1. Begin with core infrastructure setup
+2. Implement database schemas
+3. Set up authentication system
+4. Create basic admin dashboard
+5. Implement shipment management
+6. Add tracking features
+7. Integrate payment processing
+
+## 6. Performance Considerations
+
+1. Implement Redis caching for:
+   - Frequent shipment queries
+   - Real-time tracking data
+   - User sessions
+
+2. Optimize database queries for:
+   - Large shipment lists
+   - Historical tracking data
+   - Analytics calculations
+
+3. Use proper indexing for:
+   - Shipment tracking numbers
+   - Date-based queries
+   - Location-based searches 
