@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import * as schema from '../schema';
+import * as schema from './schema.js';
 
 // Initialize PostgreSQL connection pool
 const pool = new Pool({
@@ -12,4 +12,28 @@ const pool = new Pool({
 export const db = drizzle(pool, { schema });
 
 // Export schema
-export * from '../schema'; 
+export * from './drizzle.js';
+export * from './schema.js';
+
+// Export facades to avoid circular dependencies
+// Explicitly re-export to resolve naming conflicts
+export type {
+  Shipment as ShipmentInterface,
+  ShipmentStatus,
+  ShipmentRepository
+} from './facades/shipmentFacade.js';
+export { ShipmentValidationSchema } from './facades/shipmentFacade.js';
+
+export type {
+  Driver as DriverInterface,
+  DriverStatus,
+  DriverRepository
+} from './facades/driverFacade.js';
+export { DriverValidationSchema } from './facades/driverFacade.js';
+
+export type {
+  Vehicle as VehicleInterface,
+  VehicleStatus,
+  VehicleRepository
+} from './facades/vehicleFacade.js';
+export { VehicleValidationSchema } from './facades/vehicleFacade.js'; 

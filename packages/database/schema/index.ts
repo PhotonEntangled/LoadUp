@@ -94,6 +94,16 @@ export const shipmentsTable = pgTable("shipments", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+// Add shipmentHistoryTable definition
+export const shipmentHistoryTable = pgTable('shipment_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  shipmentId: uuid('shipment_id').notNull().references(() => shipmentsTable.id),
+  status: text('status').notNull(),
+  location: text('location'),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  notes: text('notes'),
+});
+
 // Tracking updates for shipments
 export const trackingUpdatesTable = pgTable("tracking_updates", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
@@ -133,13 +143,30 @@ export const paymentsTable = pgTable("payments", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+// Staging table for shipments
+export const shipmentsStaging = pgTable("shipments_staging", {
+  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  externalId: varchar("external_id", { length: 100 }),
+  pickupAddress: text("pickup_address").notNull(),
+  deliveryAddress: text("delivery_address").notNull(),
+  customerName: varchar("customer_name", { length: 255 }).notNull(),
+  customerPhone: varchar("customer_phone", { length: 50 }),
+  weight: decimal("weight"),
+  dimensions: varchar("dimensions", { length: 100 }),
+  notes: text("notes"),
+  status: varchar("status", { length: 50 }).notNull(),
+  ocrData: jsonb("ocr_data"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const usersRelations = relations(usersTable, ({ many }) => ({
   shipmentHistory: many(shipmentHistoryTable),
   shipments: many(shipmentsTable),
 }));
 
 export const shipmentsRelations = relations(shipmentsTable, ({ one, many }) => ({
-  assignedDriver: one(usersTable, {
+  driver: one(driversTable, {
     fields: [shipmentsTable.driverId],
     references: [driversTable.id],
   }),
