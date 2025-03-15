@@ -1,5 +1,5 @@
-import { useAuthStore } from '../store/authStore.js';
-import type { UserRole, User } from '../store/authStore.js';
+import { useAuthStore } from '../store/authStore';
+import type { UserRole, User } from '../store/authStore';
 
 export const useAuth = () => {
   const { 

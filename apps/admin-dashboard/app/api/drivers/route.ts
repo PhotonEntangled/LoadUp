@@ -3,7 +3,7 @@ import { db } from '@loadup/database';
 import { drivers } from '@loadup/database/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '../../auth/[...nextauth]/route.js';
 import { canManageDrivers } from '@loadup/shared/src/utils/auth';
 
 export async function GET(request: Request) {

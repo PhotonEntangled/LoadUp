@@ -1,5 +1,9 @@
 # LoadUp - Modern Logistics Platform
 
+## Status
+![CI/CD](https://github.com/zeropointmonkey/LoadUp/workflows/LoadUp%20CI/CD%20Pipeline/badge.svg)
+
+## Overview
 LoadUp is a full-stack logistics platform built with modern technologies, designed to streamline shipment management and delivery operations.
 
 ## 🚀 Features
@@ -50,8 +54,19 @@ loadup/
 │   └── driver-app/         # React Native driver app
 ├── packages/
 │   ├── api/               # Express.js API server
+│   │   └── src/          # API implementation
 │   ├── database/          # Drizzle ORM schemas
-│   └── shared/            # Shared utilities and types
+│   │   ├── src/          # Database schema
+│   │   │   ├── schema/   # Schema files
+│   │   │   │   ├── shipments.ts
+│   │   │   │   ├── drivers.ts
+│   │   │   │   ├── vehicles.ts
+│   │   │   │   ├── tracking-updates.ts
+│   │   │   │   └── validation.ts
+│   │   │   └── etl/     # ETL pipeline
+│   │   │       └── transform.ts
+│   │   └── __tests__/   # Database tests
+│   └── shared/           # Shared utilities and types
 └── package.json
 ```
 
@@ -77,11 +92,11 @@ loadup/
    NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
-   NEXT_PUBLIC_API_URL=http://localhost:3001
+   NEXT_PUBLIC_API_URL=http://localhost:3004
 
    # Driver App (.env)
    EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=
-   EXPO_PUBLIC_API_URL=http://localhost:3001
+   EXPO_PUBLIC_API_URL=http://localhost:3004
    ```
 
 4. **Start development servers**
@@ -95,7 +110,7 @@ loadup/
    
    # Start API server
    cd packages/api
-   node server.js
+   npm run dev
    ```
 
 ## 🧪 Testing
@@ -119,27 +134,12 @@ npm test --filter=driver-app
    ```
 3. Scan the QR code with Expo Go
 
-## 🚀 Deployment
+## 📚 Documentation
 
-### Admin Dashboard
-```bash
-cd apps/admin-dashboard
-vercel deploy
-```
+For more detailed information, see:
 
-### Driver App
-```bash
-cd apps/driver-app
-expo publish
-```
-
-### API Server
-```bash
-# From the root directory
-node deploy.js
-```
-
-For more detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+- [Development Guide](DEVELOPMENT.md) - Best practices and development workflow
+- [Deployment Guide](DEPLOYMENT.md) - Deployment instructions and operations
 
 ## 📝 License
 
@@ -152,3 +152,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request 
+
+## Development
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables
+4. Run development server: `npm run dev`
+
+## Testing
+- Run tests: `npm test`
+- Run linting: `npm run lint`
+
+## Deployment
+Deployments are automated through GitHub Actions and Vercel:
+- Push to `develop` for preview deployment
+- Push to `main` for production deployment
+
+## Environment Variables
+Required environment variables:
+- `DATABASE_URL`: PostgreSQL connection string
+- `NEXTAUTH_SECRET`: JWT secret for authentication
+- `NEXTAUTH_URL`: Application URL 

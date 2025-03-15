@@ -1,167 +1,584 @@
-# LoadUp API Deployment Guide
+# LoadUp Deployment Guide
 
-## Overview
+This guide provides comprehensive instructions for deploying the LoadUp platform, including environment setup, deployment procedures, and troubleshooting tips.
 
-This guide provides instructions for deploying the LoadUp API to production. The deployment process has been simplified to ensure a smooth transition from development to production.
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Environment Variables](#environment-variables)
+3. [API Deployment](#api-deployment)
+4. [Admin Dashboard Deployment](#admin-dashboard-deployment)
+5. [Driver App Deployment](#driver-app-deployment)
+6. [Database Setup](#database-setup)
+7. [Clerk Authentication Configuration](#clerk-authentication-configuration)
+8. [Monitoring & Logging](#monitoring--logging)
+9. [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
+Before deploying the LoadUp platform, ensure you have the following:
+
 - Node.js v18 or higher
 - npm v8 or higher
-- Git
-- Access to the LoadUp repository
+- PostgreSQL database
+- Access to deployment platforms (Vercel, Heroku, AWS, etc.)
+- Required API keys and credentials
 
-## Deployment Steps
+## Environment Variables
 
-### 1. Clone the Repository
+The LoadUp platform requires several environment variables for proper operation. Create a `.env` file in each app directory with the following variables:
 
-```bash
-git clone https://github.com/your-org/loadup.git
-cd loadup
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
+### API Environment Variables
 
 ```
-# Database Configuration
-DATABASE_URL=postgresql://username:password@hostname:5432/database_name
+# Database
+DATABASE_URL=postgresql://username:password@localhost:5432/loadup
+DATABASE_SSL=false
 
-# API Configuration
-PORT=3001
+# Authentication
+CLERK_SECRET_KEY=your_clerk_secret_key
+CLERK_WEBHOOK_SECRET=your_clerk_webhook_secret
+
+# Services
+MAPBOX_API_KEY=your_mapbox_api_key
+GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_api_key
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+
+# Server
+API_PORT=3004
 NODE_ENV=production
-
-# Security
-JWT_SECRET=your-secure-jwt-secret
-
-# Clerk Authentication
-CLERK_SECRET_KEY=your-clerk-secret-key
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
-EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
+API_URL=https://api.loadup.example.com
+CORS_ORIGIN=https://admin.loadup.example.com,https://loadup.example.com
 ```
 
-### 4. Run the Deployment Script
+### Admin Dashboard Environment Variables
+
+```
+# API
+NEXT_PUBLIC_API_URL=https://api.loadup.example.com
+
+# Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+CLERK_SECRET_KEY=your_clerk_secret_key
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+
+# Services
+NEXT_PUBLIC_MAPBOX_API_KEY=your_mapbox_api_key
+```
+
+### Driver App Environment Variables
+
+```
+# API
+EXPO_PUBLIC_API_URL=https://api.loadup.example.com
+
+# Authentication
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+
+# Services
+EXPO_PUBLIC_MAPBOX_API_KEY=your_mapbox_api_key
+```
+
+## API Deployment
+
+The LoadUp API is built with Express.js and can be deployed to various platforms.
+
+### Deployment to Heroku
+
+1. **Create a Heroku app**
+
+   ```bash
+   heroku create loadup-api
+   ```
+
+2. **Set environment variables**
+
+   ```bash
+   heroku config:set DATABASE_URL=your_database_url
+   heroku config:set CLERK_SECRET_KEY=your_clerk_secret_key
+   # Set other environment variables as needed
+   ```
+
+3. **Deploy the API**
+
+   ```bash
+   git subtree push --prefix packages/api heroku main
+   ```
+
+### Deployment to AWS Elastic Beanstalk
+
+1. **Initialize Elastic Beanstalk**
+
+   ```bash
+   eb init loadup-api --platform node.js --region us-east-1
+   ```
+
+2. **Create an environment**
+
+   ```bash
+   eb create production
+   ```
+
+3. **Set environment variables**
+
+   ```bash
+   eb setenv DATABASE_URL=your_database_url CLERK_SECRET_KEY=your_clerk_secret_key
+   # Set other environment variables as needed
+   ```
+
+4. **Deploy the API**
+
+   ```bash
+   eb deploy
+   ```
+
+### Deployment to Docker
+
+1. **Build the Docker image**
+
+   ```bash
+   docker build -t loadup-api -f packages/api/Dockerfile .
+   ```
+
+2. **Run the Docker container**
+
+   ```bash
+   docker run -p 3001:3001 \
+     -e DATABASE_URL=your_database_url \
+     -e CLERK_SECRET_KEY=your_clerk_secret_key \
+     # Set other environment variables as needed
+     loadup-api
+   ```
+
+## Admin Dashboard Deployment
+
+The LoadUp Admin Dashboard is built with Next.js and can be deployed to Vercel or other platforms.
+
+### Deployment to Vercel
+
+1. **Connect your GitHub repository to Vercel**
+
+2. **Set environment variables in the Vercel dashboard**
+
+3. **Deploy the Admin Dashboard**
+
+   ```bash
+   cd apps/admin-dashboard
+   vercel --prod
+   ```
+
+### Deployment to Netlify
+
+1. **Connect your GitHub repository to Netlify**
+
+2. **Set environment variables in the Netlify dashboard**
+
+3. **Configure build settings**
+
+   - Build command: `cd ../.. && npm run build --filter=admin-dashboard`
+   - Publish directory: `apps/admin-dashboard/.next`
+
+4. **Deploy the Admin Dashboard**
+
+   ```bash
+   cd apps/admin-dashboard
+   netlify deploy --prod
+   ```
+
+## Driver App Deployment
+
+The LoadUp Driver App is built with Expo React Native and can be deployed to app stores or as a web app.
+
+### Building for iOS
+
+1. **Configure app.json**
+
+   Update the `app.json` file with your app's information:
+
+   ```json
+   {
+     "expo": {
+       "name": "LoadUp Driver",
+       "slug": "loadup-driver",
+       "version": "1.0.0",
+       "orientation": "portrait",
+       "icon": "./assets/icon.png",
+       "splash": {
+         "image": "./assets/splash.png",
+         "resizeMode": "contain",
+         "backgroundColor": "#ffffff"
+       },
+       "ios": {
+         "bundleIdentifier": "com.yourcompany.loadupdriver",
+         "buildNumber": "1"
+       }
+     }
+   }
+   ```
+
+2. **Build the iOS app**
+
+   ```bash
+   cd apps/driver-app
+   eas build --platform ios
+   ```
+
+3. **Submit to the App Store**
+
+   ```bash
+   eas submit --platform ios
+   ```
+
+### Building for Android
+
+1. **Configure app.json**
+
+   Update the `app.json` file with your app's information:
+
+   ```json
+   {
+     "expo": {
+       "name": "LoadUp Driver",
+       "slug": "loadup-driver",
+       "version": "1.0.0",
+       "orientation": "portrait",
+       "icon": "./assets/icon.png",
+       "splash": {
+         "image": "./assets/splash.png",
+         "resizeMode": "contain",
+         "backgroundColor": "#ffffff"
+       },
+       "android": {
+         "package": "com.yourcompany.loadupdriver",
+         "versionCode": 1
+       }
+     }
+   }
+   ```
+
+2. **Build the Android app**
+
+   ```bash
+   cd apps/driver-app
+   eas build --platform android
+   ```
+
+3. **Submit to the Google Play Store**
+
+   ```bash
+   eas submit --platform android
+   ```
+
+## Database Setup
+
+The LoadUp platform uses PostgreSQL with Drizzle ORM for database operations.
+
+### Setting Up a PostgreSQL Database
+
+1. **Create a PostgreSQL database**
+
+   ```sql
+   CREATE DATABASE loadup;
+   ```
+
+2. **Create a database user**
+
+   ```sql
+   CREATE USER loadup_user WITH PASSWORD 'your_password';
+   GRANT ALL PRIVILEGES ON DATABASE loadup TO loadup_user;
+   ```
+
+### Running Migrations
+
+1. **Generate migrations**
+
+   ```bash
+   cd packages/database
+   npm run drizzle:generate
+   ```
+
+2. **Apply migrations**
+
+   ```bash
+   npm run drizzle:migrate
+   ```
+
+## Clerk Authentication Configuration
+
+The LoadUp platform uses Clerk.js for authentication. Proper configuration is essential for a successful deployment.
+
+### Setting Up Clerk
+
+1. **Create a Clerk Application**
+
+   Sign up for a Clerk account at [clerk.com](https://clerk.com) and create a new application.
+
+2. **Configure Authentication Settings**
+
+   In the Clerk dashboard:
+   - Set up sign-in and sign-up methods (email, social providers, etc.)
+   - Configure user roles and permissions
+   - Set up webhooks for user events
+
+3. **Get API Keys**
+
+   Obtain the following API keys from the Clerk dashboard:
+   - Publishable Key (for frontend)
+   - Secret Key (for backend)
+
+4. **Set Environment Variables**
+
+   Add the following environment variables to your deployment:
+
+   ```
+   # Admin Dashboard
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+   CLERK_SECRET_KEY=your_secret_key
+   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+   NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+   NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+   
+   # Driver App
+   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+   ```
+
+5. **Configure Webhooks**
+
+   Set up webhooks to sync user data with your backend:
+
+   ```
+   CLERK_WEBHOOK_SECRET=your_webhook_secret
+   ```
+
+   Create a webhook endpoint in your API:
+
+   ```typescript
+   // packages/api/src/routes/webhooks.ts
+   import express from 'express';
+   import { Webhook } from 'svix';
+   import { WebhookEvent } from '@clerk/nextjs/server';
+
+   const router = express.Router();
+
+   router.post('/clerk', async (req, res) => {
+     // Verify webhook
+     const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+     if (!webhookSecret) {
+       return res.status(500).json({ error: 'Webhook secret not configured' });
+     }
+
+     // Get the headers
+     const svix_id = req.headers['svix-id'] as string;
+     const svix_timestamp = req.headers['svix-timestamp'] as string;
+     const svix_signature = req.headers['svix-signature'] as string;
+
+     if (!svix_id || !svix_timestamp || !svix_signature) {
+       return res.status(400).json({ error: 'Missing svix headers' });
+     }
+
+     // Create a new Svix instance with your secret
+     const wh = new Webhook(webhookSecret);
+
+     let evt: WebhookEvent;
+     try {
+       evt = wh.verify(JSON.stringify(req.body), {
+         'svix-id': svix_id,
+         'svix-timestamp': svix_timestamp,
+         'svix-signature': svix_signature,
+       }) as WebhookEvent;
+     } catch (err) {
+       return res.status(400).json({ error: 'Invalid webhook' });
+     }
+
+     // Handle the webhook event
+     const { type, data } = evt;
+     
+     switch (type) {
+       case 'user.created':
+         // Handle user creation
+         break;
+       case 'user.updated':
+         // Handle user update
+         break;
+       // Handle other event types
+     }
+
+     return res.status(200).json({ success: true });
+   });
+
+   export default router;
+   ```
+
+### Version Compatibility
+
+Ensure all Clerk-related packages are on compatible versions:
 
 ```bash
-node deploy.js
+# Check current versions
+npm list @clerk/nextjs
+npm list @clerk/clerk-react
+
+# Update to consistent versions
+npm update @clerk/nextjs
+npm update @clerk/clerk-react
 ```
 
-This script will:
-- Start the API server on the specified port (default: 3001)
-- Log all server output to the console
-- Handle graceful shutdown on SIGINT and SIGTERM signals
+### Testing Authentication
 
-### 5. Verify Deployment
+Before deploying to production, test the authentication flow:
 
-Check that the API is running correctly by making a request to the health endpoint:
+1. **Test Sign-In and Sign-Up**
+   - Verify that users can sign in and sign up
+   - Test with different authentication methods
 
-```bash
-curl http://localhost:3001/health
-```
+2. **Test Role-Based Access**
+   - Verify that users with different roles have appropriate access
+   - Test admin-only routes
 
-You should receive a response like:
+3. **Test Error Scenarios**
+   - Test with invalid credentials
+   - Test with expired tokens
+   - Test when Clerk service is unavailable
 
-```json
-{"status":"ok"}
-```
+## Monitoring & Logging
 
-### 6. Test API Endpoints
+Proper monitoring and logging are essential for maintaining a healthy production environment.
 
-Test the authentication endpoint:
+### Setting Up Logging
 
-```bash
-curl http://localhost:3001/api/auth
-```
+1. **Configure structured logging**
 
-Test the shipments endpoint:
+   ```typescript
+   // packages/api/src/utils/logger.ts
+   import pino from 'pino';
 
-```bash
-curl http://localhost:3001/api/shipments
-```
+   export const logger = pino({
+     level: process.env.LOG_LEVEL || 'info',
+     transport: {
+       target: 'pino-pretty',
+       options: {
+         colorize: true,
+       },
+     },
+   });
+   ```
 
-Test the drivers endpoint:
+2. **Use the logger throughout the application**
 
-```bash
-curl http://localhost:3001/api/drivers
-```
+   ```typescript
+   import { logger } from '../utils/logger';
 
-## API Endpoints
+   logger.info('Server started on port 3001');
+   logger.error({ err }, 'An error occurred');
+   ```
 
-The LoadUp API provides the following endpoints:
+### Setting Up Monitoring
 
-### Health Check
-- `GET /health` - Returns the health status of the API
+1. **Configure health check endpoints**
 
-### Authentication
-- `GET /api/auth` - Returns mock authentication data
+   ```typescript
+   // packages/api/src/routes/health.ts
+   import express from 'express';
+   import { db } from '@loadup/database';
 
-### Shipments
-- `GET /api/shipments` - Returns a list of shipments
-- `GET /api/shipments/:id` - Returns details for a specific shipment
+   const router = express.Router();
 
-### Drivers
-- `GET /api/drivers` - Returns a list of drivers
-- `GET /api/drivers/current` - Returns the current driver's information
-- `POST /api/drivers/location` - Updates a driver's location
-- `PATCH /api/drivers/status` - Updates a driver's status
+   router.get('/health', async (req, res) => {
+     try {
+       // Check database connection
+       await db.execute(sql`SELECT 1`);
+       
+       res.status(200).json({
+         status: 'ok',
+         timestamp: new Date().toISOString(),
+         services: {
+           database: 'up',
+         },
+       });
+     } catch (error) {
+       res.status(500).json({
+         status: 'error',
+         timestamp: new Date().toISOString(),
+         services: {
+           database: 'down',
+         },
+         error: error.message,
+       });
+     }
+   });
+
+   export default router;
+   ```
+
+2. **Set up external monitoring services**
+
+   - Configure uptime monitoring with services like Uptime Robot or Pingdom
+   - Set up error tracking with services like Sentry
+   - Configure performance monitoring with services like New Relic or Datadog
 
 ## Troubleshooting
 
-### Port Already in Use
+### Common Issues and Solutions
 
-If you see an error like `EADDRINUSE: address already in use`, change the PORT in your .env file or pass it as an environment variable:
+#### API Connection Issues
 
-```bash
-PORT=3002 node deploy.js
-```
+**Issue**: Admin Dashboard or Driver App cannot connect to the API.
 
-### Database Connection Issues
+**Solution**:
+1. Verify that the API is running and accessible
+2. Check that the API URL is correctly set in environment variables
+3. Ensure CORS is properly configured on the API server
+4. Check for network issues or firewall restrictions
 
-If you encounter database connection issues, verify that:
-- The DATABASE_URL is correct
-- The database server is running
-- The user has the necessary permissions
+#### Database Connection Issues
 
-### Module Resolution Issues
+**Issue**: API cannot connect to the database.
 
-If you encounter module resolution issues, try the following:
-- Ensure all dependencies are installed: `npm install`
-- Check that the path aliases in tsconfig.json are correct
-- Verify that the import paths include file extensions for ESM modules
+**Solution**:
+1. Verify that the database is running and accessible
+2. Check that the DATABASE_URL is correctly set
+3. Ensure the database user has the necessary permissions
+4. Check for network issues or firewall restrictions
 
-## Monitoring
+#### Authentication Issues
 
-The deployment script logs all server output to the console. For production deployments, consider using a process manager like PM2:
+**Issue**: Users cannot log in or authentication fails.
 
-```bash
-npm install -g pm2
-pm2 start deploy.js --name loadup-api
-```
+**Solution**:
+1. Verify that the Clerk API keys are correctly set in environment variables
+2. Check that the Clerk publishable key matches the environment (development/production)
+3. Ensure the webhook endpoints are properly configured
+4. Check for version mismatches in Clerk dependencies
+5. Look for CORS issues if authentication is cross-origin
+6. Check browser console for specific error messages
+7. Verify that the middleware is properly configured
 
-## Scaling
+**Specific Clerk Errors**:
 
-For high-traffic environments, consider:
-- Using a load balancer
-- Deploying multiple instances of the API
-- Implementing a caching layer
+- **400 Bad Request on dev_browser endpoint**:
+  This is often caused by a version mismatch between Clerk JS libraries. Ensure all Clerk packages are on compatible versions.
 
-## Frontend Integration
+- **401 Unauthorized**:
+  Check that the Clerk API keys are correct and that the user has the necessary permissions.
 
-To connect the admin dashboard and driver app to the API:
+- **CORS Errors**:
+  Ensure that the Clerk domain is properly configured to allow requests from your application domain.
 
-1. Update the API URL in the frontend configuration:
-   - For admin dashboard: Update `NEXT_PUBLIC_API_URL` in `.env`
-   - For driver app: Update `EXPO_PUBLIC_API_URL` in `.env`
+#### Deployment Failures
 
-2. Verify connectivity by accessing the admin dashboard and driver app
+**Issue**: Deployment to a platform fails.
 
-## Support
+**Solution**:
+1. Check the deployment logs for specific errors
+2. Verify that all environment variables are correctly set
+3. Ensure the build process completes successfully locally
+4. Check for platform-specific requirements or limitations
 
-For deployment issues, contact the LoadUp DevOps team at devops@loadup.app. 
+---
+
+This deployment guide provides comprehensive instructions for deploying the LoadUp platform. By following these guidelines, you'll ensure a smooth deployment process and a stable production environment. 

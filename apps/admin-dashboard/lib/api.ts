@@ -3,7 +3,7 @@
  * Handles all API requests to the backend
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 
 /**
  * Generic fetch function with error handling
@@ -19,17 +19,38 @@ async function fetchAPI<T>(
     ...options.headers,
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  try {
+    console.log(`API Request: ${options.method || 'GET'} ${url}`);
+    
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include', // Include cookies for authentication
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || response.statusText);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error (${response.status}): ${errorText || response.statusText}`);
+      
+      // Handle specific error codes
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please sign in.');
+      } else if (response.status === 403) {
+        throw new Error('You do not have permission to access this resource.');
+      } else if (response.status === 404) {
+        throw new Error('The requested resource was not found.');
+      } else if (response.status >= 500) {
+        throw new Error('Server error. Please try again later.');
+      }
+      
+      throw new Error(errorText || response.statusText);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('API Request failed:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
 /**
@@ -88,7 +109,10 @@ export const etlAPI = {
  * Auth API functions
  */
 export const authAPI = {
-  getCurrentUser: () => fetchAPI<{ userId: string; role: string }>('/api/auth'),
+  getCurrentUser: () => fetchAPI<{ userId: string; role: string; email?: string; fullName?: string }>('/api/auth'),
+  
+  // Add a health check function to test API connectivity
+  healthCheck: () => fetchAPI<{ status: string }>('/health'),
 };
 
 export default {

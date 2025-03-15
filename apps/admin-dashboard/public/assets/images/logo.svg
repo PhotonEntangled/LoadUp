@@ -1,0 +1,10 @@
+<svg width="180" height="50" viewBox="0 0 180 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M10 10H30V40H10V10Z" fill="#3B82F6"/>
+  <path d="M35 10H55V25H35V10Z" fill="#2563EB"/>
+  <path d="M35 30H55V40H35V30Z" fill="#2563EB"/>
+  <path d="M60 10H80V40H60V10Z" fill="#1D4ED8"/>
+  <path d="M85 25L95 10H105L115 25L105 40H95L85 25Z" fill="#3B82F6"/>
+  <path d="M120 10H140V40H120V10Z" fill="#1D4ED8"/>
+  <path d="M145 10H165V40H145V10Z" fill="#3B82F6"/>
+  <text x="10" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">LOADUP</text>
+</svg> 
