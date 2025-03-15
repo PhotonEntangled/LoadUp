@@ -1,0 +1,13 @@
+# Ignore all embedded git repositories in the analysis folder
+Halfsies/
+subscription-tracker-api/
+uber/
+university-library-jsm/
+browser-tools-mcp/
+
+# Keep only text files and specific analysis files
+!*.txt
+!*.csv
+!*.xlsx
+!*.json
+!README.md 
