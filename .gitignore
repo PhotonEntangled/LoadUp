@@ -5,6 +5,7 @@ node_modules/
 
 # Testing
 coverage/
+.nyc_output/
 
 # Production
 build/
@@ -54,5 +55,29 @@ Thumbs.db
 *.tsbuildinfo
 
 # Cache
-.cache/ 
-node_modules
+.cache/
+
+# Analysis and temporary folders
+analysis/
+tmp/
+temp/
+browser-tools-mcp/
+
+# Embedded git repositories
+**/Halfsies/
+**/subscription-tracker-api/
+**/uber/
+**/university-library-jsm/
+
+# Logs
+logs/
+*.log
+
+# Database
+*.sqlite
+*.db
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
