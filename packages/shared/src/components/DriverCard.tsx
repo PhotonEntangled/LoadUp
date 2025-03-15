@@ -9,6 +9,7 @@ interface Driver {
   status: 'available' | 'on_delivery' | 'offline';
   truckType: string;
   phoneNumber: string;
+  name: string;
 }
 
 interface DriverCardProps {
@@ -54,7 +55,7 @@ export const DriverCard: React.FC<DriverCardProps> = ({
           />
         </View>
         <View style={styles.info}>
-          <Text style={styles.name}>{`${driver.firstName} ${driver.lastName}`}</Text>
+          <Text style={styles.name}>{driver.name}</Text>
           <Text style={styles.detail}>{driver.truckType}</Text>
           <Text style={styles.detail}>{driver.phoneNumber}</Text>
         </View>

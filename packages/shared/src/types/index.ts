@@ -21,8 +21,7 @@ export interface Shipment {
 
 export interface TruckDriver {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   truckType: 'box_truck' | 'semi' | 'van';
   currentLocation?: {
     latitude: number;

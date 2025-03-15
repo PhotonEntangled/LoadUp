@@ -47,7 +47,7 @@ export function ShipmentsTable() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useSession();
 
   const fetchShipments = async () => {
     try {

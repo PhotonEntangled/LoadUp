@@ -1,0 +1,27 @@
+This is a placeholder for a demo shipments Excel file.
+
+In a real implementation, this would be an actual .xlsx file with sample shipment data following this structure:
+- tracking_number: Unique identifier for the shipment
+- customer_name: Name of the customer
+- customer_email: Email address of the customer
+- description: Description of the shipment
+- pickup_street: Street address for pickup
+- pickup_city: City for pickup
+- pickup_state: State for pickup
+- pickup_zip: ZIP code for pickup
+- pickup_country: Country for pickup
+- pickup_contact_name: Name of the contact person at pickup location
+- pickup_contact_phone: Phone number of the contact person at pickup location
+- pickup_contact_email: Email of the contact person at pickup location
+- delivery_street: Street address for delivery
+- delivery_city: City for delivery
+- delivery_state: State for delivery
+- delivery_zip: ZIP code for delivery
+- delivery_country: Country for delivery
+- delivery_contact_name: Name of the contact person at delivery location
+- delivery_contact_phone: Phone number of the contact person at delivery location
+- delivery_contact_email: Email of the contact person at delivery location
+- pickup_date: Date for pickup (YYYY-MM-DD format)
+- delivery_date: Date for delivery (YYYY-MM-DD format)
+
+Please replace this with a real Excel file before running the demo. 

@@ -1,73 +1,76 @@
-import Link from 'next/link';
-import { useAuth } from '@loadup/shared/src/hooks/useAuth';
+"use client";
 
-const navigationItems = [
-  {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: '📊',
-  },
-  {
-    name: 'Shipments',
-    href: '/shipments',
-    icon: '📦',
-  },
-  {
-    name: 'Drivers',
-    href: '/drivers',
-    icon: '🚚',
-  },
-  {
-    name: 'Documents',
-    href: '/documents',
-    icon: '📄',
-  },
-  {
-    name: 'Tracking',
-    href: '/tracking',
-    icon: '📍',
-  },
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut } from "@/lib/auth";
+
+// Navigation items
+const navItems = [
+  { name: "Dashboard", href: "/dashboard", icon: "📊" },
+  { name: "Shipments", href: "/dashboard/shipments", icon: "📦" },
+  { name: "Customers", href: "/dashboard/customers", icon: "👥" },
+  { name: "Drivers", href: "/dashboard/drivers", icon: "🚚" },
+  { name: "Reports", href: "/dashboard/reports", icon: "📈" },
+  { name: "Settings", href: "/dashboard/settings", icon: "⚙️" },
 ];
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
+  const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut({ redirectTo: "/sign-in" });
+  };
 
   return (
-    <div className="w-64 bg-white shadow-lg">
-      <div className="flex flex-col h-full">
-        {/* Profile Section */}
-        <div className="p-4 border-b">
-          <div className="font-semibold">{user?.firstName} {user?.lastName}</div>
-          <div className="text-sm text-gray-500">{user?.email}</div>
+    <div
+      className={`flex h-full flex-col bg-gray-800 text-white transition-all ${
+        isCollapsed ? "w-16" : "w-64"
+      }`}
+    >
+      <div className="flex h-16 items-center justify-between border-b border-gray-700 px-4">
+        <div className="flex items-center">
+          <span className="text-xl font-bold">
+            {isCollapsed ? "LU" : "LoadUp"}
+          </span>
         </div>
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
+        >
+          {isCollapsed ? "→" : "←"}
+        </button>
+      </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {navigationItems.map((item) => (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
-                >
-                  <span className="mr-3">{item.icon}</span>
-                  {item.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+      <nav className="flex-1 space-y-1 px-2 py-4">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex items-center rounded-md px-2 py-2 text-sm font-medium ${
+                isActive
+                  ? "bg-gray-900 text-white"
+                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
+              }`}
+            >
+              <span className="mr-3 text-lg">{item.icon}</span>
+              {!isCollapsed && <span>{item.name}</span>}
+            </Link>
+          );
+        })}
+      </nav>
 
-        {/* Logout Button */}
-        <div className="p-4 border-t">
-          <button
-            onClick={logout}
-            className="w-full flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
-          >
-            <span className="mr-3">🚪</span>
-            Logout
-          </button>
-        </div>
+      <div className="border-t border-gray-700 p-4">
+        <button
+          onClick={handleSignOut}
+          className="flex w-full items-center rounded-md px-2 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+        >
+          <span className="mr-3 text-lg">🚪</span>
+          {!isCollapsed && <span>Sign Out</span>}
+        </button>
       </div>
     </div>
   );

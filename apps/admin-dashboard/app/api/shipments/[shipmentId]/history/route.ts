@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
+import { useSession, signIn, signOut } from "next-auth/react";
 import { db } from '@loadup/database';
 import { shipmentHistory, users } from '@loadup/database/schema';
 import { eq } from 'drizzle-orm';

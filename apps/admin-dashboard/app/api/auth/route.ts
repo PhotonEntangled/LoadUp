@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs';
+import { useSession, signIn, signOut } from "next-auth/react";
 import { NextResponse } from 'next/server';
 
 export async function GET() {

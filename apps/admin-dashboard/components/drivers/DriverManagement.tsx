@@ -14,10 +14,11 @@ interface Driver {
   };
   completedShipments: number;
   rating: number;
+  name: string;
 }
 
 export default function DriverManagement() {
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useSession();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -88,7 +89,7 @@ export default function DriverManagement() {
                     <div className="flex items-center">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {driver.firstName} {driver.lastName}
+                          {driver.name}
                         </div>
                         <div className="text-sm text-gray-500">
                           {driver.email}

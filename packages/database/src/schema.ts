@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, jsonb, boolean } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import type { InferModel } from 'drizzle-orm';
 
@@ -54,10 +54,36 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
-  fullName: text('full_name').notNull(),
+  name: text('name').notNull(),
   role: text('role', {
     enum: ['ADMIN', 'DRIVER', 'CUSTOMER']
   }).notNull().default('CUSTOMER'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+export const shipmentsStaging = pgTable('shipments_staging', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  rawData: jsonb('raw_data').notNull(),
+  source: text('source').notNull(),
+  status: text('status').notNull().default('PENDING'),
+  errorMessage: text('error_message'),
+  processedAt: timestamp('processed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+export const documentsTable = pgTable('documents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  shipmentId: uuid('shipment_id').references(() => shipments.id),
+  uploadedById: uuid('uploaded_by_id').references(() => users.id),
+  documentType: text('document_type').notNull(),
+  fileName: text('file_name').notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileSize: text('file_size').notNull(),
+  mimeType: text('mime_type').notNull(),
+  ocrProcessed: boolean('ocr_processed').default(false),
+  ocrData: jsonb('ocr_data'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
@@ -104,4 +130,6 @@ export type Shipment = InferModel<typeof shipments>;
 export type Driver = InferModel<typeof drivers>;
 export type Vehicle = InferModel<typeof vehicles>;
 export type TrackingUpdate = InferModel<typeof trackingUpdates>;
-export type User = InferModel<typeof users>; 
+export type User = InferModel<typeof users>;
+export type ShipmentStaging = InferModel<typeof shipmentsStaging>;
+export type Document = InferModel<typeof documentsTable>; 

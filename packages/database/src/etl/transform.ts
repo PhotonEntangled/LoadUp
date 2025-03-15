@@ -18,7 +18,7 @@ interface StandardAddress {
   formattedAddress?: string;
 }
 
-interface RawShipmentData {
+export interface RawShipmentData {
   externalId: string;
   pickupAddress: RawAddress;
   deliveryAddress: RawAddress;

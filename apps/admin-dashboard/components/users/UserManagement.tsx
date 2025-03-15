@@ -12,7 +12,7 @@ interface UserManagementProps {}
 const ROLES: Role[] = ['ADMIN', 'DRIVER', 'READ_ONLY'];
 
 export const UserManagement: React.FC<UserManagementProps> = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);

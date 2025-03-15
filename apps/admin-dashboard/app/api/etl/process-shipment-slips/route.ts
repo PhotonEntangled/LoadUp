@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
+import { useSession, signIn, signOut } from "next-auth/react";
 import { ShipmentSlipProcessor } from '@loadup/api/services/etl/shipments-processor';
 
 export async function POST(req: Request) {

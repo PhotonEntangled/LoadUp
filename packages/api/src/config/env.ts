@@ -9,8 +9,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.string().default('3001'),
   DATABASE_URL: z.string().optional(),
-  CLERK_SECRET_KEY: z.string().optional(),
-  CLERK_PUBLISHABLE_KEY: z.string().optional(),
+  NEXTAUTH_SECRET: z.string().optional(),
+  NEXTAUTH_URL: z.string().optional(),
 });
 
 // Parse and validate environment variables
@@ -21,8 +21,8 @@ if (env.NODE_ENV === 'development') {
   if (!env.DATABASE_URL) {
     console.warn('DATABASE_URL not set, using mock data');
   }
-  if (!env.CLERK_SECRET_KEY) {
-    console.warn('CLERK_SECRET_KEY not set, authentication will not work properly');
+  if (!env.NEXTAUTH_SECRET) {
+    console.warn('NEXTAUTH_SECRET not set, authentication will not work properly');
   }
 }
 
@@ -33,6 +33,6 @@ export default {
   isTest: env.NODE_ENV === 'test',
   port: parseInt(env.PORT, 10),
   databaseUrl: env.DATABASE_URL,
-  clerkSecretKey: env.CLERK_SECRET_KEY,
-  clerkPublishableKey: env.CLERK_PUBLISHABLE_KEY,
+  nextAuthSecret: env.NEXTAUTH_SECRET,
+  nextAuthUrl: env.NEXTAUTH_URL,
 }; 

@@ -1,13 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { Clerk } from '@clerk/clerk-sdk-node';
+import { decode, verify } from 'jsonwebtoken';
 import { FEATURES } from '../config/features.js';
 import env from '../config/env.js';
-
-// Initialize Clerk if secret key is available
-// Use type assertion for the entire expression to fix TypeScript error
-const clerk = env.clerkSecretKey 
-  ? (new Clerk({ apiKey: env.clerkSecretKey }) as any) 
-  : null;
 
 // Define custom request type with auth
 declare global {
@@ -17,6 +11,7 @@ declare global {
         userId: string;
         sessionId: string;
         isAdmin: boolean;
+        role: string;
       };
     }
   }
@@ -30,7 +25,8 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       req.auth = {
         userId: 'dev-user',
         sessionId: 'dev-session',
-        isAdmin: true
+        isAdmin: true,
+        role: 'admin'
       };
       return next();
     }
@@ -49,15 +45,20 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 
     const token = authHeader.split(' ')[1];
     
-    // Verify token with Clerk if available
-    if (clerk) {
+    // Verify token with NextAuth JWT secret
+    if (env.nextAuthSecret) {
       try {
-        const session = await clerk.sessions.verifyToken(token);
+        // Verify the JWT token
+        const decoded = verify(token, env.nextAuthSecret) as any;
+        
+        // Extract user information from the token
         req.auth = {
-          userId: session.subject,
-          sessionId: session.sid,
-          isAdmin: false // Simplified - we'll enhance this post-deployment
+          userId: decoded.sub || decoded.id,
+          sessionId: decoded.jti || 'session',
+          isAdmin: decoded.role === 'admin',
+          role: decoded.role || 'user'
         };
+        
         next();
       } catch (error) {
         return res.status(401).json({
@@ -69,14 +70,15 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
         });
       }
     } else {
-      // Fallback for development without Clerk
+      // Fallback for development without NextAuth secret
       if (env.isDevelopment) {
         // Simple token validation for development
         if (token === 'dev-token') {
           req.auth = {
             userId: 'dev-user',
             sessionId: 'dev-session',
-            isAdmin: true
+            isAdmin: true,
+            role: 'admin'
           };
           return next();
         }
@@ -95,7 +97,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-// Simplified admin check - to be enhanced post-deployment
+// Role-based access control middleware
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.auth) {
     return res.status(401).json({
@@ -107,8 +109,7 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
     });
   }
   
-  // For beta, we'll use a simplified admin check
-  // This will be enhanced post-deployment with proper role checks
+  // Check if user has admin role
   if (!req.auth.isAdmin) {
     return res.status(403).json({
       success: false,

@@ -33,7 +33,7 @@ LoadUp is a full-stack logistics platform built with modern technologies, design
 ### Backend
 - Node.js with TypeScript
 - PostgreSQL with Drizzle ORM
-- Authentication: Clerk.js
+- Authentication: NextAuth.js
 - API Server: Express.js
 
 ### Infrastructure
@@ -71,16 +71,12 @@ loadup/
 3. **Set up environment variables**
    ```bash
    # Admin Dashboard (.env)
-   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-   CLERK_SECRET_KEY=
-   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-   NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
-   NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+   NEXTAUTH_URL=
+   NEXTAUTH_SECRET=
    NEXT_PUBLIC_API_URL=http://localhost:3001
 
    # Driver App (.env)
-   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=
+   EXPO_PUBLIC_NEXTAUTH_URL=
    EXPO_PUBLIC_API_URL=http://localhost:3001
    ```
 
@@ -152,3 +148,61 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request 
+
+## Testing Infrastructure
+
+Our testing infrastructure is built on several layers to ensure comprehensive coverage:
+
+### Unit Tests
+- Located in `__tests__/**/*.unit.ts(x)`
+- Run with `npm run test:unit`
+- Focus on individual components and functions
+- Uses Jest with ts-jest
+
+### Integration Tests
+- Located in `__tests__/**/*.integration.ts(x)`
+- Run with `npm run test:integration`
+- Tests interactions between components
+- Includes API and database tests
+
+### E2E Tests
+- Located in `e2e/**/*.spec.ts`
+- Run with `npm run test:e2e`
+- Uses Playwright for browser testing
+- Tests complete user flows
+- Supports multiple browsers and devices
+
+### Coverage Requirements
+- 80% branch coverage
+- 80% function coverage
+- 80% line coverage
+- 80% statement coverage
+
+### Running Tests
+```bash
+# Install dependencies
+npm install
+
+# Install Playwright browsers
+npm run playwright:install
+
+# Run all tests
+npm test
+
+# Run specific test types
+npm run test:unit
+npm run test:integration
+npm run test:e2e
+
+# Run tests with coverage
+npm run test:coverage
+
+# Watch mode for development
+npm run test:watch
+```
+
+### CI/CD Integration
+- Tests run automatically on pull requests
+- All tests must pass before deployment
+- Coverage reports uploaded to Codecov
+- E2E test videos and screenshots on failure 

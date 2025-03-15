@@ -1,26 +1,29 @@
 ﻿{
   "compilerOptions": {
-    "target": "es2017",
+    "target": "ES2022",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "Node16",
-    "moduleResolution": "node16",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
     "baseUrl": ".",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "paths": {
-      "@/*": ["./*"],
       "@loadup/*": ["packages/*/src"]
     },
-    "types": ["node", "jest"]
+    "types": ["jest", "node"]
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", ".turbo"]
+  "include": ["packages/**/*", "__tests__/**/*", "e2e/**/*", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/dist/**"]
 }

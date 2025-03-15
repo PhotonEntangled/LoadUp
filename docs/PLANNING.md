@@ -1,27 +1,28 @@
-# LoadUp Project - Planning Document
+# LoadUp Project - Planning Document (MVP Focus)
 
 ## 🎯 Project Overview
 
 LoadUp is a logistics management platform designed to streamline shipment tracking, document processing, and delivery management. The platform consists of a web dashboard for administrators and operators, and a mobile app for drivers.
 
-## 🚀 Project Goals
+## 🚀 Project Goals (MVP)
 
 1. **Streamline Shipment Processing**
    - Automate document processing with OCR
    - Implement Excel file processing for batch imports
    - Create validation workflows for extracted data
 
-2. **Enhance Shipment Tracking**
-   - Implement real-time location tracking
-   - Create status update notifications
-   - Build customer-facing tracking interface
+2. **Provide Basic Shipment Tracking**
+   - Implement simple shipment listing and details
+   - Create basic status display
+   - Build placeholder for future tracking features
 
-3. **Optimize Delivery Management**
-   - Implement vehicle assignment system
-   - Create route optimization
-   - Build driver mobile app
+3. **Demonstrate Core Functionality**
+   - Implement authentication and admin dashboard
+   - Create document processing workflow
+   - Build simple driver view
+   - Prepare map integration placeholder
 
-## 📋 Implementation Phases
+## 📋 Implementation Phases (MVP Focus)
 
 ### Phase 1: Infrastructure & Authentication ✅
 1. **Project Setup** ✅
@@ -66,93 +67,56 @@ LoadUp is a logistics management platform designed to streamline shipment tracki
    - Build standardized output format
    - Create error handling and reporting
 
-### Phase 3: Shipment Management 🚧
+### Phase 3: Shipment Management (MVP) 🚧
 1. **Shipment Database Models** ✅
    - Create shipment schema with Drizzle ORM
-   - Define relationships with users and vehicles
+   - Define basic relationships
    - Implement CRUD operations
    - Add validation and error handling
 
 2. **Shipment Services** ✅
    - Implement business logic for shipment operations
    - Create services for shipment status updates
-   - Build services for shipment assignment
-   - Implement services for shipment tracking
+   - Build services for shipment data access
+   - Implement basic error handling
 
-3. **API Endpoints** 🚧
-   - Create shipment creation endpoint
-   - Implement shipment listing with filtering
+3. **Basic API Endpoints** 🚧
+   - Create simple shipment creation endpoint
+   - Implement basic shipment listing
    - Add shipment detail endpoint
-   - Create shipment update endpoint
+   - Skip complex filtering and pagination for MVP
 
-4. **UI Components** 🚧
-   - Build shipment list view with filters
-   - Create shipment detail view
-   - Implement shipment creation form
-   - Add status update functionality
+4. **Simple UI Components** 🚧
+   - Build basic shipment list view
+   - Create simple shipment detail view
+   - Implement minimal shipment creation form
+   - Skip complex status management for MVP
 
-### Phase 4: Vehicle Management
-1. **Vehicle Database Models**
-   - Create vehicle schema with Drizzle ORM
-   - Define relationships with shipments and users
-   - Implement CRUD operations
-   - Add validation and error handling
+### Phase 4: Driver View & Map Integration (MVP)
+1. **Basic Driver View**
+   - Create simple driver dashboard
+   - Build basic shipment list for drivers
+   - Implement simple shipment detail view
+   - Skip complex driver management features
 
-2. **Vehicle Services**
-   - Implement business logic for vehicle operations
-   - Create services for vehicle status updates
-   - Build services for vehicle assignment
-   - Implement services for vehicle tracking
-
-3. **API Endpoints**
-   - Create vehicle registration endpoint
-   - Implement vehicle listing with filtering
-   - Add vehicle detail endpoint
-   - Create vehicle update endpoint
-
-4. **UI Components**
-   - Build vehicle list view with filters
-   - Create vehicle detail view
-   - Implement vehicle registration form
-   - Add status update functionality
-
-### Phase 5: Map Integration
-1. **Mapbox Integration**
+2. **Map Integration Placeholder**
    - Set up Mapbox API
-   - Create map component
-   - Implement location services
-   - Build geocoding functionality
+   - Create basic map component
+   - Implement placeholder for location tracking
+   - Skip route optimization and complex features
 
-2. **Real-time Tracking**
-   - Implement real-time location updates
-   - Create tracking interface
-   - Build geofencing for notifications
-   - Implement ETA calculations
+### Phase 5: CI/CD Pipeline
+1. **Testing Infrastructure**
+   - Configure automated testing
+   - Implement test coverage reporting
+   - Set up continuous integration
+   - Focus on core functionality tests
 
-3. **Route Optimization**
-   - Implement route planning
-   - Create route visualization
-   - Build route optimization
-   - Implement turn-by-turn navigation
-
-### Phase 6: Mobile App Development
-1. **Driver Authentication**
-   - Implement driver login
-   - Create profile management
-   - Build status updates
-   - Implement notifications
-
-2. **Shipment Management**
-   - Create shipment list view
-   - Build shipment detail view
-   - Implement status updates
-   - Add signature capture
-
-3. **Map Integration**
-   - Implement real-time location sharing
-   - Create turn-by-turn navigation
-   - Build geofencing for notifications
-   - Implement offline support
+2. **Deployment Pipeline**
+   - Configure deployment to staging environment
+   - Implement code quality checks
+   - Create deployment documentation
+   - Set up basic monitoring
 
 ## 📊 Progress Tracking
 
@@ -170,104 +134,122 @@ Phase 2: Document Processing
 - Excel File Processing [██████████] 100%
 - Unified Data Processor [██████████] 100%
 
-Phase 3: Shipment Management
+Phase 3: Shipment Management (MVP)
 [██████░░░░] 60% Started
 - Shipment Database Models [██████████] 100%
 - Shipment Services [██████████] 100%
-- API Endpoints [████░░░░░░] 40%
-- UI Components [░░░░░░░░░░] 0%
+- Basic API Endpoints [████░░░░░░] 40%
+- Simple UI Components [░░░░░░░░░░] 0%
 
-Phase 4: Vehicle Management
+Phase 4: Driver View & Map Integration (MVP)
 [░░░░░░░░░░] 0% Not Started
+- Basic Driver View [░░░░░░░░░░] 0%
+- Map Integration Placeholder [░░░░░░░░░░] 0%
 
-Phase 5: Map Integration
+Phase 5: CI/CD Pipeline
 [░░░░░░░░░░] 0% Not Started
-
-Phase 6: Mobile App Development
-[░░░░░░░░░░] 0% Not Started
+- Testing Infrastructure [░░░░░░░░░░] 0%
+- Deployment Pipeline [░░░░░░░░░░] 0%
 ```
 
-## 🎯 Key Deliverables
+## 🎯 Key Deliverables (MVP)
 
 1. **Admin Dashboard**
    - Authentication system ✅
    - Document processing interface ✅
-   - Shipment management interface 🚧
-   - Vehicle management interface
-   - Map tracking interface
+   - Basic shipment management interface 🚧
+   - Map tracking placeholder
 
-2. **Mobile App**
-   - Driver authentication
-   - Shipment management
-   - Real-time location sharing
-   - Turn-by-turn navigation
-   - Offline support
+2. **Driver View**
+   - Simple driver dashboard
+   - Basic shipment list and details
+   - Minimal status updates
 
 3. **API Services**
    - Authentication API ✅
    - Document processing API ✅
-   - Shipment management API 🚧
-   - Vehicle management API
-   - Map tracking API
+   - Basic shipment management API 🚧
+   - Simple map integration
+
+4. **CI/CD Pipeline**
+   - Automated testing
+   - Continuous integration
+   - Deployment pipeline
+   - Code quality checks
 
 ## 📝 Technical Considerations
 
-1. **Performance**
-   - Optimize database queries for large datasets
-   - Implement caching for frequently accessed data
+1. **MVP Focus**
+   - Prioritize core functionality over comprehensive features
+   - Implement simplified versions of key components
+   - Focus on demonstration value for presentation to management
+   - Maintain code quality and testing despite simplified scope
+
+2. **Performance**
+   - Optimize critical database queries
+   - Implement basic caching for frequently accessed data
    - Use server-side rendering for initial page loads
-   - Implement lazy loading for large components
+   - Skip complex optimizations for MVP
 
-2. **Security**
+3. **Security**
    - Implement proper authentication and authorization ✅
-   - Secure API endpoints with rate limiting
-   - Encrypt sensitive data in transit and at rest
-   - Implement proper error handling to prevent information leakage
+   - Secure API endpoints
+   - Encrypt sensitive data
+   - Implement basic error handling
 
-3. **Scalability**
-   - Design database schema for horizontal scaling
-   - Implement microservices architecture where appropriate
-   - Use serverless functions for bursty workloads
-   - Implement proper caching strategies
+4. **Testing**
+   - Implement automated testing before developing new features
+   - Focus on critical paths and core functionality
+   - Ensure proper test coverage for API endpoints
+   - Set up continuous integration for automated testing
 
-4. **Maintainability**
-   - Follow consistent coding standards
-   - Implement comprehensive test coverage
-   - Create detailed documentation
-   - Use type-safe programming with TypeScript
+## 🔄 Implementation Timeline (MVP)
 
-## 🔄 Implementation Timeline
+### Week 1: Core Shipment Management & Testing
+- Day 1-2: Set up testing infrastructure
+  - Configure Jest for API testing
+  - Set up test database
+  - Create test utilities for authentication
+  - Implement test coverage reporting
 
-### Month 1: Infrastructure & Authentication ✅
-- Week 1-2: Project Setup and Authentication System ✅
-- Week 3-4: Database Setup and Initial API Endpoints ✅
+- Day 3-4: Implement basic shipment API endpoints
+  - Create simple shipment listing endpoint
+  - Implement basic shipment detail endpoint
+  - Write tests for these endpoints
+  - Skip complex filtering and pagination for MVP
 
-### Month 2: Document Processing ✅
-- Week 1-2: OCR Implementation and Validation Interface ✅
-- Week 3-4: Excel File Processing and Unified Data Processor ✅
+- Day 5-7: Create admin shipment views
+  - Build simple shipment list component
+  - Create basic shipment detail view
+  - Connect to API endpoints
+  - Implement minimal styling with TailwindCSS
 
-### Month 3: Shipment Management 🚧
-- Week 1-2: Shipment Database Models and Services ✅
-- Week 3-4: API Endpoints and UI Components 🚧
+### Week 2: Driver View & CI/CD Setup
+- Day 1-3: Implement basic driver view
+  - Create driver dashboard layout
+  - Build simple shipment list for drivers
+  - Implement basic shipment detail view for drivers
+  - Connect to existing API endpoints
 
-### Month 4: Vehicle Management
-- Week 1-2: Vehicle Database Models and Services
-- Week 3-4: API Endpoints and UI Components
+- Day 4-5: Set up CI/CD pipeline
+  - Configure GitHub Actions or similar CI tool
+  - Set up automated testing
+  - Implement linting and code quality checks
+  - Configure deployment to staging environment
 
-### Month 5: Map Integration
-- Week 1-2: Mapbox Integration and Real-time Tracking
-- Week 3-4: Route Optimization and Geofencing
-
-### Month 6: Mobile App Development
-- Week 1-2: Driver Authentication and Shipment Management
-- Week 3-4: Map Integration and Offline Support
+- Day 6-7: Map Integration Placeholder
+  - Create placeholder map component
+  - Set up basic Mapbox account and API keys
+  - Implement simple location display
+  - Skip complex tracking features for now
 
 ## 📝 Notes
 
 - The document processing system is now complete and can handle both OCR images and Excel TXT files
 - The shipment database models and services have been implemented and are ready for use
-- The next focus is on building the API endpoints and UI components for shipment management
-- Not yet ready for CI/CD - need to complete Shipment Management phase first
+- The next focus is on building basic API endpoints and UI components for shipment management
+- We're prioritizing an MVP approach to quickly demonstrate core functionality
+- Vehicle management and complex features are deprioritized for the initial MVP
 
 ## 🔄 Last Updated
 

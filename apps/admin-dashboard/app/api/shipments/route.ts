@@ -1,166 +1,141 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
-import { db } from '@loadup/database';
-import { and, eq } from 'drizzle-orm';
-import { shipments, drivers } from '@loadup/database/schema';
+import { NextRequest, NextResponse } from 'next/server';
+import { ShipmentService } from '@loadup/database/services/shipmentService';
+import { auth } from '@/lib/auth';
 import { z } from 'zod';
 
-// Validation schemas
+// Initialize shipment service
+const shipmentService = new ShipmentService();
+
+// Simplified schema for creating a shipment (MVP)
 const createShipmentSchema = z.object({
-  pickupAddress: z.string(),
-  deliveryAddress: z.string(),
-  status: z.enum(['PENDING', 'ASSIGNED', 'IN_TRANSIT', 'DELIVERED']),
-  driverId: z.string().optional(),
+  customerId: z.string().uuid(),
+  description: z.string().optional(),
+  pickupLocation: z.object({
+    street: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zipCode: z.string(),
+    country: z.string(),
+  }),
+  pickupContact: z.object({
+    name: z.string(),
+    phone: z.string(),
+    email: z.string().email().optional(),
+  }),
+  deliveryLocation: z.object({
+    street: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zipCode: z.string(),
+    country: z.string(),
+  }),
+  deliveryContact: z.object({
+    name: z.string(),
+    phone: z.string(),
+    email: z.string().email().optional(),
+  }),
+  pickupDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
+  deliveryDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
 });
 
-const updateShipmentSchema = createShipmentSchema.partial();
+// Simplified schema for filtering shipments (MVP)
+const shipmentFilterSchema = z.object({
+  status: z.string().optional(),
+  search: z.string().optional(),
+  page: z.string().optional().transform(val => val ? parseInt(val) : 1),
+  limit: z.string().optional().transform(val => val ? parseInt(val) : 50),
+});
 
-export async function GET(req: Request) {
+/**
+ * GET /api/shipments
+ * Get all shipments with basic filtering (MVP)
+ */
+export async function GET(request: NextRequest) {
   try {
-    const { userId, sessionClaims } = auth();
-    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
-
-    const role = sessionClaims?.role as string;
-    const url = new URL(req.url);
-    const status = url.searchParams.get('status');
-
-    let query = db.select().from(shipments);
-
-    // Filter by role
-    if (role === 'driver') {
-      query = query.where(eq(shipments.driverId, userId));
+    // Check authentication
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Filter by status if provided
-    if (status) {
-      query = query.where(eq(shipments.status, status));
+    // Parse query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const queryParams: Record<string, string> = {};
+    
+    // Convert searchParams to object (simplified for MVP)
+    for (const [key, value] of searchParams.entries()) {
+      queryParams[key] = value;
     }
-
-    const results = await query;
-    return NextResponse.json(results);
+    
+    // Parse and validate filters
+    const filters = shipmentFilterSchema.parse(queryParams);
+    
+    // Apply role-based filtering
+    if (session.user.role === 'customer') {
+      // Customers can only see their own shipments
+      filters.customerId = session.user.id;
+    } else if (session.user.role === 'driver') {
+      // Drivers can only see shipments assigned to them
+      filters.driverId = session.user.id;
+    }
+    // Admins can see all shipments (no additional filtering)
+    
+    // Get shipments with filters
+    const shipments = await shipmentService.getShipments(filters);
+    
+    return NextResponse.json(shipments);
   } catch (error) {
     console.error('Error fetching shipments:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid request parameters', details: error.errors }, { status: 400 });
+    }
+    return NextResponse.json({ error: 'Failed to fetch shipments' }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+/**
+ * POST /api/shipments
+ * Create a new shipment (simplified for MVP)
+ */
+export async function POST(request: NextRequest) {
   try {
-    const { userId, sessionClaims } = auth();
-    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
-    if (sessionClaims?.role !== 'admin') {
-      return new NextResponse('Forbidden', { status: 403 });
+    // Check authentication
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const body = await req.json();
-    const validatedData = createShipmentSchema.parse(body);
-
-    const result = await db.insert(shipments).values({
-      ...validatedData,
-      createdBy: userId,
-      updatedAt: new Date(),
-    });
-
-    return NextResponse.json(result);
+    
+    // Only admins and customers can create shipments
+    if (!['admin', 'customer'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    // Parse request body
+    const body = await request.json();
+    
+    // Validate request body
+    const data = createShipmentSchema.parse(body);
+    
+    // If customer is creating shipment, force customerId to be their own ID
+    if (session.user.role === 'customer') {
+      data.customerId = session.user.id;
+    }
+    
+    // Create shipment with default status
+    const shipmentData = {
+      ...data,
+      status: 'pending',
+    };
+    
+    // Create shipment
+    const shipment = await shipmentService.createShipment(shipmentData);
+    
+    return NextResponse.json(shipment, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ errors: error.errors }, { status: 400 });
-    }
     console.error('Error creating shipment:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
-  }
-}
-
-export async function PATCH(req: Request) {
-  try {
-    const { userId, sessionClaims } = auth();
-    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
-
-    const url = new URL(req.url);
-    const shipmentId = url.searchParams.get('id');
-    if (!shipmentId) {
-      return new NextResponse('Shipment ID is required', { status: 400 });
-    }
-
-    const body = await req.json();
-    const validatedData = updateShipmentSchema.parse(body);
-
-    // Check if user has permission to update
-    const shipment = await db.query.shipments.findFirst({
-      where: eq(shipments.id, shipmentId),
-    });
-
-    if (!shipment) {
-      return new NextResponse('Shipment not found', { status: 404 });
-    }
-
-    const role = sessionClaims?.role as string;
-    if (role !== 'admin' && shipment.driverId !== userId) {
-      return new NextResponse('Forbidden', { status: 403 });
-    }
-
-    // If driver is updating, they can only update status
-    if (role === 'driver') {
-      const { status } = validatedData;
-      if (!status) {
-        return new NextResponse('Status is required', { status: 400 });
-      }
-      await db.update(shipments)
-        .set({ 
-          status,
-          updatedAt: new Date(),
-          updatedBy: userId
-        })
-        .where(eq(shipments.id, shipmentId));
-    } else {
-      // Admins can update all fields
-      await db.update(shipments)
-        .set({ 
-          ...validatedData,
-          updatedAt: new Date(),
-          updatedBy: userId
-        })
-        .where(eq(shipments.id, shipmentId));
-    }
-
-    // Log the update in shipment history
-    await db.insert(shipments.history).values({
-      shipmentId,
-      status: validatedData.status || shipment.status,
-      updatedBy: userId,
-      timestamp: new Date(),
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ errors: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 });
     }
-    console.error('Error updating shipment:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
-  }
-}
-
-export async function DELETE(req: Request) {
-  try {
-    const { userId, sessionClaims } = auth();
-    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
-    if (sessionClaims?.role !== 'admin') {
-      return new NextResponse('Forbidden', { status: 403 });
-    }
-
-    const url = new URL(req.url);
-    const shipmentId = url.searchParams.get('id');
-    if (!shipmentId) {
-      return new NextResponse('Shipment ID is required', { status: 400 });
-    }
-
-    await db.delete(shipments)
-      .where(eq(shipments.id, shipmentId));
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting shipment:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return NextResponse.json({ error: 'Failed to create shipment' }, { status: 500 });
   }
 } 

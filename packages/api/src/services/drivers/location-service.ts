@@ -1,5 +1,5 @@
 import { db } from '@loadup/database';
-import { driversTable } from '@loadup/database/schema';
+import { drivers } from '@loadup/database/schema';
 import { eq } from 'drizzle-orm';
 
 export interface DriverLocation {
@@ -10,22 +10,22 @@ export interface DriverLocation {
 
 export class DriverLocationService {
   async updateLocation(driverId: string, location: DriverLocation) {
-    await db.update(driversTable)
+    await db.update(drivers)
       .set({
-        currentLocation: location,
+        location: JSON.stringify(location),
         updatedAt: new Date(),
       })
-      .where(eq(driversTable.id, driverId));
+      .where(eq(drivers.id, driverId));
   }
 
   async getDriverLocation(driverId: string) {
-    const driver = await db.query.driversTable.findFirst({
-      where: eq(driversTable.id, driverId),
+    const driver = await db.query.drivers.findFirst({
+      where: eq(drivers.id, driverId),
       columns: {
-        currentLocation: true,
+        location: true,
       },
     });
 
-    return driver?.currentLocation;
+    return driver?.location ? JSON.parse(driver.location) : null;
   }
 } 

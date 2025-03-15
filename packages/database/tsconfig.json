@@ -3,13 +3,10 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "module": "Node16",
-    "moduleResolution": "node16",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@loadup/*": ["../*/src"]
-    },
+    "strict": true,
+    "types": ["jest", "node"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
     "composite": true,
     "noEmit": false
   },

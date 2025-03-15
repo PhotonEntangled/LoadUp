@@ -1,7 +1,7 @@
 import { describe, test, expect } from '@jest/globals';
 import { z } from 'zod';
-import { transformShipmentData } from '../etl/transform.js';
-import { ShipmentSlipSchema } from '../schema/validation.js';
+import { transformShipmentData, RawShipmentData } from '../etl/transform';
+import { ShipmentSlipSchema } from '../schema/validation';
 
 describe('ELT Pipeline Final Validation', () => {
   test('Shipment Slip Schema Validation', () => {
@@ -51,7 +51,8 @@ describe('ELT Pipeline Final Validation', () => {
       city: 'New York',
       state: 'NY',
       zip: '10001',
-      coordinates: expect.any(Object)
+      coordinates: expect.any(Object),
+      formattedAddress: '123 Main St, New York, NY 10001'
     });
   });
 
@@ -101,6 +102,33 @@ describe('ELT Pipeline Final Validation', () => {
     // Batch processing should complete in under 5 seconds
     expect(endTime - startTime).toBeLessThan(5000);
     expect(results).toHaveLength(batchSize);
+  });
+
+  test('should validate transformed shipment data', async () => {
+    const mockData: RawShipmentData = {
+      externalId: 'SHIP123',
+      pickupAddress: {
+        street: '123 Main St',
+        city: 'City',
+        state: 'ST',
+        zip: '12345'
+      },
+      deliveryAddress: {
+        street: '456 Oak St',
+        city: 'Town',
+        state: 'ST',
+        zip: '67890'
+      },
+      customerName: 'John Doe',
+      customerPhone: '555-0123',
+      weight: 150.5,
+      dimensions: '10x20x30',
+      priority: 'STANDARD',
+      paymentStatus: 'PENDING'
+    };
+
+    const result = await transformShipmentData(mockData);
+    expect(() => ShipmentSlipSchema.parse(result)).not.toThrow();
   });
 });
 

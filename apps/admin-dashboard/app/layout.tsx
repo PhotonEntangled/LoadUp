@@ -1,57 +1,25 @@
-import { useAuth } from '@loadup/shared/src/hooks/useAuth';
-import { redirect } from 'next/navigation';
-import dynamic from 'next/dynamic';
-import { Inter } from 'next/font/google';
-import './globals.css';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "sonner";
 
-const inter = Inter({ subsets: ['latin'] });
-const Sidebar = dynamic(() => import('../components/Sidebar'), { ssr: false });
+const inter = Inter({ subsets: ["latin"] });
 
-const publicPaths = ['/sign-in', '/sign-up'];
+export const metadata: Metadata = {
+  title: "LoadUp Admin Dashboard",
+  description: "Logistics management platform for administrators",
+};
 
-export default function AdminLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
-  const pathname = window.location.pathname;
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500" />
-      </div>
-    );
-  }
-
-  // Allow access to public paths
-  if (publicPaths.includes(pathname)) {
-    return children;
-  }
-
-  // Redirect unauthenticated users to sign in
-  if (!isAuthenticated) {
-    redirect('/sign-in');
-    return null;
-  }
-
-  // Redirect non-admin users
-  if (!isAdmin()) {
-    redirect('/unauthorized');
-    return null;
-  }
-
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 bg-gray-50 p-6">
-            {children}
-          </main>
-        </div>
+        <Toaster position="top-right" />
+        {children}
       </body>
     </html>
   );

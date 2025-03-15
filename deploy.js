@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Ensure required environment variables are set
-const requiredEnvVars = ['DATABASE_URL', 'CLERK_SECRET_KEY'];
+const requiredEnvVars = ['DATABASE_URL', 'NEXTAUTH_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {

@@ -1,0 +1,14 @@
+This is a placeholder for a demo customers Excel file.
+
+In a real implementation, this would be an actual .xlsx file with sample customer data following this structure:
+- name: Customer name
+- email: Customer email address
+- phone: Customer phone number
+- company: Customer company name
+- address: Customer address
+- city: Customer city
+- state: Customer state
+- zip: Customer ZIP code
+- country: Customer country
+
+Please replace this with a real Excel file before running the demo. 

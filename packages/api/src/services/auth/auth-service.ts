@@ -1,5 +1,5 @@
 import { db } from '@loadup/database';
-import { usersTable } from '@loadup/database/schema';
+import { users } from '@loadup/database/schema';
 import { eq } from 'drizzle-orm';
 
 export interface UserSession {
@@ -9,17 +9,17 @@ export interface UserSession {
 
 export class AuthService {
   async getUserById(userId: string) {
-    return db.query.usersTable.findFirst({
-      where: eq(usersTable.id, userId),
+    return db.query.users.findFirst({
+      where: eq(users.id, userId),
     });
   }
 
   async updateLastLogin(userId: string) {
-    await db.update(usersTable)
+    await db.update(users)
       .set({
-        lastLoginAt: new Date(),
+        updatedAt: new Date(),
       })
-      .where(eq(usersTable.id, userId));
+      .where(eq(users.id, userId));
   }
 
   async validateSession(session: UserSession) {

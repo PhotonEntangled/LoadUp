@@ -1,0 +1,2 @@
+This is an invalid file format that should trigger an error when uploaded to the document processing system.
+It's used to test error handling in the document processing flow. 

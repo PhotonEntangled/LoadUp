@@ -162,7 +162,7 @@ The current implementation has limited test coverage:
 1. **Set Environment Variables**
    ```
    DATABASE_URL=postgresql://username:password@hostname:5432/database_name
-   CLERK_SECRET_KEY=your-clerk-secret-key
+   NEXTAUTH_SECRET=your-clerk-secret-key
    PORT=3001
    NODE_ENV=production
    ```

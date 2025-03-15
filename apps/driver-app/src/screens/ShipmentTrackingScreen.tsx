@@ -29,7 +29,7 @@ export function ShipmentTrackingScreen() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [isScannerVisible, setScannerVisible] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const { user } = useAuth();
+  const { user } = useSession();
   const toast = useToast();
 
   useEffect(() => {

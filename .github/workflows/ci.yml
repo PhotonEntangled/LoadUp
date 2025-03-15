@@ -1,113 +1,125 @@
-name: LoadUp CI/CD
+name: LoadUp CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment: production
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
-        cache: 'npm'
-    
-    - name: Install Dependencies
-      run: npm install
+      - uses: actions/checkout@v3
       
-    - name: Run Tests
-      run: npm test
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
       
-    - name: Run Linting
-      run: npm run lint
-
-  deploy-admin:
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linting
+        run: npm run lint
+      
+      - name: Run tests
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NEXTAUTH_SECRET: test_secret
+          NEXTAUTH_URL: http://localhost:3000
+      
+      - name: Generate test coverage report
+        run: npm run test:coverage
+      
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: ./coverage
+          retention-days: 14
+  
+  build:
     needs: test
     runs-on: ubuntu-latest
-    environment: production
-    if: github.ref == 'refs/heads/main'
     
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
-        cache: 'npm'
-    
-    - name: Install Dependencies
-      run: npm install
-    
-    - name: Setup Build Cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          .next/cache
-          .turbo
-        key: ${{ runner.os }}-nextjs-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-nextjs-
-    
-    - name: Build Admin Dashboard
-      run: npm run build --filter=admin-dashboard
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-        NEXT_PUBLIC_MAPBOX_TOKEN: ${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
-    
-    - name: Deploy to Vercel
-      run: |
-        npm install --global vercel@latest
-        cd apps/admin-dashboard
-        vercel deploy --prod --token=${{ secrets.VERCEL_AUTH_TOKEN }}
-
-  deploy-driver-app:
-    needs: test
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build application
+        run: npm run build
+  
+  deploy-staging:
+    needs: build
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-    environment: production
-    if: github.ref == 'refs/heads/main'
     
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Deploy to staging
+        run: echo "Deploying to staging environment"
+        # In a real setup, this would use a deployment service like Vercel, Netlify, etc.
+  
+  deploy-production:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
-        cache: 'npm'
-    
-    - name: Setup Expo
-      uses: expo/expo-github-action@v8
-      with:
-        expo-version: latest
-        token: ${{ secrets.EXPO_ACCESS_TOKEN }}
-    
-    - name: Install Dependencies
-      run: |
-        cd apps/driver-app
-        npm install
-    
-    - name: Build and Publish
-      run: |
-        cd apps/driver-app
-        expo publish --non-interactive
-      env:
-        EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-        EXPO_PUBLIC_CLERK_JWT_KEY: ${{ vars.EXPO_PUBLIC_CLERK_JWT_KEY }}
-        EXPO_PUBLIC_MAPBOX_TOKEN: ${{ vars.EXPO_PUBLIC_MAPBOX_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Deploy to production
+        run: echo "Deploying to production environment"
+        # In a real setup, this would use a deployment service like Vercel, Netlify, etc.

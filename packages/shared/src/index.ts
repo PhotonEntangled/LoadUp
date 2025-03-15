@@ -4,6 +4,9 @@ export { Map } from './components/Map.js';
 // Types
 export * from './types/index.js';
 
+// Enums
+export * from './enums/index.js';
+
 // Utils
 export {
   generateShipmentMarkers,

@@ -1,16 +1,65 @@
-import { authMiddleware } from "@clerk/nextjs";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { UserRole } from '@/lib/auth.config';
 
-// This example protects all routes including api/trpc routes
-// Please edit this to allow other routes to be public as needed.
-// See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your middleware
-export default authMiddleware({
-  // Public routes that don't require authentication
-  publicRoutes: ["/api/webhook/clerk"],
+// Define role-based route access
+const roleBasedAccess: Record<string, UserRole[]> = {
+  '/dashboard': ['admin', 'driver', 'customer'],
+  '/dashboard/admin': ['admin'],
+  '/dashboard/drivers': ['admin'],
+  '/dashboard/customers': ['admin'],
+  '/dashboard/shipments': ['admin', 'driver'],
+  '/dashboard/settings': ['admin'],
+  '/dashboard/profile': ['admin', 'driver', 'customer'],
+};
+
+export default auth((req) => {
+  const { nextUrl, auth } = req;
+  const isLoggedIn = !!auth?.user;
+  const pathname = nextUrl.pathname;
   
-  // Routes that can be accessed while signed out
-  ignoredRoutes: ["/api/public"]
+  // Public routes - allow access
+  if (
+    pathname === '/' ||
+    pathname === '/sign-in' ||
+    pathname === '/sign-up' ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/auth')
+  ) {
+    return NextResponse.next();
+  }
+  
+  // Protected routes - check authentication
+  if (pathname.startsWith('/dashboard')) {
+    // Not logged in - redirect to sign-in
+    if (!isLoggedIn) {
+      return NextResponse.redirect(new URL('/sign-in', nextUrl.origin));
+    }
+    
+    // Check role-based access
+    const userRole = auth.user.role as UserRole;
+    
+    // Check exact path match
+    if (roleBasedAccess[pathname] && !roleBasedAccess[pathname].includes(userRole)) {
+      return NextResponse.redirect(new URL('/dashboard', nextUrl.origin));
+    }
+    
+    // Check parent paths
+    for (const path in roleBasedAccess) {
+      if (
+        pathname.startsWith(path) && 
+        path !== '/dashboard' && 
+        !roleBasedAccess[path].includes(userRole)
+      ) {
+        return NextResponse.redirect(new URL('/dashboard', nextUrl.origin));
+      }
+    }
+  }
+  
+  return NextResponse.next();
 });
 
+// See "Matching Paths" below to learn more
 export const config = {
-  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }; 

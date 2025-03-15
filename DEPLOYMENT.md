@@ -41,10 +41,10 @@ NODE_ENV=production
 # Security
 JWT_SECRET=your-secure-jwt-secret
 
-# Clerk Authentication
-CLERK_SECRET_KEY=your-clerk-secret-key
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
-EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
+# NextAuth Authentication
+NEXTAUTH_SECRET=your-nextauth-secret-key
+NEXTAUTH_URL=https://your-app-url.com
+EXPO_PUBLIC_NEXTAUTH_URL=https://your-app-url.com
 ```
 
 ### 4. Run the Deployment Script
@@ -164,4 +164,4 @@ To connect the admin dashboard and driver app to the API:
 
 ## Support
 
-For deployment issues, contact the LoadUp DevOps team at devops@loadup.app. 
+For deployment issues, contact the LoadUp DevOps team at devops@loadup.app.
