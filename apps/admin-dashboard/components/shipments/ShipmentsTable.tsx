@@ -6,11 +6,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Select } from '../ui/select';
-import { Badge } from '../ui/badge';
+} from '../ui/table.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card.js';
+import { Button } from '../ui/button.js';
+import { Select } from '../ui/select.js';
+import { Badge } from '../ui/badge.js';
 import { useAuth } from '@loadup/shared/src/hooks/useAuth';
 import { formatDistance } from 'date-fns';
 

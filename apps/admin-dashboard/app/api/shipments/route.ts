@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
+import { getServerSession } from 'next-auth';
 import { db } from '@loadup/database';
 import { and, eq } from 'drizzle-orm';
 import { shipments, drivers } from '@loadup/database/schema';
@@ -17,10 +17,11 @@ const updateShipmentSchema = createShipmentSchema.partial();
 
 export async function GET(req: Request) {
   try {
-    const { userId, sessionClaims } = auth();
-    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
+    const session = await getServerSession();
+    if (!session?.user) return new NextResponse('Unauthorized', { status: 401 });
 
-    const role = sessionClaims?.role as string;
+    const userId = session.user.id;
+    const role = session.user.role;
     const url = new URL(req.url);
     const status = url.searchParams.get('status');
 
@@ -46,9 +47,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { userId, sessionClaims } = auth();
-    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
-    if (sessionClaims?.role !== 'admin') {
+    const session = await getServerSession();
+    if (!session?.user) return new NextResponse('Unauthorized', { status: 401 });
+    
+    const userId = session.user.id;
+    const role = session.user.role;
+    
+    if (role !== 'admin') {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
@@ -73,8 +78,11 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const { userId, sessionClaims } = auth();
-    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
+    const session = await getServerSession();
+    if (!session?.user) return new NextResponse('Unauthorized', { status: 401 });
+    
+    const userId = session.user.id;
+    const role = session.user.role;
 
     const url = new URL(req.url);
     const shipmentId = url.searchParams.get('id');
@@ -94,7 +102,6 @@ export async function PATCH(req: Request) {
       return new NextResponse('Shipment not found', { status: 404 });
     }
 
-    const role = sessionClaims?.role as string;
     if (role !== 'admin' && shipment.driverId !== userId) {
       return new NextResponse('Forbidden', { status: 403 });
     }
@@ -143,9 +150,13 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const { userId, sessionClaims } = auth();
-    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
-    if (sessionClaims?.role !== 'admin') {
+    const session = await getServerSession();
+    if (!session?.user) return new NextResponse('Unauthorized', { status: 401 });
+    
+    const userId = session.user.id;
+    const role = session.user.role;
+    
+    if (role !== 'admin') {
       return new NextResponse('Forbidden', { status: 403 });
     }
 

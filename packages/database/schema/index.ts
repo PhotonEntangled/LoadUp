@@ -11,9 +11,6 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { relations } from 'drizzle-orm';
-import { users } from './users';
-import { shipments, shipmentHistory } from './shipments';
-import { drivers } from './users';
 
 // Enums for various status types
 export const USER_ROLE_ENUM = pgEnum("user_role", ["ADMIN", "DRIVER", "CUSTOMER"]);
@@ -178,11 +175,9 @@ export const shipmentHistoryRelations = relations(shipmentHistoryTable, ({ one }
     fields: [shipmentHistoryTable.shipmentId],
     references: [shipmentsTable.id],
   }),
-  updatedBy: one(usersTable, {
-    fields: [shipmentHistoryTable.updatedById],
-    references: [usersTable.id],
-  }),
-}));
-
-export * from './users';
-export * from './shipments'; 
+  // Remove or comment out the updatedBy relation if updatedById doesn't exist
+  // updatedBy: one(usersTable, {
+  //   fields: [shipmentHistoryTable.updatedById],
+  //   references: [usersTable.id],
+  // }),
+})); 

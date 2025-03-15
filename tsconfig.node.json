@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@loadup/*": ["packages/*/src/*"],
+      "@shared/*": ["packages/shared/src/*"],
+      "@database/*": ["packages/database/src/*"],
+      "@api/*": ["packages/api/src/*"]
+    }
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifiers": true,
+    "require": ["tsconfig-paths/register"],
+    "transpileOnly": true,
+    "moduleTypes": {
+      "scripts/*": "esm",
+      "packages/*/src/*": "esm"
+    }
+  },
+  "include": ["scripts/**/*", "packages/*/src/**/*"]
+} 

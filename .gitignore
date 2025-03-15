@@ -56,3 +56,5 @@ Thumbs.db
 # Cache
 .cache/ 
 node_modules
+.vercel
+.env*.local
