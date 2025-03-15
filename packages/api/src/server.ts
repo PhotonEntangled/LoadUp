@@ -1,12 +1,15 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { configureSecurityMiddleware } from './config/security.js';
 import { z } from 'zod';
 import { PgTable } from 'drizzle-orm/pg-core';
 import { errorHandler } from './middleware/errorHandler.js';
 import { scheduleHealthChecks } from './utils/healthCheck.js';
 import env from './config/env.js';
 import { FEATURES } from './config/features.js';
+
+dotenv.config();
 
 // Mock database and logger if imports fail
 let db;
@@ -40,10 +43,16 @@ try {
 
 const app = express();
 
-// Middleware
-app.use(helmet());
-app.use(cors());
+// Basic middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true
+}));
+
+// Configure security middleware
+configureSecurityMiddleware(app);
 
 // Validation schemas
 const shipmentSchema = z.object({
@@ -120,7 +129,13 @@ app.get('/api/shipments/:id', async (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.json({ status: 'healthy' });
+});
+
+const port = process.env.PORT || 3001;
+
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
 });
 
 export { app }; 
