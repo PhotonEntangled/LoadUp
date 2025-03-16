@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Update path aliases
+node scripts/update-tsconfig.js
+
+# Run lint-staged
+npx lint-staged 
