@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
-import { Pool } from 'pg';
+import pg from 'pg';
+const { Pool } = pg;
 
 // Mock the pg Pool
 jest.mock('pg', () => {
@@ -11,7 +12,7 @@ jest.mock('pg', () => {
   return { Pool: jest.fn(() => mPool) };
 });
 
-// Mock drizzle-orm
+// Mock drizzle-orm with proper typing
 const mockDb = {
   select: jest.fn().mockReturnThis(),
   from: jest.fn().mockReturnThis(),
@@ -20,8 +21,19 @@ const mockDb = {
   execute: jest.fn(),
 };
 
-mockDb.limit.mockResolvedValue([]);
-mockDb.execute.mockResolvedValue({ rows: [{ exists: true }] });
+// Disable TypeScript checking for these mocks as they're just for tests
+// @ts-ignore -- This is a test mock
+mockDb.limit.mockImplementation(() => {
+  return {
+    // @ts-ignore -- This is a test mock
+    execute: jest.fn().mockResolvedValue([])
+  };
+});
+
+// @ts-ignore -- This is a test mock
+mockDb.execute.mockImplementation(() => {
+  return Promise.resolve({ rows: [{ exists: true }] });
+});
 
 jest.mock('drizzle-orm/node-postgres', () => ({
   drizzle: jest.fn(() => mockDb),
