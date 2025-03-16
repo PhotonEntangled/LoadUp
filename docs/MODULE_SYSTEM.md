@@ -222,3 +222,64 @@ This ensures consistency across all tools and environments:
 - ESLint validation
 - Webpack bundling
 - Next.js configuration 
+
+## Handling CommonJS Modules in ES Module Context
+
+Some dependencies are still using CommonJS format, which can cause issues when imported in an ES Module context. Here's how to handle these cases:
+
+### CommonJS Module Import Pattern
+
+For CommonJS modules like `pg`, use this pattern:
+
+```javascript
+// Correct way to import CommonJS modules in ES Module context
+import pg from 'pg';
+const { Pool } = pg;
+
+// Now you can use Pool
+const pool = new Pool({ /* config */ });
+```
+
+### Common Problematic Modules
+
+1. **pg (PostgreSQL client)**
+   ```javascript
+   // ❌ Incorrect - will cause "does not provide an export named 'Pool'" error
+   import { Pool } from 'pg';
+   
+   // ✅ Correct
+   import pg from 'pg';
+   const { Pool } = pg;
+   ```
+
+2. **fs-extra**
+   ```javascript
+   // ❌ Incorrect
+   import { copy } from 'fs-extra';
+   
+   // ✅ Correct
+   import fsExtra from 'fs-extra';
+   const { copy } = fsExtra;
+   ```
+
+3. **express-session**
+   ```javascript
+   // ❌ Incorrect
+   import { Session } from 'express-session';
+   
+   // ✅ Correct
+   import expressSession from 'express-session';
+   const { Session } = expressSession;
+   ```
+
+### Automated Fixing
+
+We provide a script to automatically fix imports for known problematic modules:
+
+```bash
+# Fix pg imports
+npm run fix:pg-imports
+
+# Fix all known problematic module imports
+npm run fix:module-imports
+``` 
