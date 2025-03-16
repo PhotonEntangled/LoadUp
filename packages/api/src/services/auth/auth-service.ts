@@ -1,6 +1,6 @@
 import { db } from '@loadup/database';
 import { users } from '@loadup/database/schema';
-import { eq } from 'drizzle-orm';
+import { eq } from '@loadup/database';
 
 export interface UserSession {
   userId: string;
@@ -10,7 +10,7 @@ export interface UserSession {
 export class AuthService {
   async getUserById(userId: string) {
     return db.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: eq(users.id as any, userId),
     });
   }
 
@@ -19,7 +19,7 @@ export class AuthService {
       .set({
         updatedAt: new Date(),
       })
-      .where(eq(users.id, userId));
+      .where(eq(users.id as any, userId));
   }
 
   async validateSession(session: UserSession) {

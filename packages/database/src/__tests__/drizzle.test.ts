@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeAll, afterAll } from '@jest/globals';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { eq } from 'drizzle-orm';
+import { eq } from '../db-utils.js';
 import { shipments, type Shipment } from '../schema/shipments';
 import { ShipmentStatus, type Address } from '../schema/types';
 import pg from 'pg';

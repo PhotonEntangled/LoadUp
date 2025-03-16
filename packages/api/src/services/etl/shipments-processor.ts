@@ -1,7 +1,7 @@
 import { db } from '@loadup/database';
 import { shipments } from '@loadup/database/schema';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq } from '@loadup/database';
 // Mock the Google Cloud Vision client for now
 // import vision from '@google-cloud/vision';
 
@@ -85,7 +85,7 @@ export class ShipmentSlipProcessor {
       try {
         // Check if this slip has already been processed
         const existing = await db.query.shipments.findFirst({
-          where: (fields) => eq(fields.trackingNumber, slip.externalId),
+          where: (fields) => eq(fields.trackingNumber as any, slip.externalId),
         });
 
         if (existing) {

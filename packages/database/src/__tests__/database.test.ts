@@ -4,7 +4,7 @@ const { Pool } = pkg;
 
 import { createPool, closePool } from '../connection';
 import { db } from '../drizzle.js';
-import { eq } from 'drizzle-orm';
+import { eq } from '../db-utils.js';
 import { shipments } from '../schema/shipments.js';
 import { sql } from 'drizzle-orm';
 

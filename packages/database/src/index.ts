@@ -1,5 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import pg from 'pg';
+const { Pool } = pg;
 import * as schema from './schema.js';
 
 // Initialize PostgreSQL connection pool
@@ -11,9 +12,10 @@ const pool = new Pool({
 // Create Drizzle database instance
 export const db = drizzle(pool, { schema });
 
-// Export schema
+// Export schema and utilities
 export * from './drizzle.js';
 export * from './schema.js';
+export * from './db-utils.js';
 
 // Export facades to avoid circular dependencies
 // Explicitly re-export to resolve naming conflicts

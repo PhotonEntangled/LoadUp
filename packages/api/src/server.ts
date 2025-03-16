@@ -8,22 +8,25 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { scheduleHealthChecks } from './utils/healthCheck.js';
 import env from './config/env.js';
 import { FEATURES } from './config/features.js';
+import { SQL } from 'drizzle-orm';
 
 dotenv.config();
 
 // Mock database and logger if imports fail
-let db;
-let shipments;
-let logger;
+let db: any;
+let shipments: any;
+let logger: any;
+let eq: any;
 
 try {
-  const databaseModule = await import('../../database/dist/index.js');
+  const databaseModule = await import('@loadup/database');
   db = databaseModule.db;
+  eq = databaseModule.eq;
   
-  const schemaModule = await import('../../database/dist/schema/shipments.js');
+  const schemaModule = await import('@loadup/database/schema');
   shipments = schemaModule.shipments;
   
-  const loggerModule = await import('../../shared/dist/logger.js');
+  const loggerModule = await import('@loadup/shared/logger');
   logger = loggerModule.logger;
 } catch (error) {
   console.error('Error importing modules:', error);
@@ -38,6 +41,9 @@ try {
     error: console.error,
     info: console.info,
     warn: console.warn
+  };
+  eq = (a: any, b: any): SQL<unknown> => {
+    return { type: 'custom', sql: `${a} = ${b}` } as unknown as SQL<unknown>;
   };
 }
 
@@ -80,7 +86,7 @@ const shipmentSchema = z.object({
 // Routes
 app.get('/api/shipments', async (req, res) => {
   try {
-    const allShipments = await db.select().from(shipments as unknown as PgTable<any>);
+    const allShipments = await db.select().from(shipments as any);
     res.json({ data: allShipments });
   } catch (error) {
     logger.error('Error fetching shipments:', error);
@@ -91,7 +97,9 @@ app.get('/api/shipments', async (req, res) => {
 app.post('/api/shipments', async (req, res) => {
   try {
     const validatedData = shipmentSchema.parse(req.body);
-    const [newShipment] = await db.insert(shipments as unknown as PgTable<any>).values(validatedData).returning();
+    const result = await db.insert(shipments as any).values(validatedData).returning();
+    // Handle different return types safely
+    const newShipment = Array.isArray(result) ? result[0] : result;
     res.status(201).json({ data: newShipment });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -105,15 +113,13 @@ app.post('/api/shipments', async (req, res) => {
 
 app.get('/api/shipments/:id', async (req, res) => {
   try {
-    const { eq } = await import('drizzle-orm');
-    
     // Check if shipments.id is defined
     if (!shipments.id) {
       return res.status(500).json({ error: 'Database schema not properly loaded' });
     }
     
     const shipment = await db.query.shipments.findFirst({
-      where: eq(shipments.id, req.params.id)
+      where: eq(shipments.id as any, req.params.id)
     });
 
     if (!shipment) {
