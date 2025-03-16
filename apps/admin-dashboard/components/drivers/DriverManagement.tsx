@@ -1,146 +1,119 @@
 import { useState } from 'react';
-import { useAuth } from '@loadup/shared/src/hooks/useAuth';
+// Mock auth hook until the shared package is properly set up
+// import { useAuth } from '@loadup/shared/src/hooks/useAuth';
 
 interface Driver {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   phone: string;
-  status: 'available' | 'en_route' | 'busy' | 'offline';
-  currentShipment?: {
-    id: string;
-    trackingNumber: string;
-  };
-  completedShipments: number;
-  rating: number;
-  name: string;
+  status: 'AVAILABLE' | 'ON_DELIVERY' | 'OFFLINE';
+  location?: string;
 }
 
-export default function DriverManagement() {
-  const { isAdmin } = useSession();
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+// Mock data for development
+const mockDrivers: Driver[] = [
+  {
+    id: '1',
+    name: 'John Doe',
+    email: 'john@example.com',
+    phone: '555-123-4567',
+    status: 'AVAILABLE',
+    location: 'Chicago, IL'
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    phone: '555-987-6543',
+    status: 'ON_DELIVERY',
+    location: 'New York, NY'
+  },
+  {
+    id: '3',
+    name: 'Bob Johnson',
+    email: 'bob@example.com',
+    phone: '555-456-7890',
+    status: 'OFFLINE'
+  }
+];
 
-  const getStatusColor = (status: Driver['status']) => {
-    const colors = {
-      available: 'bg-green-100 text-green-800',
-      en_route: 'bg-blue-100 text-blue-800',
-      busy: 'bg-yellow-100 text-yellow-800',
-      offline: 'bg-gray-100 text-gray-800',
-    };
-    return colors[status];
+// Mock auth hook
+const useAuth = () => {
+  return {
+    user: { id: '1', name: 'Admin User', role: 'admin' },
+    isAuthenticated: true,
+    isLoading: false,
+    login: async () => {},
+    logout: async () => {}
   };
+};
+
+export default function DriverManagement() {
+  const [drivers, setDrivers] = useState<Driver[]>(mockDrivers);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useAuth();
+
+  // Filter drivers based on search term
+  const filteredDrivers = drivers.filter(driver => 
+    driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    driver.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    driver.phone.includes(searchTerm)
+  );
 
   return (
-    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-      <div className="p-6 border-b">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Driver Management</h2>
-          {isAdmin() && (
-            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-              Add Driver
-            </button>
-          )}
-        </div>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Driver Management</h1>
+        <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+          Add New Driver
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search drivers..."
+          className="w-full p-2 border border-gray-300 rounded"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Driver
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Current Shipment
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Completed
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Rating
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+        <table className="min-w-full bg-white border border-gray-200">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="py-2 px-4 border-b text-left">Name</th>
+              <th className="py-2 px-4 border-b text-left">Email</th>
+              <th className="py-2 px-4 border-b text-left">Phone</th>
+              <th className="py-2 px-4 border-b text-left">Status</th>
+              <th className="py-2 px-4 border-b text-left">Location</th>
+              <th className="py-2 px-4 border-b text-left">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {isLoading ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto" />
+          <tbody>
+            {filteredDrivers.map((driver) => (
+              <tr key={driver.id} className="hover:bg-gray-50">
+                <td className="py-2 px-4 border-b">{driver.name}</td>
+                <td className="py-2 px-4 border-b">{driver.email}</td>
+                <td className="py-2 px-4 border-b">{driver.phone}</td>
+                <td className="py-2 px-4 border-b">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    driver.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' :
+                    driver.status === 'ON_DELIVERY' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {driver.status}
+                  </span>
+                </td>
+                <td className="py-2 px-4 border-b">{driver.location || 'Unknown'}</td>
+                <td className="py-2 px-4 border-b">
+                  <button className="text-blue-500 hover:text-blue-700 mr-2">Edit</button>
+                  <button className="text-red-500 hover:text-red-700">Delete</button>
                 </td>
               </tr>
-            ) : drivers.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                  No drivers found
-                </td>
-              </tr>
-            ) : (
-              drivers.map((driver) => (
-                <tr key={driver.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {driver.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {driver.email}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full ${getStatusColor(driver.status)}`}>
-                      {driver.status.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {driver.currentShipment ? (
-                      <a 
-                        href={`/shipments/${driver.currentShipment.id}`}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        {driver.currentShipment.trackingNumber}
-                      </a>
-                    ) : (
-                      'None'
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {driver.completedShipments}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <span className="text-yellow-400 mr-1">⭐</span>
-                      {driver.rating.toFixed(1)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button className="text-blue-600 hover:text-blue-900 mr-4">
-                      Assign
-                    </button>
-                    {isAdmin() && (
-                      <>
-                        <button className="text-blue-600 hover:text-blue-900 mr-4">
-                          Edit
-                        </button>
-                        <button className="text-red-600 hover:text-red-900">
-                          Remove
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
