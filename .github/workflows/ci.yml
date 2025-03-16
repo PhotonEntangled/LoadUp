@@ -5,6 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -40,22 +41,60 @@ jobs:
       - name: Run linting
         run: npm run lint || echo "Linting failed but continuing"
       
-      - name: Run tests
-        run: npm test
+      - name: Run tests with coverage
+        run: npm run test:coverage
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           NEXTAUTH_SECRET: test_secret
           NEXTAUTH_URL: http://localhost:3000
       
-      - name: Generate test coverage report
-        run: npm run test:coverage
-      
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v3
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
         with:
-          name: coverage-report
-          path: ./coverage
-          retention-days: 14
+          directory: ./coverage
+          fail_ci_if_error: false
+          
+      - name: Check test coverage thresholds
+        run: |
+          COVERAGE_SUMMARY=$(cat ./coverage/coverage-summary.json)
+          TOTAL_LINES=$(echo $COVERAGE_SUMMARY | jq '.total.lines.pct')
+          TOTAL_STATEMENTS=$(echo $COVERAGE_SUMMARY | jq '.total.statements.pct')
+          TOTAL_FUNCTIONS=$(echo $COVERAGE_SUMMARY | jq '.total.functions.pct')
+          TOTAL_BRANCHES=$(echo $COVERAGE_SUMMARY | jq '.total.branches.pct')
+          
+          echo "Total line coverage: $TOTAL_LINES%"
+          echo "Total statement coverage: $TOTAL_STATEMENTS%"
+          echo "Total function coverage: $TOTAL_FUNCTIONS%"
+          echo "Total branch coverage: $TOTAL_BRANCHES%"
+          
+          # Set minimum thresholds
+          MIN_LINES=60
+          MIN_STATEMENTS=60
+          MIN_FUNCTIONS=50
+          MIN_BRANCHES=40
+          
+          # Check if coverage meets thresholds
+          if (( $(echo "$TOTAL_LINES < $MIN_LINES" | bc -l) )); then
+            echo "Line coverage ($TOTAL_LINES%) is below the threshold ($MIN_LINES%)"
+            exit 1
+          fi
+          
+          if (( $(echo "$TOTAL_STATEMENTS < $MIN_STATEMENTS" | bc -l) )); then
+            echo "Statement coverage ($TOTAL_STATEMENTS%) is below the threshold ($MIN_STATEMENTS%)"
+            exit 1
+          fi
+          
+          if (( $(echo "$TOTAL_FUNCTIONS < $MIN_FUNCTIONS" | bc -l) )); then
+            echo "Function coverage ($TOTAL_FUNCTIONS%) is below the threshold ($MIN_FUNCTIONS%)"
+            exit 1
+          fi
+          
+          if (( $(echo "$TOTAL_BRANCHES < $MIN_BRANCHES" | bc -l) )); then
+            echo "Branch coverage ($TOTAL_BRANCHES%) is below the threshold ($MIN_BRANCHES%)"
+            exit 1
+          fi
+          
+          echo "All coverage thresholds passed!"
   
   build-admin:
     needs: test
@@ -77,6 +116,13 @@ jobs:
         run: cd apps/admin-dashboard && npm run build
         env:
           NODE_ENV: production
+      
+      - name: Upload admin dashboard build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: admin-dashboard-build
+          path: apps/admin-dashboard/.next
+          retention-days: 7
   
   build-driver:
     needs: test
@@ -101,6 +147,13 @@ jobs:
         run: cd apps/driver-app && npx expo export:web
         env:
           NODE_ENV: production
+      
+      - name: Upload driver app build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: driver-app-build
+          path: apps/driver-app/web-build
+          retention-days: 7
   
   deploy-staging:
     needs: [build-admin, build-driver]
@@ -119,9 +172,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Download admin dashboard build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: admin-dashboard-build
+          path: apps/admin-dashboard/.next
+      
+      - name: Download driver app build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: driver-app-build
+          path: apps/driver-app/web-build
+      
       - name: Deploy to staging
-        run: echo "Deploying to staging environment"
-        # In a real setup, this would use a deployment service like Vercel, Netlify, etc.
+        run: node deploy.js staging
+        env:
+          NODE_ENV: staging
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/test_db' }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test_secret' }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN || '' }}
   
   deploy-production:
     needs: [build-admin, build-driver]
@@ -140,6 +210,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Download admin dashboard build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: admin-dashboard-build
+          path: apps/admin-dashboard/.next
+      
+      - name: Download driver app build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: driver-app-build
+          path: apps/driver-app/web-build
+      
       - name: Deploy to production
-        run: echo "Deploying to production environment"
-        # In a real setup, this would use a deployment service like Vercel, Netlify, etc.
+        run: node deploy.js production
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/test_db' }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test_secret' }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN || '' }}
