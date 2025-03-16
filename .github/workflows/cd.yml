@@ -26,6 +26,13 @@ jobs:
       - name: Update path aliases
         run: node scripts/update-tsconfig.js
 
+      - name: Set default environment variables
+        run: |
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> $GITHUB_ENV
+          echo "SENTRY_ORG=${{ secrets.SENTRY_ORG }}" >> $GITHUB_ENV
+          echo "SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}" >> $GITHUB_ENV
+          echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> $GITHUB_ENV
+
       - name: Build admin dashboard
         run: cd apps/admin-dashboard && npm run build
         env:
@@ -33,10 +40,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/test_db' }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test_secret' }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN || '' }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG || '' }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || '' }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN || '' }}
 
       - name: Verify admin dashboard build
         run: |
@@ -75,6 +78,11 @@ jobs:
       - name: Install Expo CLI locally
         run: npm install expo-cli --no-save
 
+      - name: Set default environment variables
+        run: |
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> $GITHUB_ENV
+          echo "EXPO_PUBLIC_SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> $GITHUB_ENV
+
       - name: Build driver app
         run: cd apps/driver-app && npm run build
         env:
@@ -82,8 +90,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/test_db' }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test_secret' }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN || '' }}
-          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_DSN || '' }}
 
       - name: Verify driver app build
         run: |
@@ -178,16 +184,19 @@ jobs:
       - name: Make deploy script executable
         run: chmod +x scripts/deploy.js
 
+      - name: Set environment variables
+        run: |
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> $GITHUB_ENV
+          echo "SENTRY_ORG=${{ secrets.SENTRY_ORG }}" >> $GITHUB_ENV
+          echo "SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}" >> $GITHUB_ENV
+          echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> $GITHUB_ENV
+
       - name: Deploy to staging
         run: node scripts/deploy.js staging
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           NODE_ENV: staging
 
   deploy-production:
@@ -230,14 +239,17 @@ jobs:
       - name: Make deploy script executable
         run: chmod +x scripts/deploy.js
 
+      - name: Set environment variables
+        run: |
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> $GITHUB_ENV
+          echo "SENTRY_ORG=${{ secrets.SENTRY_ORG }}" >> $GITHUB_ENV
+          echo "SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}" >> $GITHUB_ENV
+          echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> $GITHUB_ENV
+
       - name: Deploy to production
         run: node scripts/deploy.js production
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           NODE_ENV: production
