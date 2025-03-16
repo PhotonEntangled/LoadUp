@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -6,201 +6,257 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Select } from '../ui/select';
-import { Badge } from '../ui/badge';
-import { useAuth } from '@loadup/shared/src/hooks/useAuth';
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+// Mock auth hook until the shared package is properly set up
+// import { useAuth } from '@loadup/shared/src/hooks/useAuth';
 import { formatDistance } from 'date-fns';
 
 type Shipment = {
   id: string;
   trackingNumber: string;
-  pickupAddress: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  deliveryAddress: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  status: 'PENDING' | 'ASSIGNED' | 'IN_TRANSIT' | 'DELIVERED';
+  status: 'pending' | 'in_transit' | 'delivered' | 'cancelled';
   customerName: string;
-  driverId?: string;
+  origin: string;
+  destination: string;
   createdAt: string;
-  updatedAt: string;
+  estimatedDelivery?: string;
 };
 
-type Driver = {
-  id: string;
-  name: string;
-  status: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+// Mock auth hook
+const useAuth = () => {
+  return {
+    user: { id: '1', name: 'Admin User', role: 'admin' },
+    isAuthenticated: true,
+    isLoading: false,
+    login: async () => {},
+    logout: async () => {},
+    isAdmin: () => true // Add isAdmin function
+  };
 };
 
 export function ShipmentsTable() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const { isAdmin } = useSession();
+  const { isAdmin } = useAuth();
 
   const fetchShipments = async () => {
     try {
-      const url = statusFilter 
-        ? `http://localhost:3002/api/shipments?status=${statusFilter}`
-        : 'http://localhost:3002/api/shipments';
-      const res = await fetch(url);
-      const data = await res.json();
-      setShipments(data.data || data);
+      setLoading(true);
+      // Mock data for development
+      const mockShipments: Shipment[] = [
+        {
+          id: '1',
+          trackingNumber: 'TRK12345',
+          status: 'pending',
+          customerName: 'John Doe',
+          origin: 'Chicago, IL',
+          destination: 'New York, NY',
+          createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
+          estimatedDelivery: new Date(Date.now() + 86400000 * 3).toISOString() // 3 days from now
+        },
+        {
+          id: '2',
+          trackingNumber: 'TRK67890',
+          status: 'in_transit',
+          customerName: 'Jane Smith',
+          origin: 'Los Angeles, CA',
+          destination: 'Seattle, WA',
+          createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+          estimatedDelivery: new Date(Date.now() + 86400000).toISOString() // 1 day from now
+        },
+        {
+          id: '3',
+          trackingNumber: 'TRK54321',
+          status: 'delivered',
+          customerName: 'Bob Johnson',
+          origin: 'Miami, FL',
+          destination: 'Atlanta, GA',
+          createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), // 5 days ago
+          estimatedDelivery: new Date(Date.now() - 86400000).toISOString() // 1 day ago
+        }
+      ];
+
+      // Simulate API call
+      setTimeout(() => {
+        setShipments(mockShipments);
+        setTotalPages(1);
+        setLoading(false);
+      }, 1000);
     } catch (error) {
       console.error('Error fetching shipments:', error);
-    }
-  };
-
-  const fetchDrivers = async () => {
-    try {
-      const res = await fetch('http://localhost:3002/api/drivers');
-      const data = await res.json();
-      setDrivers(data.data || data);
-    } catch (error) {
-      console.error('Error fetching drivers:', error);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchShipments(), fetchDrivers()]);
-      setLoading(false);
+    fetchShipments();
+  }, [page, searchTerm, statusFilter]);
+
+  const getStatusBadge = (status: Shipment['status']) => {
+    const statusColors = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      in_transit: 'bg-blue-100 text-blue-800',
+      delivered: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800',
     };
-    loadData();
-  }, [statusFilter]);
 
-  const handleAssignDriver = async (shipmentId: string, driverId: string) => {
-    try {
-      const res = await fetch(`http://localhost:3002/api/shipments?id=${shipmentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          driverId,
-          status: 'ASSIGNED',
-        }),
-      });
-
-      if (res.ok) {
-        fetchShipments();
-      }
-    } catch (error) {
-      console.error('Error assigning driver:', error);
-    }
+    return (
+      <Badge className={statusColors[status]}>
+        {status.replace('_', ' ').toUpperCase()}
+      </Badge>
+    );
   };
 
-  const getStatusBadgeColor = (status: Shipment['status']) => {
-    const colors = {
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      ASSIGNED: 'bg-blue-100 text-blue-800',
-      IN_TRANSIT: 'bg-purple-100 text-purple-800',
-      DELIVERED: 'bg-green-100 text-green-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setPage(1);
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  const handleStatusFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setStatusFilter(e.target.value);
+    setPage(1);
+  };
+
+  const handleAssignDriver = (shipmentId: string, driverId: string) => {
+    console.log(`Assigning driver ${driverId} to shipment ${shipmentId}`);
+    // Implement driver assignment logic here
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Shipments</span>
-          <Select
+        <CardTitle>Shipments</CardTitle>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Input
+            placeholder="Search shipments..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="max-w-sm"
+          />
+          <select
             value={statusFilter}
-            onValueChange={setStatusFilter}
-            className="w-48"
+            onChange={handleStatusFilter}
+            className="p-2 border rounded max-w-xs"
           >
-            <option value="">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="ASSIGNED">Assigned</option>
-            <option value="IN_TRANSIT">In Transit</option>
-            <option value="DELIVERED">Delivered</option>
-          </Select>
-        </CardTitle>
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="in_transit">In Transit</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Pickup</TableHead>
-              <TableHead>Delivery</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Driver</TableHead>
-              <TableHead>Last Update</TableHead>
-              {isAdmin && <TableHead>Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {shipments.map((shipment) => (
-              <TableRow key={shipment.id}>
-                <TableCell>
-                  {shipment.pickupAddress ? 
-                    `${shipment.pickupAddress.street}, ${shipment.pickupAddress.city}, ${shipment.pickupAddress.state} ${shipment.pickupAddress.zipCode}` : 
-                    'No address provided'}
-                </TableCell>
-                <TableCell>
-                  {shipment.deliveryAddress ? 
-                    `${shipment.deliveryAddress.street}, ${shipment.deliveryAddress.city}, ${shipment.deliveryAddress.state} ${shipment.deliveryAddress.zipCode}` : 
-                    'No address provided'}
-                </TableCell>
-                <TableCell>
-                  <Badge className={getStatusBadgeColor(shipment.status)}>
-                    {shipment.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {isAdmin && shipment.status === 'PENDING' ? (
-                    <Select
-                      value={shipment.driverId || ''}
-                      onValueChange={(driverId) => handleAssignDriver(shipment.id, driverId)}
-                    >
-                      <option value="">Assign Driver</option>
-                      {drivers
-                        .filter((d) => d.status === 'AVAILABLE')
-                        .map((driver) => (
-                          <option key={driver.id} value={driver.id}>
-                            {driver.name}
-                          </option>
-                        ))}
-                    </Select>
+        {loading ? (
+          <div className="flex justify-center p-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tracking #</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Origin</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Est. Delivery</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {shipments.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-4">
+                        No shipments found
+                      </TableCell>
+                    </TableRow>
                   ) : (
-                    drivers.find((d) => d.id === shipment.driverId)?.name || 'Unassigned'
+                    shipments.map((shipment) => (
+                      <TableRow key={shipment.id}>
+                        <TableCell className="font-medium">
+                          {shipment.trackingNumber}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(shipment.status)}</TableCell>
+                        <TableCell>{shipment.customerName}</TableCell>
+                        <TableCell>{shipment.origin}</TableCell>
+                        <TableCell>{shipment.destination}</TableCell>
+                        <TableCell>
+                          {formatDistance(new Date(shipment.createdAt), new Date(), {
+                            addSuffix: true,
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          {shipment.estimatedDelivery
+                            ? formatDistance(new Date(shipment.estimatedDelivery), new Date(), {
+                                addSuffix: true,
+                              })
+                            : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.location.href = `/shipments/${shipment.id}`}
+                            >
+                              View
+                            </Button>
+                            {isAdmin() && shipment.status === 'pending' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAssignDriver(shipment.id, 'driver-1')}
+                              >
+                                Assign
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
                   )}
-                </TableCell>
-                <TableCell>
-                  {formatDistance(new Date(shipment.updatedAt), new Date(), { addSuffix: true })}
-                </TableCell>
-                {isAdmin && (
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Open shipment details/edit modal
-                      }}
-                    >
-                      Details
-                    </Button>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </TableBody>
+              </Table>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-end mt-4">
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    disabled={page === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm">
+                    Page {page} of {totalPages}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(Math.min(totalPages, page + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );
