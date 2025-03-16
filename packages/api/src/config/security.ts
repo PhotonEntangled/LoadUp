@@ -14,7 +14,9 @@ export const configureSecurityMiddleware = (app: express.Application) => {
       environment: process.env.NODE_ENV,
       tracesSampleRate: 1.0,
     });
-    app.use(Sentry.Handlers.requestHandler());
+    
+    // Use Express automatic instrumentation instead of explicit handlers
+    // The SDK will automatically patch Express to capture errors and requests
   }
 
   // Set security headers
@@ -54,8 +56,11 @@ export const configureSecurityMiddleware = (app: express.Application) => {
     next(err);
   });
 
-  // Error handling
-  app.use(Sentry.Handlers.errorHandler());
+  // Set up Sentry error handler at the end of middleware chain
+  if (process.env.SENTRY_DSN) {
+    // Use the new Sentry error handler approach
+    Sentry.setupExpressErrorHandler(app);
+  }
 };
 
 export const securityConstants = {
