@@ -1,16 +1,10 @@
-// Use .mjs extension to make this file an ES module
-// Without the .mjs extension, the file is treated as CommonJS
-// and we get errors with top-level await
-
 import type { Session, User } from "next-auth";
-import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 // import { db } from "@loadup/database";
 // import { users } from "@loadup/database/schema";
 // import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { z } from 'zod';
-import { authOptions } from "./options";
 
 // Mock database functions for now
 const mockUserData = [
@@ -37,7 +31,7 @@ interface CustomUser extends User {
 // Do NOT redefine the Session type here - it's already defined in packages/shared/src/types/next-auth.d.ts
 
 // Create the auth options
-const authOptions = {
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -99,11 +93,4 @@ const authOptions = {
       return session;
     },
   },
-};
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
-
-// Export the auth options for middleware and API routes
-// Don't export as default to avoid Next.js route conflicts
-export { authOptions }; 
+}; 
