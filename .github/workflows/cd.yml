@@ -1,0 +1,243 @@
+name: CD
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  build-admin:
+    name: Build Admin Dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update path aliases
+        run: node scripts/update-tsconfig.js
+
+      - name: Build admin dashboard
+        run: cd apps/admin-dashboard && npm run build
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/test_db' }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test_secret' }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN || '' }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG || '' }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || '' }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN || '' }}
+
+      - name: Verify admin dashboard build
+        run: |
+          if [ ! -d "apps/admin-dashboard/.next" ]; then
+            echo "Admin dashboard build failed"
+            exit 1
+          fi
+
+      - name: Upload admin dashboard build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-dashboard-build
+          path: apps/admin-dashboard/.next
+          retention-days: 7
+
+  build-driver:
+    name: Build Driver App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update path aliases
+        run: node scripts/update-tsconfig.js
+
+      - name: Install Expo CLI locally
+        run: npm install expo-cli --no-save
+
+      - name: Build driver app
+        run: cd apps/driver-app && npm run build
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/test_db' }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test_secret' }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN || '' }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_DSN || '' }}
+
+      - name: Verify driver app build
+        run: |
+          if [ ! -d "apps/driver-app/dist" ]; then
+            echo "Driver app build failed"
+            exit 1
+          fi
+
+      - name: Upload driver app build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: driver-app-build
+          path: apps/driver-app/dist
+          retention-days: 7
+
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update path aliases
+        run: node scripts/update-tsconfig.js
+
+      - name: Build API
+        run: cd packages/api && npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Verify API build
+        run: |
+          if [ ! -d "packages/api/dist" ]; then
+            echo "API build failed"
+            exit 1
+          fi
+
+      - name: Upload API build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-build
+          path: packages/api/dist
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [build-admin, build-driver, build-api]
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download admin dashboard build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-dashboard-build
+          path: apps/admin-dashboard/.next
+
+      - name: Download driver app build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: driver-app-build
+          path: apps/driver-app/dist
+
+      - name: Download API build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: api-build
+          path: packages/api/dist
+
+      - name: Make deploy script executable
+        run: chmod +x scripts/deploy.js
+
+      - name: Deploy to staging
+        run: node scripts/deploy.js staging
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          NODE_ENV: staging
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [build-admin, build-driver, build-api]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download admin dashboard build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-dashboard-build
+          path: apps/admin-dashboard/.next
+
+      - name: Download driver app build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: driver-app-build
+          path: apps/driver-app/dist
+
+      - name: Download API build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: api-build
+          path: packages/api/dist
+
+      - name: Make deploy script executable
+        run: chmod +x scripts/deploy.js
+
+      - name: Deploy to production
+        run: node scripts/deploy.js production
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          NODE_ENV: production
