@@ -1,7 +1,16 @@
+'use client';
+
 import { useSession as useNextAuthSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useState } from 'react';
 import api from '../api';
-import { UserRole } from '@loadup/shared';
+// import { UserRole } from '@loadup/shared';
+
+// Define local UserRole enum until shared package is properly set up
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  DRIVER = 'DRIVER',
+  USER = 'USER'
+}
 
 interface User {
   id: string;
