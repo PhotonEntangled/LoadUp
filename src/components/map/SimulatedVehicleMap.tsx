@@ -40,13 +40,16 @@ interface ExtendedSimulatedVehicle extends SimulatedVehicle {
 function isSimulatedVehicleWithRoute(vehicle: Vehicle): vehicle is ExtendedSimulatedVehicle & { route: NonNullable<SimulatedVehicle['route']> } {
   return 'isSimulated' in vehicle && 
          (vehicle as any).route !== undefined && 
-         (vehicle as any).route?.stops !== undefined;
+         (vehicle as any).route?.stops !== undefined &&
+         Array.isArray((vehicle as any).route?.stops);
 }
 
 // Type guard to check if a vehicle has real route data
 function hasRealRouteData(vehicle: Vehicle): vehicle is ExtendedSimulatedVehicle & { route: NonNullable<SimulatedVehicle['route']> } {
-  return 'routeData' in vehicle && 
-         (vehicle as any).routeData?.isRealRoute === true && 
+  return ('routeData' in vehicle && 
+         (vehicle as any).routeData?.coordinates && 
+         Array.isArray((vehicle as any).routeData?.coordinates) &&
+         (vehicle as any).routeData?.coordinates.length > 0) &&
          isSimulatedVehicleWithRoute(vehicle);
 }
 
@@ -399,10 +402,11 @@ const SimulatedVehicleMap: React.FC<SimulatedVehicleMapProps> = ({
     return markers;
   }, [vehicles, showDestinationMarkers, styles.startMarker, styles.endMarker, styles.pulseDot]);
 
-  // Filter vehicles with real routes
+  // Filter vehicles with real routes (using the improved hasRealRouteData function)
   const vehiclesWithRealRoutes = useMemo(() => {
+    if (!useRealRoutes) return [];
     return vehicles.filter(hasRealRouteData);
-  }, [vehicles]);
+  }, [vehicles, useRealRoutes]);
   
   // Render the component
   return (
@@ -470,9 +474,9 @@ const SimulatedVehicleMap: React.FC<SimulatedVehicleMapProps> = ({
                         color={vehicle.routeData?.color || '#00FF00'}
                         width={vehicle.routeData?.width || 4}
                         animated={true}
-                        pulsing={true}
+                        pulsing={false} // Disable pulsing to avoid errors
                         showStartEnd={false} // We handle start/end markers separately
-                        useMockData={false} // Always use real API data
+                        useMockData={vehicle.routeData?.isRealRoute === false} // Use mock data if not a real route
                       />
                     ))
                   ) : (

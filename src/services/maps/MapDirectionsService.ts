@@ -78,6 +78,15 @@ class MapDirectionsService {
   private useMockData: boolean;
   private cachedRoutes: Map<string, RouteInfo>;
   
+  // Add additional globals for rate limiting and retries
+  private rateLimitRemaining: number = 300; // Default Mapbox free tier limit
+  private rateLimitNextReset: number = Date.now() + 60000; // Default 1 minute
+  private mockModeForced: boolean = false;
+  private errorCache: Map<string, { error: Error, timestamp: number }> = new Map();
+  private readonly ERROR_CACHE_DURATION = 60000; // 1 minute
+  private readonly MAX_RETRIES = 3;
+  private readonly RETRY_DELAY_BASE = 1000; // 1 second
+  
   constructor() {
     this.token = getMapboxPublicToken(FALLBACK_MAPBOX_TOKEN);
     this.useMockData = false;
@@ -165,22 +174,95 @@ class MapDirectionsService {
   }
   
   /**
+   * Check if we should use mock data based on rate limits and cached errors
+   * @param cacheKey The cache key for the route
+   * @returns True if mock data should be used
+   */
+  private shouldUseMockData(cacheKey: string): boolean {
+    // If mock mode is globally forced, use mock data
+    if (this.mockModeForced || this.useMockData) {
+      return true;
+    }
+    
+    // Check if we have a cached error
+    if (this.errorCache.has(cacheKey)) {
+      const { timestamp } = this.errorCache.get(cacheKey)!;
+      // If the error is still fresh, use mock data
+      if (Date.now() - timestamp < this.ERROR_CACHE_DURATION) {
+        console.log('[MapDirectionsService] Using mock data due to recently cached error');
+        return true;
+      } else {
+        // Error cache expired, remove it
+        this.errorCache.delete(cacheKey);
+      }
+    }
+    
+    // Check if we're rate limited
+    if (this.rateLimitRemaining <= 5) {
+      const nowTime = Date.now();
+      if (nowTime < this.rateLimitNextReset) {
+        console.log(`[MapDirectionsService] Rate limit near exhaustion, using mock data until reset (${Math.round((this.rateLimitNextReset - nowTime)/1000)}s)`);
+        return true;
+      }
+      // Reset time passed, reset our counter
+      this.rateLimitRemaining = 300;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Update rate limit information from response headers
+   * @param headers Response headers from Mapbox API
+   */
+  private updateRateLimits(headers: Headers): void {
+    try {
+      // Extract rate limit information from headers
+      const remaining = headers.get('X-Rate-Limit-Remaining');
+      const reset = headers.get('X-Rate-Limit-Reset');
+      
+      if (remaining) {
+        this.rateLimitRemaining = parseInt(remaining, 10);
+      }
+      
+      if (reset) {
+        // Reset time is in seconds, convert to milliseconds
+        this.rateLimitNextReset = parseInt(reset, 10) * 1000;
+      }
+      
+      console.log(`[MapDirectionsService] Rate limit: ${this.rateLimitRemaining} requests remaining, resets in ${Math.round((this.rateLimitNextReset - Date.now())/1000)}s`);
+    } catch (error) {
+      console.warn('[MapDirectionsService] Error parsing rate limit headers:', error);
+    }
+  }
+  
+  /**
+   * Force mock mode globally (use for severe rate limiting)
+   * @param force Whether to force mock mode
+   */
+  public forceMockMode(force: boolean): void {
+    this.mockModeForced = force;
+    console.log(`[MapDirectionsService] ${force ? 'Forcing mock mode ON' : 'Forcing mock mode OFF'}`);
+  }
+  
+  /**
    * Get directions for a route with more detailed options
    */
   async getDirections(
     route: SimpleRouteRequest,
     options: RouteOptions = {}
   ): Promise<RouteInfo> {
+    // Create a cache key based on coordinates and options
+    const cacheKey = this.createCacheKey(route, options);
+    
     // Check if we should use mock data
-    const useMock = options.useMock !== undefined ? options.useMock : this.useMockData;
+    const useMock = options.useMock !== undefined ? options.useMock : this.shouldUseMockData(cacheKey);
     
     // For mock mode, return simplified route
     if (useMock) {
+      console.log('[MapDirectionsService] Using mock route data');
       return this.createMockRoute(route);
     }
-    
-    // Create a cache key based on coordinates and options
-    const cacheKey = this.createCacheKey(route, options);
     
     // Check cache first
     if (this.cachedRoutes.has(cacheKey)) {
@@ -188,77 +270,134 @@ class MapDirectionsService {
       return this.cachedRoutes.get(cacheKey)!;
     }
     
-    try {
-      // Build the request URL
-      const { origin, destination, waypoints } = route;
-      
-      // Format coordinates as 'lng,lat' strings
-      const originStr = `${origin[0]},${origin[1]}`;
-      const destinationStr = `${destination[0]},${destination[1]}`;
-      
-      // Add waypoints if provided
-      let waypointsStr = '';
-      if (waypoints && waypoints.length > 0) {
-        waypointsStr = waypoints.map(wp => `${wp[0]},${wp[1]}`).join(';');
-        waypointsStr = `;${waypointsStr};`;
+    // Implement retry with exponential backoff
+    let retries = 0;
+    while (retries <= this.MAX_RETRIES) {
+      try {
+        // Build the request URL
+        const { origin, destination, waypoints } = route;
+        
+        // Format coordinates as 'lng,lat' strings
+        const originStr = `${origin[0]},${origin[1]}`;
+        const destinationStr = `${destination[0]},${destination[1]}`;
+        
+        // Add waypoints if provided
+        let waypointsStr = '';
+        if (waypoints && waypoints.length > 0) {
+          waypointsStr = waypoints.map(wp => `${wp[0]},${wp[1]}`).join(';');
+          waypointsStr = `;${waypointsStr};`;
+        }
+        
+        // Build coordinates string
+        const coordinatesStr = `${originStr}${waypointsStr}${destinationStr}`;
+        
+        // Set default options if not provided
+        const profile = options.profile || 'driving';
+        const steps = options.steps !== undefined ? options.steps : true;
+        const geometries = options.geometries || 'geojson';
+        const alternatives = options.alternatives !== undefined ? options.alternatives : false;
+        const overview = options.overview || 'full';
+        const annotations = options.annotations?.join(',') || '';
+        
+        // Build query parameters
+        const params = new URLSearchParams({
+          access_token: this.token,
+          steps: String(steps),
+          geometries,
+          alternatives: String(alternatives),
+          overview,
+        });
+        
+        // Add annotations if specified
+        if (annotations) {
+          params.append('annotations', annotations);
+        }
+        
+        // Build the final URL
+        const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinatesStr}?${params.toString()}`;
+        
+        console.log(`[MapDirectionsService] Fetching route from Mapbox Directions API (attempt ${retries + 1}): ${url.substring(0, 100)}...`);
+        
+        // Make the API request
+        const response = await fetch(url);
+        
+        // Update rate limit information
+        this.updateRateLimits(response.headers);
+        
+        // Handle rate limiting
+        if (response.status === 429) {
+          console.warn(`[MapDirectionsService] Hit rate limit (429 Too Many Requests)`);
+          
+          // Cache the error
+          this.errorCache.set(cacheKey, { 
+            error: new Error('Mapbox Directions API rate limit exceeded'),
+            timestamp: Date.now()
+          });
+          
+          // Force mock mode if this is the second 429 error in a row
+          if (retries >= 1) {
+            this.forceMockMode(true);
+            // Auto-reset after 5 minutes
+            setTimeout(() => {
+              this.forceMockMode(false);
+            }, 5 * 60 * 1000);
+          }
+          
+          // If we've tried enough times, fall back to mock route
+          if (retries >= this.MAX_RETRIES) {
+            console.warn(`[MapDirectionsService] Max retries exceeded, falling back to mock route`);
+            return this.createMockRoute(route);
+          }
+          
+          // Otherwise, retry with exponential backoff
+          const delay = this.RETRY_DELAY_BASE * Math.pow(2, retries);
+          console.log(`[MapDirectionsService] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          retries++;
+          continue;
+        }
+        
+        // Check if the request was successful
+        if (!response.ok) {
+          const errorText = await response.text();
+          const error = new Error(`Mapbox Directions API error: ${response.status} ${errorText}`);
+          
+          // Cache the error
+          this.errorCache.set(cacheKey, { error, timestamp: Date.now() });
+          
+          throw error;
+        }
+        
+        // Parse the response
+        const data = await response.json();
+        
+        // Process the API response into our RouteInfo format
+        const processedRoute = this.processMapboxResponse(data, route);
+        
+        // Cache the result
+        this.cachedRoutes.set(cacheKey, processedRoute);
+        
+        return processedRoute;
+      } catch (error) {
+        console.error('[MapDirectionsService] Error fetching directions:', error);
+        
+        // If we've tried enough times, fall back to mock route
+        if (retries >= this.MAX_RETRIES) {
+          console.warn('[MapDirectionsService] Falling back to mock route due to API error');
+          return this.createMockRoute(route);
+        }
+        
+        // Otherwise, retry with exponential backoff
+        const delay = this.RETRY_DELAY_BASE * Math.pow(2, retries);
+        console.log(`[MapDirectionsService] Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        retries++;
       }
-      
-      // Build coordinates string
-      const coordinatesStr = `${originStr}${waypointsStr}${destinationStr}`;
-      
-      // Set default options if not provided
-      const profile = options.profile || 'driving';
-      const steps = options.steps !== undefined ? options.steps : true;
-      const geometries = options.geometries || 'geojson';
-      const alternatives = options.alternatives !== undefined ? options.alternatives : false;
-      const overview = options.overview || 'full';
-      const annotations = options.annotations?.join(',') || '';
-      
-      // Build query parameters
-      const params = new URLSearchParams({
-        access_token: this.token,
-        steps: String(steps),
-        geometries,
-        alternatives: String(alternatives),
-        overview,
-      });
-      
-      // Add annotations if specified
-      if (annotations) {
-        params.append('annotations', annotations);
-      }
-      
-      // Build the final URL
-      const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinatesStr}?${params.toString()}`;
-      
-      console.log(`[MapDirectionsService] Fetching route from Mapbox Directions API: ${url.substring(0, 100)}...`);
-      
-      // Make the API request
-      const response = await fetch(url);
-      
-      // Check if the request was successful
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Mapbox Directions API error: ${response.status} ${errorText}`);
-      }
-      
-      // Parse the response
-      const data = await response.json();
-      
-      // Process the API response into our RouteInfo format
-      const processedRoute = this.processMapboxResponse(data, route);
-      
-      // Cache the result
-      this.cachedRoutes.set(cacheKey, processedRoute);
-      
-      return processedRoute;
-    } catch (error) {
-      console.error('[MapDirectionsService] Error fetching directions:', error);
-      
-      // Fall back to mock route on error
-      console.warn('[MapDirectionsService] Falling back to mock route due to API error');
-      return this.createMockRoute(route);
     }
+    
+    // If we get here, all retries failed
+    console.error('[MapDirectionsService] All retries failed, using mock route');
+    return this.createMockRoute(route);
   }
   
   /**

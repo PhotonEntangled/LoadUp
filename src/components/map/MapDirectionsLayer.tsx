@@ -31,6 +31,10 @@ interface MarkerFeatureProperties {
   description: string;
 }
 
+// For rate limiting API calls (debounce mechanism)
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
+
 /**
  * MapDirectionsLayer - Renders routes fetched from Mapbox Directions API
  * 
@@ -77,6 +81,15 @@ const MapDirectionsLayer: React.FC<MapDirectionsLayerProps> = ({
     
     const loadRoute = async () => {
       try {
+        // Implement rate limiting to avoid 429 errors
+        const now = Date.now();
+        if (now - lastRequestTime < MIN_REQUEST_INTERVAL) {
+          console.log('[MapDirectionsLayer] Rate limiting API call - using mock data instead');
+          useMockData = true;
+        } else {
+          lastRequestTime = now;
+        }
+        
         setLoading(true);
         setError(null);
         
@@ -187,14 +200,7 @@ const MapDirectionsLayer: React.FC<MapDirectionsLayerProps> = ({
     paint: {
       'line-width': width,
       'line-color': color,
-      'line-opacity': pulsing ? [
-        'interpolate',
-        ['linear'],
-        ['modulo', ['*', 0.01, ['time']], 1.0],
-        0, 0.5,
-        0.5, 1.0,
-        1.0, 0.5
-      ] : 0.8,
+      'line-opacity': pulsing ? 0.8 : 0.8,
       'line-blur': 0.5,
     },
   };
