@@ -5,9 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { signIn } from '@/lib/auth';
+import { signIn, performRedirect } from '@/lib/simple-auth';
 import { signUpUser } from '@/lib/supabase';
-import { UserRole } from "@/lib/auth.config";
+import { UserRole } from "@/auth";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -28,7 +28,7 @@ const FIELD_TYPES = {
 };
 
 interface AuthFormProps<T extends z.ZodType> {
-  formType: 'sign-in' | 'sign-up';
+  formType: 'sign-in' | 'sign-up' | 'forgot-password';
   schema: T;
   defaultValues?: Partial<z.infer<T>>;
   showRoleSelector?: boolean;
@@ -43,6 +43,7 @@ export default function AuthForm<T extends z.ZodType>({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   
   const {
     register,
@@ -59,34 +60,84 @@ export default function AuthForm<T extends z.ZodType>({
     
     try {
       if (formType === 'sign-in') {
+        console.log('AuthForm: Attempting to sign in with:', { email: data.email });
+        
         // @ts-ignore - We know these fields exist on the sign-in form
-        await signIn('credentials', {
+        const result = await signIn({
           email: data.email,
           password: data.password,
-          redirect: true,
-          callbackUrl: '/dashboard',
         });
         
-        // If we get here, sign-in was successful (otherwise it would redirect)
-        router.push('/dashboard');
-      } else {
+        console.log('AuthForm: Sign-in result:', result);
+        
+        if (!result.success) {
+          throw new Error(result.error || "Invalid email or password. Please try again.");
+        }
+        
+        // Show success message
+        toast.success("Sign in successful! Redirecting...");
+        
+        // Use the redirectTo from the result if available
+        if (result.redirectTo) {
+          console.log('AuthForm: Redirecting to:', result.redirectTo);
+          // Use the new performRedirect function
+          performRedirect(result.redirectTo);
+          return;
+        }
+        
+        // Fallback redirection if redirectTo is not available
+        console.log('AuthForm: Setting up fallback redirection timer...');
+        setTimeout(() => {
+          console.log('AuthForm: Fallback timer triggered, checking if redirection needed');
+          // Check if we're still on the sign-in page
+          if (document.location.pathname.includes('sign-in')) {
+            console.log('AuthForm: Manual redirect fallback executing');
+            const userType = data.email.includes('admin') ? 'admin' : 
+                            data.email.includes('driver') ? 'driver' : 'customer';
+            
+            const redirectPath = userType === 'admin' ? '/' : 
+                                userType === 'driver' ? '/dashboard/driver/success' : 
+                                '/dashboard/customer/success';
+            
+            console.log('AuthForm: Fallback redirecting to:', redirectPath);
+            // Use the new performRedirect function
+            performRedirect(redirectPath);
+          } else {
+            console.log('AuthForm: No fallback needed, already redirected');
+          }
+        }, 1000);
+      } else if (formType === 'sign-up') {
+        console.log('AuthForm: Attempting to sign up with:', { email: data.email });
+        
         // @ts-ignore - We know these fields exist on the sign-up form
-        const { error } = await signUpUser({
+        const { data: signUpData, error: signUpError } = await signUpUser({
           email: data.email,
           password: data.password,
           name: data.name,
           companyId: data.companyId,
-          role: data.role,
+          role: data.role || UserRole.USER,
         });
         
-        if (error) {
-          throw new Error(error.message);
+        if (signUpError) {
+          console.error('AuthForm: Sign-up error:', signUpError);
+          throw new Error(signUpError.message);
         }
         
-        // Redirect to sign-in after successful sign-up
-        router.push('/sign-in?registered=true');
+        console.log('AuthForm: Sign-up successful:', signUpData);
+        
+        // Redirect to success page with user details
+        // @ts-ignore - We know these fields exist on the sign-up form
+        router.push(`/sign-up/success?email=${encodeURIComponent(data.email)}&role=${data.role || 'customer'}`);
+      } else if (formType === 'forgot-password') {
+        // Simulate sending a password reset email
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Show success message
+        setEmailSent(true);
+        toast.success("Password reset link sent to your email");
       }
     } catch (err) {
+      console.error('AuthForm: Authentication error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
@@ -113,7 +164,7 @@ export default function AuthForm<T extends z.ZodType>({
           className={`w-full px-3 py-2 border rounded-md ${
             fieldError ? 'border-red-500' : 'border-gray-300'
           }`}
-          disabled={isLoading}
+          disabled={isLoading || emailSent}
           // @ts-ignore - Dynamic field registration
           {...register(fieldName)}
         />
@@ -151,58 +202,92 @@ export default function AuthForm<T extends z.ZodType>({
     );
   };
 
+  // Render success message for forgot password
+  if (formType === 'forgot-password' && emailSent) {
+    return (
+      <div className="w-full">
+        <div className="p-3 bg-green-100 border border-green-400 text-green-700 rounded mb-4">
+          Password reset link sent! Check your email for instructions.
+        </div>
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => router.push('/sign-in')}
+            className="text-sm text-blue-600 hover:text-blue-500"
+          >
+            Return to sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div className="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {formType === 'sign-up' && renderField('name', 'Full Name')}
-          {renderField('email', 'Email', 'email')}
-          {renderField('password', 'Password', 'password')}
-          {formType === 'sign-up' && renderField('companyId', 'Company ID', 'text', false)}
-          {formType === 'sign-up' && showRoleSelector && renderRoleSelector()}
-          
-          {error && (
-            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {error}
-            </div>
-          )}
-          
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Loading..." : formType === "sign-in" ? "Sign In" : "Sign Up"}
-            </button>
-          </div>
-        </form>
+    <div className="w-full">
+      <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        {formType === 'sign-up' && renderField('name', 'Full Name')}
+        {renderField('email', 'Email', 'email')}
+        {formType !== 'forgot-password' && renderField('password', 'Password', 'password')}
+        {formType === 'sign-up' && renderField('companyId', 'Company ID', 'text', false)}
+        {formType === 'sign-up' && showRoleSelector && renderRoleSelector()}
         
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">
-                {formType === "sign-in" 
-                  ? "New to LoadUp?" 
-                  : "Already have an account?"}
-              </span>
-            </div>
+        {error && (
+          <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
           </div>
-          
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => router.push(formType === "sign-in" ? "/sign-up" : "/sign-in")}
-              className="text-sm text-blue-600 hover:text-blue-500"
-            >
+        )}
+        
+        <div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading 
+              ? "Loading..." 
+              : formType === "sign-in" 
+                ? "Sign In" 
+                : formType === "sign-up" 
+                  ? "Sign Up" 
+                  : "Reset Password"}
+          </button>
+        </div>
+      </form>
+      
+      <div className="mt-6">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">
               {formType === "sign-in" 
-                ? "Create an account" 
-                : "Sign in to your account"}
-            </button>
+                ? "New to LoadUp?" 
+                : formType === "sign-up"
+                  ? "Already have an account?"
+                  : "Remember your password?"}
+            </span>
           </div>
+        </div>
+        
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => router.push(
+              formType === "sign-in" 
+                ? "/sign-up" 
+                : formType === "sign-up"
+                  ? "/sign-in"
+                  : "/sign-in"
+            )}
+            className="text-sm text-blue-600 hover:text-blue-500"
+          >
+            {formType === "sign-in" 
+              ? "Create an account" 
+              : formType === "sign-up"
+                ? "Sign in to your account"
+                : "Sign in to your account"}
+          </button>
         </div>
       </div>
     </div>

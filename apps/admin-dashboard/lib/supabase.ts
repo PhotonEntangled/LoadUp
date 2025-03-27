@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { UserRole } from './auth.config';
+import { UserRole } from '@/auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://loadup.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -13,7 +13,7 @@ export async function signUpUser({
   password, 
   name, 
   companyId,
-  role = 'customer'
+  role = UserRole.USER
 }: { 
   email: string; 
   password: string; 

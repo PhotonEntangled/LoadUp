@@ -1,0 +1,144 @@
+/**
+ * BACKUP FILE - Original simulation.ts
+ * 
+ * This file is kept as a reference only. The actual implementation has been
+ * removed to rebuild it from scratch.
+ */
+
+/**
+ * Simulation Types for LoadUp Vehicle Tracking and Simulation
+ * 
+ * This file contains all type definitions for the simulation system.
+ * These types are used by the simulation engine, store, and UI components.
+ */
+
+/**
+ * Core vehicle type for the simulation system
+ */
+export interface SimulationVehicle {
+  id: string;
+  type: 'truck' | 'van' | 'motorcycle';
+  status: 'idle' | 'moving' | 'loading' | 'unloading' | 'maintenance';
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  heading: number; // 0-359 degrees
+  speed: number; // km/h
+  route?: SimulationRoute;
+  driver?: {
+    id: string;
+    name: string;
+    phone?: string;
+  };
+}
+
+/**
+ * Route with multiple stops
+ */
+export interface SimulationRoute {
+  id: string;
+  stops: SimulationStop[];
+  currentStopIndex: number;
+  completed: boolean;
+  startTime: Date;
+  estimatedEndTime: Date;
+}
+
+/**
+ * Individual stop on a route
+ */
+export interface SimulationStop {
+  id: string;
+  type: 'pickup' | 'delivery' | 'waypoint';
+  location: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  arrivalTime?: Date;
+  departureTime?: Date;
+  completed: boolean;
+  geofenceRadius: number; // meters
+}
+
+/**
+ * Overall simulation state
+ */
+export interface SimulationState {
+  isRunning: boolean;
+  speed: number; // 1 = real-time, 2 = 2x speed, etc.
+  currentTime: Date;
+  vehicles: SimulationVehicle[];
+  selectedVehicleId: string | null;
+}
+
+/**
+ * Simulation control actions interface
+ */
+export interface SimulationControls {
+  start: () => void;
+  stop: () => void;
+  reset: () => void;
+  setSpeed: (speed: number) => void;
+  addVehicle: (vehicle: SimulationVehicle) => void;
+  removeVehicle: (id: string) => void;
+  selectVehicle: (id: string | null) => void;
+}
+
+/**
+ * Geofence definition for locations
+ */
+export interface Geofence {
+  id: string;
+  name: string;
+  type: 'pickup' | 'delivery' | 'depot' | 'restricted';
+  center: {
+    latitude: number;
+    longitude: number;
+  };
+  radius: number; // meters
+}
+
+/**
+ * Vehicle update event for tracking
+ */
+export interface VehicleUpdateEvent {
+  vehicleId: string;
+  timestamp: Date;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  heading: number;
+  speed: number;
+  status: SimulationVehicle['status'];
+}
+
+/**
+ * Geofence event when a vehicle enters or exits a geofence
+ */
+export interface GeofenceEvent {
+  id: string;
+  vehicleId: string;
+  stopId: string;
+  type: 'arrival' | 'departure';
+  timestamp: Date;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+/**
+ * Simulation scenario that can be saved and loaded
+ */
+export interface SimulationScenario {
+  id: string;
+  name: string;
+  description?: string;
+  initialState: SimulationState;
+  geofences: Geofence[];
+  createdAt: Date;
+  updatedAt: Date;
+} 

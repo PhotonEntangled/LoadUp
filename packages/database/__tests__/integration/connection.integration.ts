@@ -1,5 +1,6 @@
-import { Client } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
+const { Client } = pg;
+import { drizzle } from '@loadup/database/dist/drizzle.js';
 
 describe('Database Connection', () => {
   let client: Client;

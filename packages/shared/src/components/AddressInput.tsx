@@ -20,6 +20,19 @@ interface Suggestion {
   center: [number, number];
 }
 
+// Local implementation of the token utility
+const FALLBACK_PUBLIC_TOKEN = 'pk.eyJ1IjoibG9hZHVwIiwiYSI6ImNsbTUxcWVsajJnOXAzZG83cHo1bjB5dWYifQ.8Fh30KBunCj-FlP2E7hGUw';
+
+const getMapboxPublicToken = (): string => {
+  // Check all potential token environment variables
+  const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+  const publicToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const mappingToken = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN;
+  
+  // Use the first available token with fallback
+  return accessToken || publicToken || mappingToken || FALLBACK_PUBLIC_TOKEN;
+};
+
 export const AddressInput: React.FC<AddressInputProps> = ({
   onAddressSelect,
   initialValue = '',
@@ -34,7 +47,10 @@ export const AddressInput: React.FC<AddressInputProps> = ({
     let timeoutId: NodeJS.Timeout;
 
     const fetchSuggestions = async () => {
-      if (!query.trim() || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
+      // Use all possible Mapbox token environment variables with a fallback
+      const mapboxToken = getMapboxPublicToken();
+      
+      if (!query.trim() || !mapboxToken) {
         setSuggestions([]);
         return;
       }
@@ -44,7 +60,7 @@ export const AddressInput: React.FC<AddressInputProps> = ({
         const response = await fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
             query
-          )}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&country=MY`
+          )}.json?access_token=${mapboxToken}&country=MY`
         );
         const data = await response.json();
         setSuggestions(data.features || []);

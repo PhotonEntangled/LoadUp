@@ -1,0 +1,25 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+// Auto-Think Rule
+When continuing development or interpreting user intent, always follow this principle:
+
+🔧 Think like a senior engineer:
+- Understand the full context from PLANNING.md and active code files
+- Do not ask what to do next — determine the next most logical action
+- Follow best practices for modularity, testability, and long-term maintainability
+- Break changes into atomic, verifiable steps
+
+✅ Output a plan of action:
+- Describe the proposed file to update or create (include reasoning)
+- Show the key code or structure you will implement
+- Ask the user only: “Ready to create this?” or “Want to proceed?”
+
+📌 Special Cases:
+- If simulating a flow: Always use mock data unless `PLANNING.md` says otherwise
+- If integrating shipment → map: Use `SimulationFromShipmentService.ts` and `mockShipment` from PLANNING.md
+- Avoid re-explaining things covered in the plan — just act on them
+
+// Your job is to decide the next intelligent move — not ask for it.

@@ -1,0 +1,195 @@
+.mapContainer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  color: #333;
+  font-weight: 500;
+}
+
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 1rem;
+}
+
+.errorContainer button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.errorContainer button:hover {
+  background-color: #b91c1c;
+}
+
+.mapControls {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.simulationStatus {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.simulationStatus::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: #10B981;
+  margin-right: 0.5rem;
+}
+
+.trackingError {
+  background-color: rgba(220, 38, 38, 0.7);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.vehiclePopup {
+  max-width: 300px;
+}
+
+/* Vehicle marker styles wrapper class */
+.markerStyles :global(.vehicle-marker) {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.markerStyles :global(.vehicle-marker-icon) {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.markerStyles :global(.vehicle-marker-label) {
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  white-space: nowrap;
+  margin-top: -0.5rem;
+  z-index: 1;
+}
+
+.markerStyles :global(.vehicle-marker-pulse) {
+  position: absolute;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 3px solid;
+  opacity: 0.8;
+  transform: translate(-50%, -50%);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Popup styles wrapper class */
+.popupStyles :global(.vehicle-popup-header) {
+  padding: 0.5rem;
+  color: white;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+
+.popupStyles :global(.vehicle-popup-header h3) {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.popupStyles :global(.vehicle-popup-content) {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.popupStyles :global(.vehicle-popup-info) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.popupStyles :global(.vehicle-popup-info p) {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.popupStyles :global(.vehicle-popup-info p strong) {
+  margin-right: 0.5rem;
+} 

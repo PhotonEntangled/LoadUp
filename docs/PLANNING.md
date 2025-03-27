@@ -1,256 +1,214 @@
-# LoadUp Project - Planning Document (MVP Focus)
+# 📋 LoadUp Project Planning Document (Updated for Simulation & Upload Integration)
 
-## 🎯 Project Overview
+## 🚚 Vision
+Build a production-ready, simulation-first logistics system that links **document upload** to **vehicle movement** on a map — using only mock data for now. Everything should be modular, testable, and swappable with real data later.
 
-LoadUp is a logistics management platform designed to streamline shipment tracking, document processing, and delivery management. The platform consists of a web dashboard for administrators and operators, and a mobile app for drivers.
+## ✅ Sprint Objective (48h)
+> Simulate a parsed shipment slip creating a vehicle that animates from pickup to dropoff on the tracking page map — without needing to manually upload a document.
 
-## 🚀 Project Goals (MVP)
+---
 
-1. **Streamline Shipment Processing**
-   - Automate document processing with OCR
-   - Implement Excel file processing for batch imports
-   - Create validation workflows for extracted data
+## ❓ Development Philosophy
 
-2. **Provide Basic Shipment Tracking**
-   - Implement simple shipment listing and details
-   - Create basic status display
-   - Build placeholder for future tracking features
+### 🔁 Should we go through the full document upload flow?
+**No — not yet.**
+- During simulation phase, we should **bypass the upload UI** for speed.
+- Do **not require file uploads or API calls** — use a **single hardcoded mock shipment object**.
+- A "Simulate Upload" dev-only trigger is ideal (e.g., button, function, or mock service).
 
-3. **Demonstrate Core Functionality**
-   - Implement authentication and admin dashboard
-   - Create document processing workflow
-   - Build simple driver view
-   - Prepare map integration placeholder
+### 🧠 Best Practice:
+- Build `SimulationFromShipmentService.ts` to handle:
+  - a) Fake/mock data (current)
+  - b) Real parsed document rows (later)
+- This makes it swappable **without rewriting simulation logic**.
 
-## 📋 Implementation Phases (MVP Focus)
+---
 
-### Phase 1: Infrastructure & Authentication ✅
-1. **Project Setup** ✅
-   - Set up monorepo with Turborepo
-   - Configure Next.js for admin dashboard
-   - Set up React Native with Expo for mobile app
-   - Configure shared packages
-
-2. **Authentication System** ✅
-   - Implement NextAuth with Supabase
-   - Create authentication UI components
-   - Set up protected routes with middleware
-   - Implement role-based access control
-
-3. **Database Setup** ✅
-   - Configure PostgreSQL with Supabase
-   - Set up Drizzle ORM
-   - Create initial database schema
-
-### Phase 2: Document Processing ✅
-1. **OCR Implementation** ✅
-   - Set up Google Cloud Vision API
-   - Create document upload interface
-   - Implement OCR processing service
-   - Build document parser for OCR results
-
-2. **Validation Interface** ✅
-   - Create validation UI for extracted data
-   - Implement confidence scoring
-   - Build correction interface for low-confidence results
-   - Implement data standardization
-
-3. **Excel File Processing** ✅
-   - Implement Excel file parser
-   - Create batch processing for Excel data
-   - Build validation for Excel imports
-   - Implement data standardization
-
-4. **Unified Data Processor** ✅
-   - Create unified parser for both data sources
-   - Implement common validation rules
-   - Build standardized output format
-   - Create error handling and reporting
-
-### Phase 3: Shipment Management (MVP) 🚧
-1. **Shipment Database Models** ✅
-   - Create shipment schema with Drizzle ORM
-   - Define basic relationships
-   - Implement CRUD operations
-   - Add validation and error handling
-
-2. **Shipment Services** ✅
-   - Implement business logic for shipment operations
-   - Create services for shipment status updates
-   - Build services for shipment data access
-   - Implement basic error handling
-
-3. **Basic API Endpoints** 🚧
-   - Create simple shipment creation endpoint
-   - Implement basic shipment listing
-   - Add shipment detail endpoint
-   - Skip complex filtering and pagination for MVP
-
-4. **Simple UI Components** 🚧
-   - Build basic shipment list view
-   - Create simple shipment detail view
-   - Implement minimal shipment creation form
-   - Skip complex status management for MVP
-
-### Phase 4: Driver View & Map Integration (MVP)
-1. **Basic Driver View**
-   - Create simple driver dashboard
-   - Build basic shipment list for drivers
-   - Implement simple shipment detail view
-   - Skip complex driver management features
-
-2. **Map Integration Placeholder**
-   - Set up Mapbox API
-   - Create basic map component
-   - Implement placeholder for location tracking
-   - Skip route optimization and complex features
-
-### Phase 5: CI/CD Pipeline
-1. **Testing Infrastructure**
-   - Configure automated testing
-   - Implement test coverage reporting
-   - Set up continuous integration
-   - Focus on core functionality tests
-
-2. **Deployment Pipeline**
-   - Configure deployment to staging environment
-   - Implement code quality checks
-   - Create deployment documentation
-   - Set up basic monitoring
-
-## 📊 Progress Tracking
-
-```
-Phase 1: Infrastructure & Authentication
-[██████████] 100% Complete
-- Project Setup      [██████████] 100%
-- Auth System        [██████████] 100%
-- Database Setup     [██████████] 100%
-
-Phase 2: Document Processing
-[██████████] 100% Complete
-- OCR Implementation [██████████] 100%
-- Validation Interface [██████████] 100%
-- Excel File Processing [██████████] 100%
-- Unified Data Processor [██████████] 100%
-
-Phase 3: Shipment Management (MVP)
-[██████░░░░] 60% Started
-- Shipment Database Models [██████████] 100%
-- Shipment Services [██████████] 100%
-- Basic API Endpoints [████░░░░░░] 40%
-- Simple UI Components [░░░░░░░░░░] 0%
-
-Phase 4: Driver View & Map Integration (MVP)
-[░░░░░░░░░░] 0% Not Started
-- Basic Driver View [░░░░░░░░░░] 0%
-- Map Integration Placeholder [░░░░░░░░░░] 0%
-
-Phase 5: CI/CD Pipeline
-[░░░░░░░░░░] 0% Not Started
-- Testing Infrastructure [░░░░░░░░░░] 0%
-- Deployment Pipeline [░░░░░░░░░░] 0%
+## 🧪 Mock Parsed Shipment (To Use Immediately)
+```ts
+const mockShipment = {
+  orderId: "LOA123456",
+  poNumber: "HWSH053412",
+  shipDate: "2025-01-07",
+  originPO: "Kuala Lumpur General Post Office",
+  destination: "HOME CREATIVE LAB SDN. BHD., JOHOR",
+  destinationState: "JOHOR",
+  contact: "MR YAP 60167705522 / SD CHIN TAK 60192017664",
+  remarks: "NEED UNLOADING SERVICE, CALL PIC 1 HOUR BEFORE DELIVERY",
+  weight: 29000,
+  status: "loading",
+  vehicleType: "16-wheeler",
+  capacity: {
+    maxWeight: 36000000,
+    currentWeight: 29000
+  },
+  isSimulated: true,
+  route: {
+    start: {
+      name: "Kuala Lumpur General Post Office",
+      latitude: 3.1493,
+      longitude: 101.6953
+    },
+    end: {
+      name: "Johor Dropoff Location",
+      latitude: 1.4927,
+      longitude: 103.7414
+    }
+  }
+};
 ```
 
-## 🎯 Key Deliverables (MVP)
+---
 
-1. **Admin Dashboard**
-   - Authentication system ✅
-   - Document processing interface ✅
-   - Basic shipment management interface 🚧
-   - Map tracking placeholder
+## 📂 Key Files Overview
 
-2. **Driver View**
-   - Simple driver dashboard
-   - Basic shipment list and details
-   - Minimal status updates
+### ✅ Existing Files (Use Now)
+- `LogisticsDocumentUploader.tsx` — Upload UI (bypass for now)
+- `ShipmentParser.ts` — Excel/OCR → Parsed Shipment schema
+- `ShipmentDataDisplay.tsx` — Parses output visually (can borrow types)
+- `SimulatedVehicleMap.tsx` — Shows vehicles on Mapbox
+- `VehicleMarkerLayer.tsx` — Renders vehicle markers with custom styling
+- `MapRouteLayer.tsx` — Renders route lines between points
+- `useUnifiedVehicleStore.ts` — Zustand store for all vehicles
+- `VehicleServiceFactory.ts` — Chooses real vs. mock
+- `SimpleMockVehicleService.ts` — Test simulation source
 
-3. **API Services**
-   - Authentication API ✅
-   - Document processing API ✅
-   - Basic shipment management API 🚧
-   - Simple map integration
+### 🆕 Needs to Be Created
+- `SimulationFromShipmentService.ts` ✅ — Convert shipment → `SimulationVehicle`
+- `POCoordinateMap.ts` ✅ — LatLng lookup by PO name
+- `MockGeocoder.ts` 🟡 — Address → LatLng if needed
+- `MapDirectionsService.ts` ✅ — Service for real-world routing via Mapbox API
+- `MapDirectionsLayer.tsx` ✅ — Component for API-based route visualization
 
-4. **CI/CD Pipeline**
-   - Automated testing
-   - Continuous integration
-   - Deployment pipeline
-   - Code quality checks
+---
 
-## 📝 Technical Considerations
+## 🚦 Updated Roadmap & Milestones
 
-1. **MVP Focus**
-   - Prioritize core functionality over comprehensive features
-   - Implement simplified versions of key components
-   - Focus on demonstration value for presentation to management
-   - Maintain code quality and testing despite simplified scope
+### 🔨 Phase 1: Simulation from Shipment (Now)
+- [x] Bypass upload page with mock shipment data
+- [x] Parse shipment → vehicle
+- [x] Animate 1 vehicle on map with start → end
+- [x] Show truck emoji markers on map
+- [x] Show shipment info in popup on click
 
-2. **Performance**
-   - Optimize critical database queries
-   - Implement basic caching for frequently accessed data
-   - Use server-side rendering for initial page loads
-   - Skip complex optimizations for MVP
+### 🔄 Phase 2: Multi-Vehicle & Trigger System
+- [ ] Simulate multiple shipments in a loop
+- [ ] Add UI "Simulate Upload" button for each
+- [ ] Route lines drawn (READY FOR IMPLEMENTATION)
+- [ ] Vehicle filter support (search, status)
 
-3. **Security**
-   - Implement proper authentication and authorization ✅
-   - Secure API endpoints
-   - Encrypt sensitive data
-   - Implement basic error handling
+### 🚗 Phase 2.5: Mapbox Directions API Integration (CURRENT FOCUS)
+- [x] Create MapDirectionsService for Mapbox API handling
+- [x] Implement MapDirectionsLayer for visualizing API routes
+- [ ] Integrate MapDirectionsLayer with SimulatedVehicleMap
+- [ ] Add real-world routing between vehicle origin and destination
+- [ ] Implement start/destination markers and tooltips
 
-4. **Testing**
-   - Implement automated testing before developing new features
-   - Focus on critical paths and core functionality
-   - Ensure proper test coverage for API endpoints
-   - Set up continuous integration for automated testing
+### 🌐 Phase 3: Mock API & Live Simulation
+- [ ] Mock WebSocket push updates
+- [ ] Reconnect fallback
+- [ ] Hook into `VehicleServiceFactory`
 
-## 🔄 Implementation Timeline (MVP)
+### 🔥 Phase 4: Firebase Swap
+- [ ] Swap out mock simulation
+- [ ] Test Firebase live data with fallback
 
-### Week 1: Core Shipment Management & Testing
-- Day 1-2: Set up testing infrastructure
-  - Configure Jest for API testing
-  - Set up test database
-  - Create test utilities for authentication
-  - Implement test coverage reporting
+---
 
-- Day 3-4: Implement basic shipment API endpoints
-  - Create simple shipment listing endpoint
-  - Implement basic shipment detail endpoint
-  - Write tests for these endpoints
-  - Skip complex filtering and pagination for MVP
+## 🧠 Modular Simulation Pipeline
+```
+📤 MockParsedShipment → 🛠 SimulationFromShipmentService → 🚚 SimulationVehicle → 🧠 useUnifiedVehicleStore → 🗺 SimulatedVehicleMap
+```
 
-- Day 5-7: Create admin shipment views
-  - Build simple shipment list component
-  - Create basic shipment detail view
-  - Connect to API endpoints
-  - Implement minimal styling with TailwindCSS
+---
 
-### Week 2: Driver View & CI/CD Setup
-- Day 1-3: Implement basic driver view
-  - Create driver dashboard layout
-  - Build simple shipment list for drivers
-  - Implement basic shipment detail view for drivers
-  - Connect to existing API endpoints
+## 🗃️ File/Folder Suggestions
+```
+src/
+├── components/map/
+│   └── SimulatedVehicleMap.tsx
+│   └── VehicleMarkerLayer.tsx
+│   └── MapRouteLayer.tsx
+│   └── MapDirectionsLayer.tsx
+├── services/
+│   └── maps/MapDirectionsService.ts
+│   └── mock/POCoordinateMap.ts
+│   └── shipment/SimulationFromShipmentService.ts
+├── types/Shipment.ts
+├── store/useUnifiedVehicleStore.ts
+```
 
-- Day 4-5: Set up CI/CD pipeline
-  - Configure GitHub Actions or similar CI tool
-  - Set up automated testing
-  - Implement linting and code quality checks
-  - Configure deployment to staging environment
+---
 
-- Day 6-7: Map Integration Placeholder
-  - Create placeholder map component
-  - Set up basic Mapbox account and API keys
-  - Implement simple location display
-  - Skip complex tracking features for now
+## 🧠 Best Practices Recap
+- Use mock input to simulate the system quickly
+- Delay real file upload integration until simulation is solid
+- Use Cursor prompts that focus on: 1 file → 1 outcome → 1 state update
+- Keep shipment transformation logic in one service (reusable later)
+- Test with only 1 vehicle before scaling
 
-## 📝 Notes
+## 🚚 Current Implementation Status
 
-- The document processing system is now complete and can handle both OCR images and Excel TXT files
-- The shipment database models and services have been implemented and are ready for use
-- The next focus is on building basic API endpoints and UI components for shipment management
-- We're prioritizing an MVP approach to quickly demonstrate core functionality
-- Vehicle management and complex features are deprioritized for the initial MVP
+### ✅ What's Working
+- Truck emoji markers are properly displayed on the map
+- Markers are animating correctly from origin to destination
+- Marker selection and zooming to vehicle positions
+- Vehicle data flow through unified store
 
-## 🔄 Last Updated
+### 🚧 What Needs Improvement
+- Route lines between origin and destination aren't visible yet
+- Start/end destination markers need to be implemented
+- Real-world routing via Mapbox Directions API needs integration
+- Map size should be adjusted to fill container border
 
-May 16, 2024 
+## 🗺️ Map Architecture & File Structure (Updated)
+
+### 🔄 Updated Architecture
+The map implementation has been refactored to use a more stable and maintainable architecture that prevents render loops and improves performance:
+
+1. **MapManager Singleton**: A central entity that manages map initialization and lifecycle outside of React's render cycle
+2. **Component Separation**: Clear separation between map initialization, marker rendering, and vehicle tracking
+3. **One-Way Data Flow**: Simplified data flow from vehicle store → map rendering
+
+### 📁 Core Files & Responsibilities
+
+#### 🧩 Core Map Components
+- `src/components/map/SimulatedVehicleMap.tsx` — Main map component with React-MapGL integration
+- `src/components/map/VehicleMarkerLayer.tsx` — Renders vehicle markers with emojis and styling
+- `src/components/map/MapRouteLayer.tsx` — Renders straight-line routes between points
+- `src/components/map/MapDirectionsLayer.tsx` — Renders API-based route with real-world roads
+
+#### 🔍 Map Management
+- `src/utils/maps/MapManager.ts` — Singleton for map lifecycle management
+- `src/utils/maps/constants.ts` — Shared constants for map components
+- `src/utils/mapbox-token.ts` — Handles Mapbox token retrieval and validation
+
+#### 🚚 Vehicle & Simulation
+- `src/components/map/VehicleSimulationProvider.tsx` — Controls simulation lifecycle
+- `src/services/shipment/SimulationFromShipmentService.ts` — Converts shipments to simulated vehicles
+- `src/services/SimpleMockVehicleService.ts` — Generates mock vehicle data
+- `src/services/maps/MapDirectionsService.ts` — Handles Mapbox Directions API integration
+
+#### 🧠 State Management
+- `src/store/useUnifiedVehicleStore.ts` — Single source of truth for vehicle data
+- `src/store/map/useMapViewStore.ts` — Stores map viewport state
+
+### 🔄 Data Flow Architecture
+```
+VehicleSimulationProvider
+        ↓ 
+SimulationFromShipmentService
+        ↓
+useUnifiedVehicleStore
+        ↓
+SimulatedVehicleMap
+      ↙     ↘
+VehicleMarkerLayer    MapRouteLayer/MapDirectionsLayer
+```
+
+### 🧪 Next Integration Steps
+1. Enable route visualization by setting enableRoutes=true in SimulatedVehicleMap
+2. Integrate MapDirectionsLayer for real-world routing
+3. Add start/end destination markers
+4. Enhance vehicle information popup
+

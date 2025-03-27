@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
-import { Client } from 'pg';
+import pg from 'pg';
+const { Client } = pg;
 import { drizzle } from 'drizzle-orm/node-postgres';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';

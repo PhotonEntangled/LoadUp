@@ -49,50 +49,90 @@ loadup/
 │   ├── admin-dashboard/    # Next.js admin panel
 │   └── driver-app/         # React Native driver app
 ├── packages/
-│   ├── api/               # Express.js API server
-│   ├── database/          # Drizzle ORM schemas
-│   └── shared/            # Shared utilities and types
-└── package.json
+│   ├── database/           # Drizzle ORM schema and migrations
+│   ├── shared/             # Shared utilities and types
+│   └── api/                # API server
+├── scripts/                # Utility scripts
+├── docs/                   # Documentation
+└── PowerShell Scripts:
+    ├── run-nextjs.ps1      # Run the admin dashboard
+    ├── run-driver-app.ps1  # Run the driver app
+    └── deploy-admin.ps1    # Deploy admin dashboard to Vercel
 ```
 
 ## 🚀 Getting Started
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/loadup.git
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- PostgreSQL database
+- Supabase account (for authentication)
+- Google Cloud Vision API key (for OCR)
+- Mapbox API key (for maps)
+
+### Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-username/loadup.git
    cd loadup
    ```
 
-2. **Install dependencies**
-   ```bash
+2. Install dependencies:
+   ```
    npm install
    ```
 
-3. **Set up environment variables**
-   ```bash
-   # Admin Dashboard (.env)
-   NEXTAUTH_URL=
-   NEXTAUTH_SECRET=
-   NEXT_PUBLIC_API_URL=http://localhost:3001
-
-   # Driver App (.env)
-   EXPO_PUBLIC_NEXTAUTH_URL=
-   EXPO_PUBLIC_API_URL=http://localhost:3001
+3. Set up environment variables:
+   ```
+   cp .env.example .env
+   # Edit .env with your configuration
    ```
 
-4. **Start development servers**
-   ```bash
-   # Start all apps
-   npm run dev
+### Running the Applications
 
-   # Start specific app
-   npm run dev --filter=admin-dashboard
-   npm run dev --filter=driver-app
-   
-   # Start API server
-   cd packages/api
-   node server.js
-   ```
+#### Windows (PowerShell)
+
+Run the admin dashboard:
+```powershell
+.\run-nextjs.ps1
+```
+
+Run the driver app:
+```powershell
+.\run-driver-app.ps1
+```
+
+#### macOS/Linux (Bash)
+
+Run the admin dashboard:
+```bash
+cd apps/admin-dashboard && npm run dev
+```
+
+Run the driver app:
+```bash
+cd apps/driver-app && npm run start
+```
+
+### Deployment
+
+Deploy the admin dashboard to Vercel:
+```powershell
+.\deploy-admin.ps1
+```
+
+## 📚 Documentation
+
+For more detailed documentation, please refer to the following:
+
+- [PowerShell Compatibility Guide](docs/POWERSHELL_GUIDE.md)
+- [Vercel Deployment Guide](docs/VERCEL_DEPLOYMENT.md)
+- [Project Planning](docs/PLANNING.md)
+- [Current Status](docs/CURRENT_STATUS.md)
+- [Next Steps](docs/NEXT_STEPS.md)
+- [Testing Guide](docs/TESTING.md)
 
 ## 🧪 Testing
 
@@ -206,3 +246,129 @@ npm run test:watch
 - All tests must pass before deployment
 - Coverage reports uploaded to Codecov
 - E2E test videos and screenshots on failure 
+
+## CI/CD Pipeline
+
+We use GitHub Actions for continuous integration and deployment:
+
+- **Admin Dashboard**: Deployed to Vercel
+- **Driver App**: Deployed to Expo
+- **API**: Deployed to Railway
+
+### Workflow Status
+
+| Application | Status |
+|-------------|--------|
+| Admin Dashboard | [![Admin Dashboard CI/CD](https://github.com/yourusername/loadup/actions/workflows/admin-dashboard.yml/badge.svg)](https://github.com/yourusername/loadup/actions/workflows/admin-dashboard.yml) |
+| Driver App | [![Driver App CI/CD](https://github.com/yourusername/loadup/actions/workflows/driver-app.yml/badge.svg)](https://github.com/yourusername/loadup/actions/workflows/driver-app.yml) |
+| API | [![API CI/CD](https://github.com/yourusername/loadup/actions/workflows/api.yml/badge.svg)](https://github.com/yourusername/loadup/actions/workflows/api.yml) |
+
+### Deployment Environments
+
+- **Production**: Deployed from the `main` branch
+- **Staging/Preview**: Deployed from the `develop` branch
+
+For more details on the CI/CD setup, see [.github/workflows/README.md](.github/workflows/README.md).
+
+## Error Tracking
+
+We use Sentry for error tracking across all applications. Error boundaries are set up to capture and report issues automatically.
+
+## License
+
+This project is proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited.
+
+# LoadUp: AI-Enhanced Excel Parser
+
+## Overview
+
+The LoadUp logistics application includes an AI-enhanced Excel parser that intelligently maps column names from uploaded Excel files to standardized field names in the system. This allows for processing of Excel shipment files with varying column naming conventions without requiring manual field mapping.
+
+## Key Features
+
+1. **Tiered Field Mapping Approach**:
+   - Direct mapping for exact matches
+   - Case-insensitive matching for minor variations
+   - Fuzzy matching for similar names
+   - AI-powered mapping using OpenAI API for unrecognized columns
+   - Normalized field names as a final fallback
+
+2. **AI Integration with OpenAI**:
+   - Intelligent field mapping using contextual analysis
+   - Confidence scoring for each mapping
+   - Caching mechanism to minimize API calls
+   - Graceful fallbacks for API failures
+
+3. **Data Confidence Scoring**:
+   - Overall confidence score for each processed shipment
+   - Identification of shipments that need manual review
+   - Special handling for critical fields
+   - Confidence thresholds configurable via environment variables
+
+4. **Enhanced UI Feedback**:
+   - Visual indicators for AI-mapped fields
+   - Color-coded confidence levels
+   - Tooltips showing original field names and confidence scores
+   - CSV export with AI mapping annotations
+
+## Project Structure
+
+- `services/excel/ExcelParserService.ts` - Core Excel parsing logic with AI field mapping
+- `services/ai/OpenAIService.ts` - OpenAI API integration with caching
+- `services/ai/schema-reference.ts` - Standardized field definitions and synonyms
+- `services/document-processing.ts` - Document processing orchestration
+- `types/shipment.ts` - TypeScript types for shipment data
+
+## Usage
+
+### Environment Setup
+
+Configure the application with the following environment variables:
+
+```
+# OpenAI API Configuration
+OPENAI_API_KEY=your_api_key_here
+
+# AI Mapping Configuration
+ENABLE_AI_MAPPING=true
+AI_MAPPING_CONFIDENCE_THRESHOLD=0.7
+
+# Logging
+LOG_LEVEL=info
+```
+
+### Processing Excel Files
+
+```typescript
+import { processDocument } from './services/document-processing';
+
+// Process an Excel file with AI mapping
+const result = await processDocument('shipments.xlsx', { 
+  useAIMapping: true,
+  aiConfidenceThreshold: 0.7
+});
+
+// Check if any shipments need review
+if (result.needsReview) {
+  console.log(result.message);
+}
+
+// Access the parsed shipment data
+const shipments = result.data;
+```
+
+## Testing
+
+Run the tests using Vitest:
+
+```
+npm test
+```
+
+## Future Enhancements
+
+1. **Custom Field Mapping Templates**: Allow users to create and save custom field mapping templates for specific vendors
+2. **Feedback Loop for AI**: Incorporate user corrections to improve future AI mappings
+3. **Batch Processing Optimization**: Enhance performance for large batch file processing
+4. **Advanced Validation Rules**: Add domain-specific validation rules for shipment data
+5. **Multi-language Support**: Extend AI mapping to handle column names in multiple languages 

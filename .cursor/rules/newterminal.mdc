@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+When running a command that will open a new terminal, especially for 'npm run dev' please use your Desktop Commander MCP tools to list all open terminals to check if you even need to run the command again and if the relevant terminal is already open then you should use the read output command to see the new terminal output, or close the terminal and open it again. Be intelligent about the tools at your disposal.

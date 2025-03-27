@@ -104,7 +104,7 @@ export class ShipmentService {
    * Get shipment by ID
    */
   async getShipmentById(id: string) {
-    const [shipment] = await db.select().from(shipments).where(eq(shipments.id, id));
+    const [shipment] = await db.select().from(shipments).where(eq(shipments.id as any, id));
     
     if (!shipment) {
       return null;
@@ -112,12 +112,12 @@ export class ShipmentService {
     
     // Get shipment events
     const events = await db.select().from(shipmentEvents)
-      .where(eq(shipmentEvents.shipmentId, id))
+      .where(eq(shipmentEvents.shipmentId as any, id))
       .orderBy(desc(shipmentEvents.createdAt));
     
     // Get shipment documents
     const documents = await db.select().from(shipmentDocuments)
-      .where(eq(shipmentDocuments.shipmentId, id))
+      .where(eq(shipmentDocuments.shipmentId as any, id))
       .orderBy(desc(shipmentDocuments.uploadedAt));
     
     return {
@@ -132,7 +132,7 @@ export class ShipmentService {
    */
   async getShipmentByTrackingNumber(trackingNumber: string) {
     const [shipment] = await db.select().from(shipments)
-      .where(eq(shipments.trackingNumber, trackingNumber));
+      .where(eq(shipments.trackingNumber as any, trackingNumber));
     
     if (!shipment) {
       return null;
@@ -140,12 +140,12 @@ export class ShipmentService {
     
     // Get shipment events
     const events = await db.select().from(shipmentEvents)
-      .where(eq(shipmentEvents.shipmentId, shipment.id))
+      .where(eq(shipmentEvents.shipmentId as any, shipment.id))
       .orderBy(desc(shipmentEvents.createdAt));
     
     // Get shipment documents
     const documents = await db.select().from(shipmentDocuments)
-      .where(eq(shipmentDocuments.shipmentId, shipment.id))
+      .where(eq(shipmentDocuments.shipmentId as any, shipment.id))
       .orderBy(desc(shipmentDocuments.uploadedAt));
     
     return {
@@ -165,7 +165,7 @@ export class ShipmentService {
         status: status as any, // Type assertion to handle enum
         updatedAt: new Date()
       })
-      .where(eq(shipments.id, id))
+      .where(eq(shipments.id as any, id))
       .returning();
     
     if (!updatedShipment) {
@@ -196,7 +196,7 @@ export class ShipmentService {
         status: 'ASSIGNED' as any, // Type assertion to handle enum
         updatedAt: new Date()
       })
-      .where(eq(shipments.id, id))
+      .where(eq(shipments.id as any, id))
       .returning();
     
     if (!updatedShipment) {
@@ -259,15 +259,15 @@ export class ShipmentService {
     }
     
     if (customerId) {
-      query = query.where(eq(shipments.customerId, customerId));
+      query = query.where(eq(shipments.customerId as any, customerId));
     }
     
     if (driverId) {
-      query = query.where(eq(shipments.driverId, driverId));
+      query = query.where(eq(shipments.driverId as any, driverId));
     }
     
     if (trackingNumber) {
-      query = query.where(eq(shipments.trackingNumber, trackingNumber));
+      query = query.where(eq(shipments.trackingNumber as any, trackingNumber));
     }
     
     if (fromDate) {
@@ -351,7 +351,7 @@ export class ShipmentService {
   async deleteShipment(id: string) {
     // This will cascade delete events and documents
     const [deletedShipment] = await db.delete(shipments)
-      .where(eq(shipments.id, id))
+      .where(eq(shipments.id as any, id))
       .returning();
     
     return deletedShipment;

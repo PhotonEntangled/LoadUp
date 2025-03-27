@@ -1,0 +1,161 @@
+name: Driver App CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/driver-app/**'
+      - 'packages/**'
+      - '.github/workflows/driver-app.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/driver-app/**'
+      - 'packages/**'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for Sentry release
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint driver app
+        run: cd apps/driver-app && npm run lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run driver app tests
+        run: cd apps/driver-app && npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for Sentry release
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set default environment variables
+        run: |
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN || '' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SENTRY_DSN=${{ secrets.SENTRY_DSN || '' }}" >> $GITHUB_ENV
+          # These environment variables will only be used if Sentry is configured
+          if [ -n "${{ secrets.SENTRY_DSN }}" ]; then
+            echo "SENTRY_ORG=${{ secrets.SENTRY_ORG }}" >> $GITHUB_ENV
+            echo "SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}" >> $GITHUB_ENV
+            echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> $GITHUB_ENV
+          fi
+
+      - name: Create Sentry release
+        if: env.SENTRY_DSN != ''
+        run: |
+          npm install @sentry/cli
+          VERSION=$(node -e "console.log(require('./apps/driver-app/package.json').version)")
+          RELEASE="${{ github.repository }}-driver-app@$VERSION"
+          echo "SENTRY_RELEASE=$RELEASE" >> $GITHUB_ENV
+          npx sentry-cli releases new "$RELEASE"
+          npx sentry-cli releases set-commits "$RELEASE" --auto
+          
+      - name: Build driver app
+        run: cd apps/driver-app && npm run build
+        env:
+          NODE_ENV: production
+          SENTRY_RELEASE: ${{ env.SENTRY_RELEASE || '' }}
+
+      - name: Finalize Sentry release
+        if: env.SENTRY_DSN != ''
+        run: |
+          npx sentry-cli releases finalize "$SENTRY_RELEASE"
+
+      - name: Upload driver app build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: driver-app-build
+          path: apps/driver-app/dist
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Expo
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Expo CLI
+        run: npm install --global expo-cli
+
+      - name: Install dependencies
+        run: cd apps/driver-app && npm ci
+
+      - name: Login to Expo
+        run: npx expo login --non-interactive -u ${{ secrets.EXPO_USERNAME }} -p ${{ secrets.EXPO_PASSWORD }}
+
+      - name: Deploy to Expo
+        run: |
+          cd apps/driver-app
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            npx expo publish --release-channel production
+          else
+            npx expo publish --release-channel staging
+          fi
+        
+      - name: Create Sentry deploy
+        if: env.SENTRY_DSN != ''
+        run: |
+          VERSION=$(node -e "console.log(require('./apps/driver-app/package.json').version)")
+          RELEASE="${{ github.repository }}-driver-app@$VERSION"
+          ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+          npx sentry-cli releases deploys "$RELEASE" new -e "$ENVIRONMENT" 

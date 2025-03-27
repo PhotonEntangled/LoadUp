@@ -1,0 +1,284 @@
+/**
+ * BACKUP FILE - Original useSimulationStore.ts
+ * 
+ * This file is kept as a reference only. The actual implementation has been
+ * removed to rebuild it from scratch.
+ */
+
+import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
+import { v4 as uuidv4 } from 'uuid';
+
+import {
+  SimulationState,
+  SimulationVehicle,
+  SimulationRoute,
+  SimulationStop,
+  GeofenceEvent
+} from '../types/simulation';
+import { KUALA_LUMPUR_CENTER } from '../utils/geoUtils';
+
+// Define the store interface extending the state with actions
+interface SimulationStore extends SimulationState {
+  // Control actions
+  start: () => void;
+  stop: () => void;
+  reset: () => void;
+  setSpeed: (speed: number) => void;
+  setCurrentTime: (time: Date) => void;
+  
+  // Vehicle actions
+  addVehicle: (vehicle: Partial<SimulationVehicle>) => string;
+  removeVehicle: (id: string) => void;
+  updateVehicle: (id: string, updates: Partial<SimulationVehicle>) => void;
+  selectVehicle: (id: string | null) => void;
+  
+  // Route actions
+  addRouteToVehicle: (vehicleId: string, route: Partial<SimulationRoute>) => void;
+  updateRoute: (vehicleId: string, updates: Partial<SimulationRoute>) => void;
+  advanceToNextStop: (vehicleId: string) => void;
+  
+  // Stop actions
+  addStopToRoute: (vehicleId: string, stop: Partial<SimulationStop>) => void;
+  updateStop: (vehicleId: string, stopId: string, updates: Partial<SimulationStop>) => void;
+  
+  // Bulk actions
+  importScenario: (state: Partial<SimulationState>) => void;
+  exportScenario: () => SimulationState;
+}
+
+// Initial state
+const initialState: SimulationState = {
+  isRunning: false,
+  speed: 1,
+  currentTime: new Date(),
+  vehicles: [],
+  selectedVehicleId: null
+};
+
+// Create the store with middleware
+export const useSimulationStore = create<SimulationStore>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        // Initial state
+        ...initialState,
+
+        // Control actions
+        start: () => set({ isRunning: true }),
+        
+        stop: () => set({ isRunning: false }),
+        
+        reset: () => set({ 
+          ...initialState, 
+          currentTime: new Date() // Reset with current real time
+        }),
+        
+        setSpeed: (speed) => set({ speed }),
+        
+        setCurrentTime: (currentTime) => set({ currentTime }),
+
+        // Vehicle actions
+        addVehicle: (vehicleData) => {
+          const id = vehicleData.id || uuidv4();
+          const newVehicle: SimulationVehicle = {
+            id,
+            type: vehicleData.type || 'truck',
+            status: vehicleData.status || 'idle',
+            location: vehicleData.location || { 
+              ...KUALA_LUMPUR_CENTER // Default to KL if no location
+            },
+            heading: vehicleData.heading || 0,
+            speed: vehicleData.speed || 0,
+            route: vehicleData.route,
+            driver: vehicleData.driver
+          };
+          
+          set((state) => ({
+            vehicles: [...state.vehicles, newVehicle]
+          }));
+          
+          return id;
+        },
+        
+        removeVehicle: (id) => set((state) => ({
+          vehicles: state.vehicles.filter(vehicle => vehicle.id !== id),
+          // Clear selection if the removed vehicle was selected
+          selectedVehicleId: state.selectedVehicleId === id ? null : state.selectedVehicleId
+        })),
+        
+        updateVehicle: (id, updates) => set((state) => ({
+          vehicles: state.vehicles.map(vehicle => 
+            vehicle.id === id ? { ...vehicle, ...updates } : vehicle
+          )
+        })),
+        
+        selectVehicle: (id) => set({ selectedVehicleId: id }),
+
+        // Route actions
+        addRouteToVehicle: (vehicleId, routeData) => {
+          const route: SimulationRoute = {
+            id: routeData.id || uuidv4(),
+            stops: routeData.stops || [],
+            currentStopIndex: routeData.currentStopIndex || 0,
+            completed: routeData.completed || false,
+            startTime: routeData.startTime || new Date(),
+            estimatedEndTime: routeData.estimatedEndTime || new Date(Date.now() + 3600000) // 1 hour later by default
+          };
+          
+          set((state) => ({
+            vehicles: state.vehicles.map(vehicle => 
+              vehicle.id === vehicleId ? { ...vehicle, route } : vehicle
+            )
+          }));
+        },
+        
+        updateRoute: (vehicleId, updates) => set((state) => ({
+          vehicles: state.vehicles.map(vehicle => 
+            vehicle.id === vehicleId && vehicle.route 
+              ? { ...vehicle, route: { ...vehicle.route, ...updates } } 
+              : vehicle
+          )
+        })),
+        
+        advanceToNextStop: (vehicleId) => set((state) => {
+          const vehicle = state.vehicles.find(v => v.id === vehicleId);
+          if (!vehicle || !vehicle.route) return state;
+          
+          const { route } = vehicle;
+          const newIndex = route.currentStopIndex + 1;
+          
+          // Check if this was the last stop
+          const isLastStop = newIndex >= route.stops.length;
+          const newCompleted = isLastStop ? true : route.completed;
+          
+          // Update the vehicle status based on the next stop
+          const newStatus = isLastStop 
+            ? 'idle' 
+            : route.stops[newIndex]?.type === 'pickup' 
+              ? 'loading' 
+              : 'unloading';
+          
+          return {
+            vehicles: state.vehicles.map(v => 
+              v.id === vehicleId 
+                ? {
+                    ...v,
+                    status: newStatus,
+                    route: {
+                      ...route,
+                      currentStopIndex: isLastStop ? route.currentStopIndex : newIndex,
+                      completed: newCompleted
+                    }
+                  } 
+                : v
+            )
+          };
+        }),
+
+        // Stop actions
+        addStopToRoute: (vehicleId, stopData) => set((state) => {
+          const vehicle = state.vehicles.find(v => v.id === vehicleId);
+          if (!vehicle || !vehicle.route) return state;
+          
+          const stop: SimulationStop = {
+            id: stopData.id || uuidv4(),
+            type: stopData.type || 'delivery',
+            location: stopData.location || { ...KUALA_LUMPUR_CENTER },
+            completed: stopData.completed || false,
+            geofenceRadius: stopData.geofenceRadius || 100, // Default 100m
+            arrivalTime: stopData.arrivalTime,
+            departureTime: stopData.departureTime
+          };
+          
+          return {
+            vehicles: state.vehicles.map(v => 
+              v.id === vehicleId && v.route 
+                ? {
+                    ...v,
+                    route: {
+                      ...v.route,
+                      stops: [...v.route.stops, stop]
+                    }
+                  } 
+                : v
+            )
+          };
+        }),
+        
+        updateStop: (vehicleId, stopId, updates) => set((state) => {
+          const vehicle = state.vehicles.find(v => v.id === vehicleId);
+          if (!vehicle || !vehicle.route) return state;
+          
+          return {
+            vehicles: state.vehicles.map(v => 
+              v.id === vehicleId && v.route 
+                ? {
+                    ...v,
+                    route: {
+                      ...v.route,
+                      stops: v.route.stops.map(stop => 
+                        stop.id === stopId 
+                          ? { ...stop, ...updates } 
+                          : stop
+                      )
+                    }
+                  } 
+                : v
+            )
+          };
+        }),
+
+        // Bulk actions
+        importScenario: (scenario) => set({
+          isRunning: false, // Always start in a stopped state for safety
+          speed: scenario.speed || initialState.speed,
+          currentTime: scenario.currentTime || new Date(),
+          vehicles: scenario.vehicles || [],
+          selectedVehicleId: null // Clear selection on import
+        }),
+        
+        exportScenario: () => {
+          const state = get();
+          return {
+            isRunning: state.isRunning,
+            speed: state.speed,
+            currentTime: state.currentTime,
+            vehicles: state.vehicles,
+            selectedVehicleId: state.selectedVehicleId
+          };
+        }
+      }),
+      {
+        name: 'loadup-simulation-storage',
+        partialize: (state) => ({
+          // Only persist these fields, not runtime state
+          vehicles: state.vehicles,
+          speed: state.speed
+        })
+      }
+    )
+  )
+);
+
+// Selector hooks for common usage patterns
+export const useSelectedVehicle = () => 
+  useSimulationStore(state => {
+    const selectedId = state.selectedVehicleId;
+    if (!selectedId) return null;
+    return state.vehicles.find(v => v.id === selectedId) || null;
+  }, shallow);
+
+// Get all vehicles that are not in maintenance
+export const useActiveVehicles = () => 
+  useSimulationStore(state => state.vehicles.filter(v => v.status !== 'maintenance'));
+
+// Get simulation status values
+export const useSimulationStatus = () => 
+  useSimulationStore(state => ({
+    isRunning: state.isRunning,
+    speed: state.speed,
+    currentTime: state.currentTime,
+    vehicleCount: state.vehicles.length
+  }), shallow); 

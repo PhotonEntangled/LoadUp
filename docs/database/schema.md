@@ -159,7 +159,3 @@
    - `shipmentId` (FOREIGN KEY)
    - `type` (B-TREE)
 
-6. `payments`
-   - `shipmentId` (FOREIGN KEY)
-   - `status` (B-TREE)
-   - `stripePaymentId` (UNIQUE) 

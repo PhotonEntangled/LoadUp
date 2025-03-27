@@ -1,0 +1,1396 @@
+/**
+ * FleetOverviewMapV2 Component
+ * 
+ * A refactored map component using vanilla JavaScript with Mapbox GL,
+ * implementing the design patterns from Uber clone for proper state
+ * management and lifecycle handling.
+ */
+import React, { useEffect, useRef, useState, useCallback, useMemo, useLayoutEffect } from 'react';
+import Head from 'next/head';
+import { useVehicleStore } from '../../store/map/useVehicleStore';
+import { useLocationStore, VehicleLocation } from '../../store/map/useLocationStore';
+import { useMapViewStore, Viewport } from '../../store/map/useMapViewStore';
+import { 
+  calculateBoundingBox, 
+  expandBoundingBox,
+  createVehicleMarkerElement, 
+  createVehiclePopupElement 
+} from '../../utils/map';
+import styles from './FleetOverviewMapV2.module.css';
+import mapboxgl from 'mapbox-gl';
+import MapboxMap from '../../../packages/shared/src/components/MapboxMap';
+import { Vehicle } from '../../types/vehicle';
+import { VehicleMarker } from '../../../apps/admin-dashboard/components/VehicleMarker';
+import { getMapboxPublicToken } from '../../utils/mapbox-token';
+import { debounce } from 'lodash';
+import * as turf from '@turf/turf';
+
+// Define valid Mapbox token directly to fix any caching or reference issues
+const VALID_MAPBOX_TOKEN = 'pk.eyJ1IjoiZXNyYXJ1c3RpbiIsImEiOiJjbThnaG9zbGUwaTJwMmtzN3Z2NG52aGFqIn0.YZU4AX-XapN8dwxI79fs0g';
+
+// Define MapBounds interface
+export interface MapBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+// Extend Window interface to include mapboxgl
+declare global {
+  interface Window {
+    mapboxgl: any;
+  }
+}
+
+export interface FleetOverviewMapV2Props {
+  height?: string | number;
+  width?: string | number;
+  className?: string;
+  enableControls?: boolean;
+  enableSimulation?: boolean;
+  enableSearch?: boolean;
+  onMapReady?: (map: any) => void;
+  forceScriptReload?: boolean;
+  vehicles?: Vehicle[];
+  mapStyle?: string;
+  containerStyle?: React.CSSProperties;
+  initialView?: {
+    center: { lat: number; lng: number };
+    zoom: number;
+  };
+  bounds?: MapBounds;
+}
+
+// Global initialization tracking
+if (typeof window !== 'undefined' && !window.hasOwnProperty('mapboxGlobalInit')) {
+  (window as any).mapboxGlobalInit = {
+    scriptInitialized: false,
+    cssInitialized: false,
+    loadAttempted: false
+  };
+}
+
+/**
+ * Fleet Overview Map Component V2
+ */
+const FleetOverviewMapV2: React.FC<VehicleTrackingMapProps> = ({
+  height = '100%',
+  width = '100%',
+  className = '',
+  enableControls = true,
+  enableSimulation = false,
+  enableSearch = true,
+  onMapReady,
+  forceScriptReload = false,
+  vehicles = [],
+  mapStyle = 'light-v11',
+  containerStyle = {
+    width: '100%',
+    height: '500px', // Default height
+  },
+  initialView = {
+    center: { lat: 3.1390, lng: 101.6869 }, // Default: Kuala Lumpur
+    zoom: 12,
+  },
+  bounds,
+}) => {
+  const [displayVehicles, setDisplayVehicles] = useState<Vehicle[]>(vehicles);
+  const [mapError, setComponentMapError] = useState<Error | null>(null);
+  
+  // Add a helper function for the missing setError function
+  const setError = (errorMessage: string) => {
+    setComponentMapError(new Error(errorMessage));
+  };
+  
+  // Refs
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const markersRef = useRef<Record<string, any>>({});
+  const popupsRef = useRef<Record<string, any>>({});
+  const linkElementRef = useRef<HTMLLinkElement | null>(null);
+  const scriptElementRef = useRef<HTMLScriptElement | null>(null);
+  
+  // State
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [isCssLoaded, setIsCssLoaded] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
+  const [hasContainer, setHasContainer] = useState(false);
+  const [scriptLoadAttempted, setScriptLoadAttempted] = useState(false);
+  
+  // Use refs for store values to prevent re-renders
+  const viewportRef = useRef<Viewport>({
+    center: [0, 0],
+    zoom: 2,
+    bearing: 0,
+    pitch: 0
+  });
+  const mapTokenRef = useRef<string | null>(null);
+  const vehiclesRef = useRef<any[]>([]);
+  const vehicleLocationsRef = useRef<Record<string, VehicleLocation>>({});
+  const selectedVehicleRef = useRef<any>(null);
+  
+  // Get store values initially and set up subscriptions to keep refs updated
+  useEffect(() => {
+    try {
+      // Access store states directly without hooks
+      const mapViewState = useMapViewStore.getState();
+      const vehicleState = useVehicleStore.getState();
+      const locationState = useLocationStore.getState();
+
+      // Set initial values
+      viewportRef.current = mapViewState.viewport;
+      mapTokenRef.current = mapViewState.mapToken;
+      
+      // Apply filters manually to get filtered vehicles
+      const filteredVehicles = vehicleState.vehicles.filter(vehicle => {
+        const filters = vehicleState.filters;
+        // Filter by type
+        if (filters.types.length > 0 && !filters.types.includes(vehicle.type)) {
+          return false;
+        }
+        
+        // Filter by status
+        if (filters.statuses.length > 0 && !filters.statuses.includes(vehicle.status)) {
+          return false;
+        }
+        
+        // Filter by search term
+        if (filters.searchTerm && !vehicle.name.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      vehiclesRef.current = filteredVehicles;
+      vehicleLocationsRef.current = locationState.vehicleLocations as Record<string, VehicleLocation>;
+      
+      // Get selected vehicle if any
+      const selectedVehicleId = vehicleState.selectedVehicleId;
+      selectedVehicleRef.current = selectedVehicleId ? 
+        vehicleState.vehicles.find(v => v.id === selectedVehicleId) || null : null;
+      
+      // Set up subscriptions
+      const unsubscribeMapView = useMapViewStore.subscribe(state => {
+        viewportRef.current = state.viewport;
+        mapTokenRef.current = state.mapToken;
+      });
+      
+      const unsubscribeVehicle = useVehicleStore.subscribe(state => {
+        // Apply filters manually to update filteredVehicles ref
+        const { vehicles, filters, selectedVehicleId } = state;
+        
+        // Filter vehicles based on current filters
+        const filtered = vehicles.filter(vehicle => {
+          // Filter by type
+          if (filters.types.length > 0 && !filters.types.includes(vehicle.type)) {
+            return false;
+          }
+          
+          // Filter by status
+          if (filters.statuses.length > 0 && !filters.statuses.includes(vehicle.status)) {
+            return false;
+          }
+          
+          // Filter by search term
+          if (filters.searchTerm && !vehicle.name.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
+            return false;
+          }
+          
+          return true;
+        });
+        
+        // Update refs
+        vehiclesRef.current = filtered;
+        selectedVehicleRef.current = selectedVehicleId ? 
+          vehicles.find(v => v.id === selectedVehicleId) || null : null;
+      });
+      
+      const unsubscribeLocation = useLocationStore.subscribe(state => {
+        vehicleLocationsRef.current = state.vehicleLocations as Record<string, VehicleLocation>;
+      });
+      
+      // Clean up subscriptions
+      return () => {
+        unsubscribeMapView();
+        unsubscribeVehicle();
+        unsubscribeLocation();
+      };
+    } catch (err) {
+      console.error('Error in store subscription setup:', err);
+    }
+  }, []);
+  
+  // Get store actions using getState instead of hooks
+  const mapViewActions = useMapViewStore.getState();
+  const setMapToken = mapViewActions.setMapToken;
+  const setMapReady = mapViewActions.setMapReady;
+  const storeSetMapError = mapViewActions.setMapError;
+  
+  // Fetch map token using our utility instead of API
+  useEffect(() => {
+    const setupMapboxToken = () => {
+      try {
+        setMapReady(false);
+        console.log('Setting up Mapbox token...');
+        
+        // Use our valid token directly to avoid any potential issues
+        const accessToken = VALID_MAPBOX_TOKEN;
+        
+        if (accessToken) {
+          console.log('Token set successfully:', accessToken.substring(0, 10) + '...');
+          setMapToken(accessToken);
+          mapTokenRef.current = accessToken;
+          setHasToken(true);
+          // Fix type mismatch - use proper boolean type as expected by the store function
+          storeSetMapError(false);
+        } else {
+          console.error('Failed to load map token - no token available');
+          setMapToken(null);
+          setHasToken(false);
+          // Fix type to use boolean and message parameters as defined in the store
+          storeSetMapError(true, 'Failed to load map token');
+        }
+      } catch (err) {
+        console.error('Error setting up map token:', err);
+        setMapToken(null);
+        setHasToken(false);
+        // Fix type to use boolean and message parameters as defined in the store
+        storeSetMapError(true, `Error setting up map token: ${err}`);
+      } finally {
+        setMapReady(true);
+      }
+    };
+    
+    // Execute token setup
+    setupMapboxToken();
+  }, []);
+
+  // Placeholder values for vehicle tracking
+  const isConnected = true;
+  const trackingError = null;
+  const isSimulationActive = false; // Always false since simulation is disabled
+  
+  // Add effect for force script reload
+  useEffect(() => {
+    if (forceScriptReload) {
+      console.log('Force script reload requested');
+      
+      // Clear script and CSS loaded flags
+      setIsScriptLoaded(false);
+      setIsCssLoaded(false);
+      
+      // Clear script load attempted flag to allow reloading
+      setScriptLoadAttempted(false);
+      
+      // Remove existing elements if they exist
+      if (scriptElementRef.current) {
+        scriptElementRef.current.remove();
+        scriptElementRef.current = null;
+      }
+      
+      if (linkElementRef.current) {
+        linkElementRef.current.remove();
+        linkElementRef.current = null;
+      }
+    }
+  }, [forceScriptReload]);
+
+  // Replace the script loading effect with a more robust one
+  useEffect(() => {
+    // Skip if already attempted to load script
+    if (scriptLoadAttempted) return;
+    
+    // Check if already loaded
+    if (isScriptLoaded && isCssLoaded) {
+      console.log('Scripts already loaded, skipping load');
+      return;
+    }
+    
+    // Check if scripts are already in document
+    const existingScript = document.querySelector('script[src*="mapbox-gl.js"]');
+    const existingCSS = document.querySelector('link[href*="mapbox-gl.css"]');
+    
+    if (existingScript && !isScriptLoaded) {
+      console.log('Mapbox script found in document, setting as loaded');
+      setIsScriptLoaded(true);
+    }
+    
+    if (existingCSS && !isCssLoaded) {
+      console.log('Mapbox CSS found in document, setting as loaded');
+      setIsCssLoaded(true);
+    }
+    
+    // If both already exist and are properly loaded, skip
+    if ((existingScript && isScriptLoaded) && (existingCSS && isCssLoaded)) {
+      return;
+    }
+    
+    console.log('Attempting to load Mapbox resources...');
+    setScriptLoadAttempted(true);
+    
+    // Load CSS if needed
+    if (!existingCSS || !isCssLoaded) {
+      const linkElement = document.createElement('link');
+      linkElement.rel = 'stylesheet';
+      linkElement.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+      linkElement.onload = () => {
+        console.log('Mapbox CSS loaded successfully');
+        setIsCssLoaded(true);
+      };
+      linkElement.onerror = () => {
+        console.error('Failed to load Mapbox CSS');
+        setError('Failed to load Mapbox CSS. Please check your internet connection.');
+      };
+      document.head.appendChild(linkElement);
+      linkElementRef.current = linkElement;
+    }
+    
+    // Load script if needed
+    if (!existingScript || !isScriptLoaded) {
+      const scriptElement = document.createElement('script');
+      scriptElement.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+      scriptElement.async = true;
+      
+      scriptElement.onload = () => {
+        console.log('Mapbox script loaded successfully');
+        setIsScriptLoaded(true);
+      };
+      
+      scriptElement.onerror = () => {
+        console.error('Failed to load Mapbox script');
+        setError('Failed to load Mapbox script. Please check your internet connection.');
+      };
+      
+      document.body.appendChild(scriptElement);
+      scriptElementRef.current = scriptElement;
+    }
+    
+    return () => {
+      // Don't remove resources on unmount since they may be needed by other components
+      // Just clear our references
+      scriptElementRef.current = null;
+      linkElementRef.current = null;
+    };
+  }, [scriptLoadAttempted, isScriptLoaded, isCssLoaded]);
+  
+  // Initialize map when script and token are loaded
+  const initializeMap = useCallback(() => {
+    if (!isScriptLoaded || !isCssLoaded || !mapTokenRef.current || !mapContainerRef.current || mapRef.current) {
+      console.log('Map initialization conditions not met:', {
+        isScriptLoaded,
+        isCssLoaded,
+        hasToken: !!mapTokenRef.current,
+        hasContainer: !!mapContainerRef.current,
+        mapAlreadyExists: !!mapRef.current
+      });
+      return;
+    }
+    
+    try {
+      console.log('Initializing map with token:', mapTokenRef.current.substring(0, 10) + '...');
+      
+      // Check if mapboxgl is available
+      if (!window.mapboxgl) {
+        throw new Error('mapboxgl is not available. Script may have loaded but the global object is not accessible.');
+      }
+      
+      // Set token - directly use the valid token to fix any caching issues
+      const validToken = 'pk.eyJ1IjoiZXNyYXJ1c3RpbiIsImEiOiJjbThnaG9zbGUwaTJwMmtzN3Z2NG52aGFqIn0.YZU4AX-XapN8dwxI79fs0g';
+      window.mapboxgl.accessToken = validToken;
+      
+      // Ensure container has dimensions
+      if (mapContainerRef.current.clientHeight === 0 || mapContainerRef.current.clientWidth === 0) {
+        console.warn('Map container has zero dimensions. Setting explicit size.');
+        mapContainerRef.current.style.height = typeof height === 'number' ? `${height}px` : height as string;
+        mapContainerRef.current.style.width = typeof width === 'number' ? `${width}px` : width as string;
+      }
+      
+      console.log('Container dimensions:', {
+        width: mapContainerRef.current.clientWidth,
+        height: mapContainerRef.current.clientHeight
+      });
+      
+      // Create map with explicitly set token
+      const map = new window.mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: viewportRef.current.center,
+        zoom: viewportRef.current.zoom,
+        bearing: viewportRef.current.bearing,
+        pitch: viewportRef.current.pitch,
+        failIfMajorPerformanceCaveat: false, // Allow rendering in less ideal conditions
+        preserveDrawingBuffer: true, // Helps with screenshot functionality
+        accessToken: validToken // Explicitly set token again for the map instance
+      });
+      
+      // Save ref
+      mapRef.current = map;
+      
+      // Add navigation control if enabled
+      if (enableControls) {
+        map.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
+      }
+      
+      // Wait for map to load
+      map.on('load', () => {
+        console.log('Map loaded successfully');
+        setIsMapLoaded(true);
+        
+        // Dispatch an event for parent components to listen to
+        try {
+          const event = new Event('mapboxgl.map.loaded');
+          document.dispatchEvent(event);
+        } catch (e) {
+          console.error('Failed to dispatch map loaded event:', e);
+        }
+        
+        if (onMapReady) onMapReady(map);
+      });
+      
+      // Handle errors
+      map.on('error', (e: any) => {
+        console.error('Map error:', e);
+        setError(`Map error: ${e.error?.message || 'Unknown error'}`);
+      });
+      
+      // Debug info for style loading
+      map.on('styleimagemissing', (e: any) => {
+        console.warn('Style image missing:', e);
+      });
+      
+      console.log('Map initialized successfully');
+    } catch (err) {
+      console.error('Error initializing map:', err);
+      setError(`Error initializing map: ${err}`);
+    }
+  }, [
+    isScriptLoaded,
+    isCssLoaded,
+    height,
+    width,
+    enableControls, 
+    onMapReady
+  ]);
+  
+  // Improvement to the container dimension detection logic
+  useEffect(() => {
+    if (!mapContainerRef.current) {
+      return;
+    }
+
+    console.log('Container ref connected, checking dimensions');
+    
+    // Check if container has dimensions and set state
+    const forceAndCheckDimensions = () => {
+      if (!mapContainerRef.current) return;
+      
+      // First, try to explicitly set dimensions
+      mapContainerRef.current.style.position = 'relative';
+      mapContainerRef.current.style.overflow = 'hidden';
+      
+      // Force explicit dimensions if needed
+      if (typeof height === 'string' || typeof height === 'number') {
+        mapContainerRef.current.style.height = typeof height === 'number' ? `${height}px` : height;
+      }
+      if (typeof width === 'string' || typeof width === 'number') {
+        mapContainerRef.current.style.width = typeof width === 'number' ? `${width}px` : width;
+      }
+      
+      // Ensure a minimum size that mapbox can work with
+      mapContainerRef.current.style.minHeight = '300px';
+      mapContainerRef.current.style.minWidth = '300px';
+      
+      // Check client dimensions after setting styles
+      const clientWidth = mapContainerRef.current.clientWidth;
+      const clientHeight = mapContainerRef.current.clientHeight;
+      
+      console.log('Container dimensions after forcing:', {
+        width: clientWidth,
+        height: clientHeight,
+        styleWidth: mapContainerRef.current.style.width,
+        styleHeight: mapContainerRef.current.style.height
+      });
+      
+      if (clientWidth > 0 && clientHeight > 0) {
+        console.log('Container has valid dimensions, setting hasContainer to true');
+        setHasContainer(true);
+        return true;
+      }
+      
+      return false;
+    };
+    
+    // Try immediately
+    const hasValidDimensions = forceAndCheckDimensions();
+    
+    // If still no dimensions, set up a periodic check
+    if (!hasValidDimensions) {
+      console.log('Container still has no dimensions, setting up periodic check');
+      
+      const dimensionCheckInterval = setInterval(() => {
+        if (forceAndCheckDimensions() || hasContainer) {
+          clearInterval(dimensionCheckInterval);
+        }
+      }, 100); // Check every 100ms
+      
+      // Set a timeout to eventually proceed even without perfect dimensions
+      const fallbackTimer = setTimeout(() => {
+        console.log('Forcing hasContainer to true after timeout');
+        clearInterval(dimensionCheckInterval);
+        setHasContainer(true);
+      }, 2000); // Force proceed after 2s
+      
+      return () => {
+        clearInterval(dimensionCheckInterval);
+        clearTimeout(fallbackTimer);
+      };
+    }
+  }, [height, width, hasContainer]);
+
+  // Detect if we're in the tracking page
+  const isTrackingPage = typeof window !== 'undefined' && 
+    window.location.pathname.includes('/tracking');
+
+  // More aggressive init for tracking page
+  useEffect(() => {
+    if (isTrackingPage) {
+      console.log('Tracking page detected, using special initialization');
+      
+      // Force dimension detection
+      if (mapContainerRef.current) {
+        const checkContainer = () => {
+          const width = mapContainerRef.current!.clientWidth;
+          const height = mapContainerRef.current!.clientHeight;
+          
+          console.log('Forced container check (tracking page):', { width, height });
+          
+          if (width > 0 && height > 0) {
+            setHasContainer(true);
+          } else {
+            // If container has no dimensions yet, force them
+            mapContainerRef.current!.style.minHeight = '400px';
+            mapContainerRef.current!.style.minWidth = '300px';
+            
+            // Check again after style changes
+            setTimeout(() => {
+              if (mapContainerRef.current) {
+                const updatedWidth = mapContainerRef.current.clientWidth;
+                const updatedHeight = mapContainerRef.current.clientHeight;
+                console.log('After forcing dimensions:', { updatedWidth, updatedHeight });
+                
+                if (updatedWidth > 0 && updatedHeight > 0) {
+                  setHasContainer(true);
+                }
+              }
+            }, 0);
+          }
+        };
+        
+        // Run immediate check
+        checkContainer();
+        
+        // Set up an interval to keep checking until container is ready
+        const containerCheckInterval = setInterval(() => {
+          if (hasContainer) {
+            clearInterval(containerCheckInterval);
+            return;
+          }
+          checkContainer();
+        }, 100);
+        
+        // Clean up interval on unmount
+        return () => clearInterval(containerCheckInterval);
+      }
+    }
+  }, [isTrackingPage, hasContainer]);
+
+  // Update initialization logic to handle edge cases better
+  useEffect(() => {
+    // Create a reference to check if the component is still mounted
+    let isMounted = true;
+    let initTimeout: any = null;
+    
+    const delayedInitialize = async () => {
+      // Only proceed if still mounted
+      if (!isMounted) return;
+      
+      console.log('Checking map initialization requirements...');
+      console.log('Dependencies status:', {
+        isScriptLoaded,
+        isCssLoaded,
+        hasToken: !!mapTokenRef.current,
+        mapTokenPrefix: mapTokenRef.current ? mapTokenRef.current.substring(0, 10) + '...' : 'null',
+        hasContainer,
+        mapExists: !!mapRef.current,
+        isTrackingPage
+      });
+      
+      // Proceed with initialization even if hasContainer is false after certain conditions
+      const forceInitialize = isScriptLoaded && 
+                           isCssLoaded && 
+                           mapTokenRef.current && 
+                           mapContainerRef.current && 
+                           !mapRef.current;
+      
+      // If we have the script, CSS and token, but the container check is failing,
+      // we'll force the initialization after ensuring the container has explicit dimensions
+      if (forceInitialize) {
+        console.log('Critical dependencies ready, preparing to initialize map');
+        
+        // Force container dimensions one more time before initializing
+        if (mapContainerRef.current) {
+          if (!hasContainer) {
+            console.log('Container check failed but forcing dimensions before initialization');
+            mapContainerRef.current.style.position = 'relative';
+            mapContainerRef.current.style.overflow = 'hidden';
+            mapContainerRef.current.style.minHeight = '400px';
+            mapContainerRef.current.style.minWidth = '300px';
+            
+            // Force hasContainer to true
+            console.log('Forcing hasContainer to true');
+            setHasContainer(true);
+          }
+        }
+        
+        // Short delay to ensure the DOM is fully updated
+        initTimeout = setTimeout(() => {
+          if (isMounted && mapContainerRef.current) {
+            console.log('Running initializeMap now with dimensions:', {
+              width: mapContainerRef.current.clientWidth,
+              height: mapContainerRef.current.clientHeight
+            });
+            
+            try {
+              initializeMap();
+            } catch (err) {
+              console.error('Error initializing map:', err);
+              
+              // More aggressive fallback for tracking page
+              if (isTrackingPage) {
+                console.log('Using fallback initialization for tracking page');
+                try {
+                  // Force element to have dimensions
+                  if (mapContainerRef.current) {
+                    const div = mapContainerRef.current;
+                    div.style.width = '100%';
+                    div.style.height = '400px';
+                    div.style.position = 'relative';
+                  }
+                  
+                  // Force token setting
+                  if (mapTokenRef.current) {
+                    console.log('Setting mapbox token directly');
+                    (mapboxgl as any).accessToken = mapTokenRef.current;
+                  }
+                  
+                  // Try initialization again
+                  setTimeout(() => {
+                    if (isMounted) {
+                      console.log('Attempting final fallback initialization');
+                      try {
+                        initializeMap();
+                      } catch (finalErr) {
+                        console.error('Final fallback initialization failed:', finalErr);
+                      }
+                    }
+                  }, 500);
+                } catch (fallbackErr) {
+                  console.error('Fallback initialization also failed:', fallbackErr);
+                }
+              }
+            }
+          }
+        }, isTrackingPage ? 1000 : 300); // Longer delay for tracking page
+      } else {
+        // If we're missing dependencies, log and schedule another check
+        console.log('Not all conditions met for map initialization');
+        
+        // For tracking page, be more aggressive
+        if (isTrackingPage) {
+          console.log('On tracking page, scheduling another initialization check');
+          initTimeout = setTimeout(() => {
+            if (isMounted) delayedInitialize();
+          }, 500);
+        }
+      }
+    };
+    
+    // Run the delayed initialize function
+    delayedInitialize();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (initTimeout) clearTimeout(initTimeout);
+      
+      if (mapRef.current) {
+        console.log('Cleaning up map');
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [initializeMap, isScriptLoaded, isCssLoaded, hasToken, hasContainer, isTrackingPage]);
+
+  // Store the initial values and only subscribe to changes
+  const selectVehicleRef = useRef<(id: string | null) => void>(() => {});
+  const setViewportRef = useRef<(viewport: Partial<Viewport>) => void>(() => {});
+  
+  // Initialize store refs once at component creation time
+  useEffect(() => {
+    // Store the setter functions
+    selectVehicleRef.current = useVehicleStore.getState().selectVehicle;
+    setViewportRef.current = useMapViewStore.getState().setViewport;
+    
+    // Subscribe to changes in the store
+    const unsubscribeVehicle = useVehicleStore.subscribe((state, prevState) => {
+      // Only update the ref if the function changed
+      if (state.selectVehicle !== prevState.selectVehicle) {
+        selectVehicleRef.current = state.selectVehicle;
+      }
+    });
+    
+    const unsubscribeViewport = useMapViewStore.subscribe((state, prevState) => {
+      // Only update the ref if the function changed
+      if (state.setViewport !== prevState.setViewport) {
+        setViewportRef.current = state.setViewport;
+      }
+    });
+    
+    return () => {
+      // Clean up subscriptions
+      unsubscribeVehicle();
+      unsubscribeViewport();
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  // Define handler functions at the component top level
+  const handleVehicleMarkerClick = useCallback((vehicleId: string) => {
+    if (selectVehicleRef.current) {
+      selectVehicleRef.current(vehicleId);
+    }
+  }, []);
+  
+  const handlePopupClose = useCallback(() => {
+    if (selectVehicleRef.current) {
+      selectVehicleRef.current(null);
+    }
+  }, []);
+  
+  const handleMapMove = useCallback(() => {
+    if (!mapRef.current || !setViewportRef.current) return;
+    
+    const center = mapRef.current.getCenter();
+    const zoom = mapRef.current.getZoom();
+    
+    setViewportRef.current({
+      center: [center.lng, center.lat],
+      zoom: zoom
+    });
+  }, []);
+  
+  const handleMapClick = useCallback(() => {
+    // Implement any map click behavior here
+  }, []);
+  
+  // Helper function for selecting vehicles
+  const selectVehicle = useCallback((id: string | null) => {
+    if (selectVehicleRef.current) {
+      selectVehicleRef.current(id);
+    }
+  }, []);
+  
+  // Helper function for fitting bounds
+  const fitBounds = useCallback((bounds: [[number, number], [number, number]], padding?: number) => {
+    if (!mapRef.current) return;
+    mapRef.current.fitBounds(bounds, { padding: padding || 50 });
+  }, []);
+
+  // Attach map event listeners
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded) return;
+    
+    // Add map-specific event listeners
+    mapRef.current.on('moveend', handleMapMove);
+    mapRef.current.on('zoomend', handleMapMove);
+    mapRef.current.on('click', handleMapClick);
+    
+    // Clean up event listeners on unmount
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('moveend', handleMapMove);
+        mapRef.current.off('zoomend', handleMapMove);
+        mapRef.current.off('click', handleMapClick);
+      }
+    };
+  }, [isMapLoaded, handleMapMove, handleMapClick]);
+  
+  // Create mapEvents object with all handlers
+  const mapEvents = {
+    handleVehicleMarkerClick,
+    handlePopupClose,
+    handleMapMove,
+    handleMapClick,
+    selectVehicle,
+    fitBounds
+  };
+  
+  // Helper function to get coordinates from vehicles
+  const getCoordinatesFromVehicles = (
+    vehicles: any[],
+    vehicleLocations: Record<string, VehicleLocation>
+  ) => {
+    return vehicles
+      .filter(vehicle => vehicleLocations[vehicle.id])
+      .map(vehicle => {
+        const location = vehicleLocations[vehicle.id];
+        return [location.longitude, location.latitude] as [number, number];
+      });
+  };
+  
+  // Common function to create or update vehicle markers - with optimization
+  const updateVehicleMarkers = useCallback(() => {
+    // Don't log on every update to reduce console spam
+    // console.log('Updating vehicle markers...');
+    
+    if (!mapRef.current) {
+      console.warn('Cannot update markers: map not available');
+      return;
+    }
+    
+    const map = mapRef.current;
+    const existingMarkers = markersRef.current;
+    const existingPopups = popupsRef.current;
+    
+    // Vehicle object to update markers for
+    const vehicles = vehiclesRef.current;
+    const locations = vehicleLocationsRef.current;
+    const selectedVehicleId = selectedVehicleRef.current?.id;
+    
+    // Track which markers we've updated to detect stale ones
+    const updatedMarkers = new Set<string>();
+    
+    // Cache DOM elements for reuse to improve performance
+    const cachedElements: Record<string, HTMLElement> = {};
+    
+    // Add or update markers for each vehicle
+    vehicles.forEach(vehicle => {
+      const location = locations[vehicle.id];
+      
+      // Skip vehicles with no location
+      if (!location) {
+        return;
+      }
+      
+      // Check if marker already exists
+      if (existingMarkers[vehicle.id]) {
+        const existingMarker = existingMarkers[vehicle.id];
+        
+        // Update position
+        existingMarker.setLngLat([location.longitude, location.latitude]);
+        
+        // Update element with new styling only if selection state changed
+        const isSelected = vehicle.id === selectedVehicleId;
+        const wasSelected = existingMarker.getElement().getAttribute('data-selected') === 'true';
+        
+        if (isSelected !== wasSelected) {
+          const element = createTruckMarkerElement(vehicle, location, isSelected);
+          existingMarker.getElement().replaceWith(element);
+          
+          // Set the marker's element
+          if (typeof existingMarker._element !== 'undefined') {
+            existingMarker._element = element;
+          }
+        }
+        
+        // Mark as updated
+        updatedMarkers.add(vehicle.id);
+      } else {
+        // Create new marker
+        const isSelected = vehicle.id === selectedVehicleId;
+        const element = createTruckMarkerElement(vehicle, location, isSelected);
+        
+        // Create options for rotation if heading is available
+        const options: any = {
+          element: element,
+          anchor: 'center'
+        };
+        
+        if (location.heading !== undefined) {
+          options.rotation = location.heading * (Math.PI / 180);
+        }
+        
+        // Create marker
+        const marker = new window.mapboxgl.Marker(options)
+          .setLngLat([location.longitude, location.latitude])
+          .addTo(map);
+          
+        // Add click handler - only once for the marker
+        marker.getElement().addEventListener('click', () => {
+          // Handle marker click - avoid logging on every click
+          // console.log(`Clicked on vehicle ${vehicle.id}`);
+          
+          // Update selected vehicle in store using the ref function
+          if (selectVehicleRef.current) {
+            selectVehicleRef.current(vehicle.id);
+          }
+          
+          // Show popup if not already showing
+          if (!existingPopups[vehicle.id]) {
+            const popupElement = createVehiclePopup(vehicle, location);
+            const popup = new window.mapboxgl.Popup({
+              closeButton: true,
+              closeOnClick: false,
+              maxWidth: '300px',
+              anchor: 'bottom',
+              offset: [0, -20]
+            })
+              .setLngLat([location.longitude, location.latitude])
+              .setDOMContent(popupElement)
+              .addTo(map);
+              
+            // Store popup reference
+            existingPopups[vehicle.id] = popup;
+            
+            // Remove from refs when closed
+            popup.on('close', () => {
+              delete existingPopups[vehicle.id];
+              
+              // When popup is closed, deselect the vehicle
+              if (selectVehicleRef.current) {
+                selectVehicleRef.current(null);
+              }
+            });
+          }
+        });
+        
+        // Store marker reference
+        existingMarkers[vehicle.id] = marker;
+        
+        // Mark as updated
+        updatedMarkers.add(vehicle.id);
+      }
+    });
+    
+    // Remove stale markers
+    Object.keys(existingMarkers).forEach(id => {
+      if (!updatedMarkers.has(id)) {
+        // console.log(`Removing stale marker for vehicle ${id}`);
+        existingMarkers[id].remove();
+        delete existingMarkers[id];
+        
+        // Remove associated popup if exists
+        if (existingPopups[id]) {
+          existingPopups[id].remove();
+          delete existingPopups[id];
+        }
+      }
+    });
+    
+  }, []);
+  
+  // Create a truck marker element with enhanced styling - with performance optimizations
+  const createTruckMarkerElement = useCallback((vehicle: any, location: any, isSelected: boolean = false): HTMLElement => {
+    // Create main marker container
+    const marker = document.createElement('div');
+    marker.className = 'vehicle-marker';
+    marker.setAttribute('data-vehicle-id', vehicle.id);
+    marker.setAttribute('data-vehicle-status', vehicle.status);
+    marker.setAttribute('data-selected', isSelected ? 'true' : 'false');
+    
+    // Apply styling
+    const markerSize = 40; // Medium size
+    const statusColor = getStatusColor(vehicle.status);
+    
+    marker.style.width = `${markerSize}px`;
+    marker.style.height = `${markerSize}px`;
+    marker.style.borderRadius = '50%';
+    marker.style.backgroundColor = statusColor;
+    marker.style.border = isSelected 
+      ? '3px solid white' 
+      : '2px solid rgba(255, 255, 255, 0.8)';
+    marker.style.boxShadow = isSelected
+      ? '0 0 0 2px #3b82f6, 0 0 10px rgba(0, 0, 0, 0.35)'
+      : '0 0 10px rgba(0, 0, 0, 0.25)';
+    marker.style.cursor = 'pointer';
+    marker.style.position = 'relative';
+    marker.style.transition = 'all 0.2s ease';
+    
+    // Add truck icon
+    const icon = document.createElement('div');
+    
+    // Truck icon (only using trucks per user clarification)
+    const svgContent = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 6H6L3 11V19C3 19.5523 3.44772 20 4 20H5C5.55228 20 6 19.5523 6 19V18H16V19C16 19.5523 16.4477 20 17 20H18C18.5523 20 19 19.5523 19 19V11L16 6Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M7 14H7.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15 14H15.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+    
+    icon.innerHTML = svgContent;
+    icon.style.position = 'absolute';
+    icon.style.top = '50%';
+    icon.style.left = '50%';
+    icon.style.transform = 'translate(-50%, -50%)';
+    
+    // Rotate icon based on heading if available
+    if (location?.heading !== undefined) {
+      icon.style.transform = `translate(-50%, -50%) rotate(${location.heading}deg)`;
+    }
+    
+    marker.appendChild(icon);
+    
+    // Add pulse animation for active/moving vehicles
+    if ((location?.speed && location.speed > 0) || vehicle.status === 'active') {
+      const pulse = document.createElement('div');
+      pulse.className = 'pulse';
+      pulse.style.position = 'absolute';
+      pulse.style.width = '100%';
+      pulse.style.height = '100%';
+      pulse.style.borderRadius = '50%';
+      pulse.style.backgroundColor = `${statusColor}80`; // Add transparency
+      pulse.style.animation = 'pulse 2s infinite';
+      marker.appendChild(pulse);
+      
+      // Add keyframes for pulse animation if needed - add only once globally
+      if (!document.getElementById('vehicle-marker-keyframes')) {
+        const style = document.createElement('style');
+        style.id = 'vehicle-marker-keyframes';
+        style.textContent = `
+          @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            70% { transform: scale(1.5); opacity: 0; }
+            100% { transform: scale(1.5); opacity: 0; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+    
+    // Add vehicle info label
+    const label = document.createElement('div');
+    label.className = 'vehicle-label';
+    label.textContent = vehicle.name;
+    label.style.position = 'absolute';
+    label.style.bottom = '-24px';
+    label.style.left = '50%';
+    label.style.transform = 'translateX(-50%)';
+    label.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    label.style.color = 'white';
+    label.style.padding = '2px 6px';
+    label.style.borderRadius = '4px';
+    label.style.fontSize = '12px';
+    label.style.fontWeight = 'bold';
+    label.style.whiteSpace = 'nowrap';
+    
+    if (!isSelected) {
+      // Hide the label by default, show on hover
+      label.style.opacity = '0';
+      label.style.transition = 'opacity 0.2s ease';
+      
+      marker.addEventListener('mouseenter', () => {
+        label.style.opacity = '1';
+      });
+      
+      marker.addEventListener('mouseleave', () => {
+        label.style.opacity = '0';
+      });
+    } else {
+      label.style.opacity = '1';
+    }
+    
+    marker.appendChild(label);
+    
+    return marker;
+  }, []);
+  
+  // Function to determine status color
+  const getStatusColor = useCallback((status: string): string => {
+    switch (status) {
+      case 'active':
+      case 'moving':
+        return '#3B82F6'; // Blue
+      case 'delivery':
+        return '#10B981'; // Green
+      case 'pickup':
+        return '#F59E0B'; // Amber
+      case 'returning':
+        return '#8B5CF6'; // Purple
+      case 'maintenance':
+        return '#EF4444'; // Red
+      case 'idle':
+        return '#6B7280'; // Gray
+      case 'offline':
+        return '#9CA3AF'; // Light gray
+      default:
+        return '#3B82F6'; // Default blue
+    }
+  }, []);
+  
+  // Create a popup with enhanced information display
+  const createVehiclePopup = useCallback((vehicle: any, location: any): HTMLElement => {
+    // Create popup container
+    const popup = document.createElement('div');
+    popup.className = 'vehicle-popup';
+    popup.style.padding = '0';
+    popup.style.borderRadius = '4px';
+    popup.style.overflow = 'hidden';
+    popup.style.fontFamily = 'system-ui, sans-serif';
+    popup.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+    popup.style.minWidth = '220px';
+    
+    // Create header
+    const header = document.createElement('div');
+    header.style.backgroundColor = getStatusColor(vehicle.status);
+    header.style.color = 'white';
+    header.style.padding = '8px 12px';
+    
+    const title = document.createElement('h3');
+    title.textContent = vehicle.name;
+    title.style.margin = '0';
+    title.style.fontSize = '16px';
+    title.style.fontWeight = 'bold';
+    header.appendChild(title);
+    
+    // Create content
+    const content = document.createElement('div');
+    content.style.padding = '12px';
+    content.style.backgroundColor = 'white';
+    
+    // Format a timestamp for display
+    const formatTimestamp = (timestamp: number): string => {
+      if (!timestamp) return 'Unknown';
+      
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
+      });
+    };
+    
+    // Add vehicle info
+    content.innerHTML = `
+      <div style="font-size: 14px; line-height: 1.5;">
+        <div style="display: flex; align-items: center; margin-bottom: 6px;">
+          <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${getStatusColor(vehicle.status)}; margin-right: 6px;"></span>
+          <span><strong>Status:</strong> ${vehicle.status.charAt(0).toUpperCase() + vehicle.status.slice(1)}</span>
+        </div>
+        <p style="margin: 4px 0;"><strong>License:</strong> ${vehicle.licenseNumber || 'No plate'}</p>
+        ${vehicle.driverId ? `<p style="margin: 4px 0;"><strong>Driver ID:</strong> ${vehicle.driverId}</p>` : ''}
+        ${location ? `
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee;">
+            <p style="margin: 4px 0;"><strong>Speed:</strong> ${location.speed ? Math.round(location.speed) + ' km/h' : 'Stationary'}</p>
+            <p style="margin: 4px 0;"><strong>Position:</strong> ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}</p>
+            <p style="margin: 4px 0;"><strong>Updated:</strong> ${formatTimestamp(location.timestamp)}</p>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    
+    // Assemble popup
+    popup.appendChild(header);
+    popup.appendChild(content);
+    
+    return popup;
+  }, [getStatusColor]);
+  
+  // Update markers when map is ready with a reduced frequency
+  useEffect(() => {
+    if (mapRef.current && isMapLoaded) {
+      let isMounted = true;
+      
+      // Initial update
+      updateVehicleMarkers();
+      
+      // Set up periodic updates with longer interval to reduce CPU usage
+      const intervalId = setInterval(() => {
+        if (isMounted) {
+          updateVehicleMarkers();
+        }
+      }, 3000); // Update every 3 seconds instead of 1 second
+      
+      return () => {
+        isMounted = false;
+        clearInterval(intervalId);
+      };
+    }
+  }, [isMapLoaded, updateVehicleMarkers]);
+
+  // Memoize the containerStyle to prevent unnecessary renders
+  const memoizedContainerStyle = useMemo(() => ({
+    height,
+    width
+  }), [height, width]);
+  
+  // Debug info
+  useEffect(() => {
+    console.log('Map component state:', {
+      isScriptLoaded,
+      isCssLoaded,
+      isMapLoaded,
+      hasToken,
+      hasMapRef: !!mapRef.current,
+      hasContainer,
+      containerDimensions: mapContainerRef.current ? 
+        { width: mapContainerRef.current.clientWidth, height: mapContainerRef.current.clientHeight } : 
+        null
+    });
+  }, [isScriptLoaded, isCssLoaded, isMapLoaded, hasToken, hasContainer]);
+  
+  // Add a new effect to monitor when the container becomes available
+  useEffect(() => {
+    if (mapContainerRef.current) {
+      // Container is already available, no need to observe
+      setHasContainer(true);
+      return;
+    }
+    
+    // Create a more efficient function to check container dimensions
+    const checkContainerDimensions = () => {
+      if (!mapContainerRef.current) return false;
+      
+      const { clientWidth, clientHeight } = mapContainerRef.current;
+      return clientWidth > 0 && clientHeight > 0;
+    };
+    
+    // Setup proper initialization when container is ready
+    const tryInitializeMap = () => {
+      if (!mapContainerRef.current) return false;
+      
+      setHasContainer(true);
+      
+      if (isScriptLoaded && isCssLoaded && mapTokenRef.current && !mapRef.current) {
+        if (checkContainerDimensions()) {
+          initializeMap();
+          return true;
+        }
+      }
+      return false;
+    };
+    
+    // First, try to find the container by ID
+    const targetElement = document.getElementById('map-container');
+    if (targetElement && 'current' in mapContainerRef) {
+      // Cast to MutableRefObject to allow assignment
+      (mapContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = targetElement as HTMLDivElement;
+      tryInitializeMap();
+      return;
+    }
+    
+    // If not found by ID, use a more targeted MutationObserver
+    let observerTimeoutId: NodeJS.Timeout | null = null;
+    let maxWaitTimeoutId: NodeJS.Timeout | null = null;
+    
+    // Maximum wait time - 10 seconds
+    const MAX_WAIT_TIME = 10000; 
+    
+    // Create a mutation observer that targets only the main content area
+    const observer = new MutationObserver((mutations) => {
+      // Only check if we need to (throttle checks)
+      if (observerTimeoutId) return;
+      
+      observerTimeoutId = setTimeout(() => {
+        // Check for map container again
+        const container = document.getElementById('map-container') || 
+                          document.querySelector('.map-container');
+        
+        if (container && 'current' in mapContainerRef) {
+          // Cast to MutableRefObject to allow assignment
+          (mapContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = container as HTMLDivElement;
+          if (tryInitializeMap()) {
+            // Successfully initialized, clean up
+            observer.disconnect();
+            if (maxWaitTimeoutId) clearTimeout(maxWaitTimeoutId);
+          }
+        }
+        
+        observerTimeoutId = null;
+      }, 100); // Throttle checks to every 100ms
+    });
+    
+    // Find a more specific parent element to observe
+    const targetContainer = document.querySelector('.dashboard-content') || 
+                           document.querySelector('.admin-dashboard') || 
+                           document.querySelector('main') || 
+                           document.body;
+    
+    // Start observing with more specific options
+    observer.observe(targetContainer, { 
+      childList: true, 
+      subtree: true,
+      attributes: false,
+      characterData: false
+    });
+    
+    // Set a max wait time to stop observing
+    maxWaitTimeoutId = setTimeout(() => {
+      observer.disconnect();
+      if (observerTimeoutId) {
+        clearTimeout(observerTimeoutId);
+      }
+      console.warn('Timed out waiting for map container after', MAX_WAIT_TIME, 'ms');
+    }, MAX_WAIT_TIME);
+    
+    return () => {
+      // Clean up on unmount
+      observer.disconnect();
+      if (observerTimeoutId) clearTimeout(observerTimeoutId);
+      if (maxWaitTimeoutId) clearTimeout(maxWaitTimeoutId);
+    };
+  }, [isScriptLoaded, isCssLoaded, initializeMap, setHasContainer]);
+  
+  // Handle map errors
+  const handleMapError = (error: Error) => {
+    console.error('Map error:', error);
+    setComponentMapError(error);
+  };
+  
+  // If there's an error, show it
+  if (mapError) {
+    return (
+      <div className={`${styles.errorContainer} ${className}`} style={memoizedContainerStyle}>
+        <p>Error: {mapError.message}</p>
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className={`${styles.mapContainer} ${styles.markerStyles} ${styles.popupStyles} ${className}`} 
+        style={{
+          ...memoizedContainerStyle,
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        ref={mapContainerRef}
+      >
+        {(!isScriptLoaded || !isCssLoaded || !isMapLoaded) && (
+          <div className={styles.loadingOverlay}>
+            <div className={styles.loadingSpinner}></div>
+            <div>Loading map... ({isScriptLoaded ? 'Script ✓' : 'Script ⏳'} | {isCssLoaded ? 'CSS ✓' : 'CSS ⏳'} | {isMapLoaded ? 'Map ✓' : 'Map ⏳'})</div>
+          </div>
+        )}
+      </div>
+      
+      {/* Map controls overlay */}
+      {enableControls && isMapLoaded && (
+        <div className={styles.mapControls}>
+          {/* REMOVED: All simulation status elements */}
+          
+          {trackingError && (
+            <div className={styles.trackingError}>
+              Connection Error: {trackingError}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+};
+
+export default React.memo(FleetOverviewMapV2); 

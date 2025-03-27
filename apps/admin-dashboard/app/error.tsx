@@ -4,8 +4,9 @@
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/shared/Card';
 
-export default function ErrorBoundary({
+export default function ErrorPage({
   error,
   reset,
 }: {
@@ -18,45 +19,35 @@ export default function ErrorBoundary({
   }, [error]);
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-md">
-        <div className="mb-4 flex items-center justify-center">
-          <svg
-            className="h-12 w-12 text-red-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
-        <h2 className="mb-2 text-center text-xl font-semibold text-gray-800">
-          Something went wrong
-        </h2>
-        <p className="mb-4 text-center text-gray-600">
-          An unexpected error has occurred. Our team has been notified.
-        </p>
-        <div className="flex justify-center">
-          <Button
-            onClick={reset}
-            className="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
-          >
-            Try again
-          </Button>
-        </div>
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 rounded-md bg-gray-100 p-3">
-            <p className="text-sm font-medium text-gray-800">Error details:</p>
-            <p className="text-xs text-gray-600">{error.message}</p>
+    <div className="container mx-auto py-12">
+      <Card className="p-6 max-w-lg mx-auto">
+        <div className="text-center py-6">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Something went wrong!</h2>
+          <p className="text-gray-600 mb-6">
+            {process.env.NODE_ENV === 'development' ? (
+              <>
+                <div className="p-4 bg-red-50 rounded text-red-800 text-left mb-4">
+                  <strong>Error:</strong> {error.message}
+                </div>
+                <div className="text-xs text-left mb-4 p-2 bg-gray-100 rounded overflow-auto">
+                  <pre>{error.stack}</pre>
+                </div>
+              </>
+            ) : (
+              'An error occurred. Our team has been notified.'
+            )}
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button onClick={() => reset()}>Try again</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.href = '/'}
+            >
+              Go to Home
+            </Button>
           </div>
-        )}
-      </div>
+        </div>
+      </Card>
     </div>
   );
 } 

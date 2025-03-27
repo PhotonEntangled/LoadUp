@@ -2,7 +2,7 @@ import { Shipment, TruckDriver, DeliveryStop, MapRegion } from '../types/index.j
 import { Marker } from 'react-native-maps';
 import type { Region, LatLng } from 'react-native-maps';
 
-const MAPBOX_API_KEY = process.env.NEXT_PUBLIC_MAPBOX_API_KEY;
+const MAPBOX_API_KEY = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 export interface MapMarker extends LatLng {
   id: string;
@@ -52,7 +52,7 @@ export const generateShipmentMarkers = ({
         id: `driver-${driver.id}`,
         latitude: driver.currentLocation.latitude,
         longitude: driver.currentLocation.longitude,
-        title: `${driver.firstName} ${driver.lastName}`,
+        title: `Truck #${driver.id}`,
         description: `Current Shipment: ${driver.currentShipment || 'None'}`,
         markerType: 'driver'
       });

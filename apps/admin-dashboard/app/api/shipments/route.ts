@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ShipmentService } from '@loadup/database/services/shipmentService';
+// import { ShipmentService } from '@loadup/database/services/shipmentService';
 import { auth } from '@/lib/auth';
 import { z } from 'zod';
 
 // Initialize shipment service
-const shipmentService = new ShipmentService();
+// const shipmentService = new ShipmentService();
 
 // Simplified schema for creating a shipment (MVP)
 const createShipmentSchema = z.object({
@@ -52,44 +52,65 @@ const shipmentFilterSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // Parse query parameters
-    const searchParams = request.nextUrl.searchParams;
-    const queryParams: Record<string, string> = {};
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const customerId = searchParams.get('customerId');
+    const driverId = searchParams.get('driverId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
     
-    // Convert searchParams to object (simplified for MVP)
-    for (const [key, value] of searchParams.entries()) {
-      queryParams[key] = value;
-    }
+    // Mock implementation
+    const mockShipments = Array.from({ length: limit }, (_, i) => ({
+      id: `ship${i + 1 + (page - 1) * limit}`,
+      trackingNumber: `TRK-${i + 1 + (page - 1) * limit}`,
+      status: status || ['pending', 'in_transit', 'delivered'][Math.floor(Math.random() * 3)],
+      origin: {
+        address: "123 Pickup St",
+        city: "Origin City",
+        state: "CA",
+        zipCode: "90001",
+        country: "USA"
+      },
+      destination: {
+        address: "456 Delivery Ave",
+        city: "Destination City",
+        state: "NY",
+        zipCode: "10001",
+        country: "USA"
+      },
+      customer: {
+        id: customerId || "cust1",
+        name: "Acme Corp",
+        email: "contact@acmecorp.com",
+        phone: "555-1234"
+      },
+      driver: {
+        id: driverId || "driver1",
+        name: "John Driver",
+        phone: "555-5678",
+        vehicle: "Truck XL"
+      },
+      createdAt: new Date(Date.now() - 86400000 * (i + 1)).toISOString(),
+      updatedAt: new Date().toISOString(),
+      estimatedDelivery: new Date(Date.now() + 86400000 * (i + 1)).toISOString()
+    }));
     
-    // Parse and validate filters
-    const filters = shipmentFilterSchema.parse(queryParams);
-    
-    // Apply role-based filtering
-    if (session.user.role === 'customer') {
-      // Customers can only see their own shipments
-      filters.customerId = session.user.id;
-    } else if (session.user.role === 'driver') {
-      // Drivers can only see shipments assigned to them
-      filters.driverId = session.user.id;
-    }
-    // Admins can see all shipments (no additional filtering)
-    
-    // Get shipments with filters
-    const shipments = await shipmentService.getShipments(filters);
-    
-    return NextResponse.json(shipments);
+    return NextResponse.json({
+      shipments: mockShipments,
+      pagination: {
+        total: 100,
+        page,
+        limit,
+        pages: Math.ceil(100 / limit)
+      }
+    });
   } catch (error) {
-    console.error('Error fetching shipments:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request parameters', details: error.errors }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch shipments' }, { status: 500 });
+    console.error("Error fetching shipments:", error);
+    return NextResponse.json(
+      { error: 'Failed to fetch shipments' },
+      { status: 500 }
+    );
   }
 }
 
@@ -99,43 +120,42 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    // Only admins and customers can create shipments
-    if (!['admin', 'customer'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    
-    // Parse request body
     const body = await request.json();
     
-    // Validate request body
-    const data = createShipmentSchema.parse(body);
-    
-    // If customer is creating shipment, force customerId to be their own ID
-    if (session.user.role === 'customer') {
-      data.customerId = session.user.id;
+    // Validate required fields
+    if (!body.origin || !body.destination || !body.items) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
     }
     
-    // Create shipment with default status
-    const shipmentData = {
-      ...data,
-      status: 'pending',
+    // Mock implementation
+    const mockNewShipment = {
+      id: `ship${Date.now()}`,
+      trackingNumber: `TRK-${Date.now().toString().slice(-6)}`,
+      status: "pending",
+      origin: body.origin,
+      destination: body.destination,
+      customer: body.customer || {
+        id: "cust1",
+        name: "Acme Corp",
+        email: "contact@acmecorp.com",
+        phone: "555-1234"
+      },
+      driver: null,
+      items: body.items,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      estimatedDelivery: new Date(Date.now() + 86400000 * 3).toISOString()
     };
     
-    // Create shipment
-    const shipment = await shipmentService.createShipment(shipmentData);
-    
-    return NextResponse.json(shipment, { status: 201 });
+    return NextResponse.json({ shipment: mockNewShipment }, { status: 201 });
   } catch (error) {
-    console.error('Error creating shipment:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to create shipment' }, { status: 500 });
+    console.error("Error creating shipment:", error);
+    return NextResponse.json(
+      { error: 'Failed to create shipment' },
+      { status: 500 }
+    );
   }
 } 

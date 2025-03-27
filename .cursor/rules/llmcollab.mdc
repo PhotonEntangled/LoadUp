@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+  "chatgptCollaboration": {
+    "strategyName": "Complementary Skills Collaboration",
+    "description": "Workflow for collaborating with ChatGPT where each AI leverages its unique strengths",
+    "workflow": [
+      "Claude manages codebase navigation and comprehensive change implementation",
+      "ChatGPT provides architectural guidance and new component designs",
+      "Claude implements changes first, then passes modified state to ChatGPT",
+      "Claude always documents changes in knowledge graph",
+      "Keep ChatGPT informed of completed steps and current state"
+    ],
+    "clausePriority": ["implementation", "architecture", "knowledge", "communication"],
+    "collaborativeModules": ["MapComponents", "Simulation", "StoreManagement"]

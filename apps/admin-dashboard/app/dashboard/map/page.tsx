@@ -1,114 +1,241 @@
 "use client";
 
-import { useState } from "react";
-import { Card } from "@/components/shared/Card";
-import { MapPin, Truck, AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
+import mapboxgl from 'mapbox-gl';
+import { Card } from '../../../components/ui/card';
+import { Truck, AlertCircle } from 'lucide-react';
+import { VehicleTrackingProvider } from '../../../../../src/components/VehicleTrackingProvider';
+import { VehicleServiceType } from '../../../../../src/services/VehicleServiceFactory';
+import SimulatedVehicleMap from '../../../../../src/components/map/SimulatedVehicleMap';
+import { TrackingControls } from '../../../../../src/components/TrackingControls';
+import { useUnifiedVehicleStore } from '../../../../../src/store/useUnifiedVehicleStore';
+
+// Define the vehicle type enum
+enum VehicleType {
+  TRUCK = "truck",
+  VAN = "van",
+  CAR = "car"
+}
+
+// Define a unified vehicle interface
+interface AppVehicle {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  licenseNumber: string;
+  currentOrderId?: string;
+  driverId?: string;
+  capacity?: number;
+  notes?: string;
+}
+
+// Vehicle Status Summary component
+const VehicleStatusSummary = () => {
+  const vehiclesRecord = useUnifiedVehicleStore(state => state.vehicles);
+  const vehicles = Object.values(vehiclesRecord);
+  
+  const activeCount = vehicles.filter(v => v.status === 'moving').length;
+  const idleCount = vehicles.filter(v => v.status === 'idle').length;
+  const loadingCount = vehicles.filter(v => (v.status === 'loading' || v.status === 'unloading')).length;
+  const maintenanceCount = vehicles.filter(v => v.status === 'maintenance').length;
+  
+  return (
+    <div className="grid grid-cols-4 bg-gray-50 p-2 border-b">
+      <div className="flex items-center justify-center p-2">
+        <div className="flex items-center">
+          <div className="p-1 rounded-full bg-blue-100 mr-2">
+            <Truck className="h-4 w-4 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Active</p>
+            <p className="text-sm font-medium">{activeCount}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-center p-2">
+        <div className="flex items-center">
+          <div className="p-1 rounded-full bg-amber-100 mr-2">
+            <Truck className="h-4 w-4 text-amber-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Idle</p>
+            <p className="text-sm font-medium">{idleCount}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-center p-2">
+        <div className="flex items-center">
+          <div className="p-1 rounded-full bg-green-100 mr-2">
+            <Truck className="h-4 w-4 text-green-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Loading/Unloading</p>
+            <p className="text-sm font-medium">{loadingCount}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-center p-2">
+        <div className="flex items-center">
+          <div className="p-1 rounded-full bg-red-100 mr-2">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Maintenance</p>
+            <p className="text-sm font-medium">{maintenanceCount}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function MapPage() {
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const [serviceType, setServiceType] = useState<VehicleServiceType>(
+    process.env.NEXT_PUBLIC_USE_MOCK_VEHICLES === 'true'
+      ? VehicleServiceType.MOCK
+      : VehicleServiceType.FIREBASE
+  );
+  const [mapError, setMapError] = useState<Error | null>(null);
+  
+  // Toggle between Firebase and Mock services
+  const toggleServiceType = () => {
+    setServiceType(current =>
+      current === VehicleServiceType.FIREBASE
+        ? VehicleServiceType.MOCK
+        : VehicleServiceType.FIREBASE
+    );
+  };
+
+  const handleMapError = (error: Error) => {
+    console.error('Map error:', error);
+    setMapError(error);
+  };
   
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Live Tracking</h1>
+        
+        <div className="flex space-x-2">
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+            onClick={toggleServiceType}
+          >
+            Switch to {serviceType === VehicleServiceType.FIREBASE ? 'Mock' : 'Firebase'} Data
+          </button>
+          
+          {/* Export data button */}
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+            onClick={() => {
+              // Get data from the unified store
+              const vehiclesRecord = useUnifiedVehicleStore.getState().vehicles;
+              const vehicles = Object.values(vehiclesRecord);
+              
+              // Create CSV content
+              const headers = ['ID', 'Type', 'Status', 'Last Updated'];
+              const rows = vehicles.map(vehicle => [
+                vehicle.id,
+                vehicle.type,
+                vehicle.status,
+                new Date().toLocaleString() // Use current date for now
+              ]);
+              
+              // Combine headers and rows
+              const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+              ].join('\n');
+              
+              // Create and download the file
+              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', `vehicle_locations_${new Date().toISOString().slice(0, 10)}.csv`);
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            Export Data
+          </button>
+        </div>
       </div>
 
+      <VehicleTrackingProvider>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-1">
+            <Card className="p-4 mb-4">
+              <h2 className="text-lg font-semibold mb-3">Tracking Controls</h2>
+              <TrackingControls 
+                serviceType={serviceType}
+                className="mt-2" 
+              />
+            </Card>
+            
+            {/* Additional panels can go here */}
+          </div>
+
         <div className="lg:col-span-3">
           <Card className="overflow-hidden">
             <div className="p-4 border-b">
               <h2 className="text-lg font-semibold">Map View</h2>
             </div>
+            
+              {/* Vehicle status counts */}
+              <VehicleStatusSummary />
+            
             <div className="relative">
-              {/* Map placeholder for MVP */}
-              <div className="h-[600px] bg-gray-100 flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-2">Map integration will be available in a future update</p>
-                  <p className="text-sm text-gray-400">This is a placeholder for the Mapbox integration</p>
-                </div>
-              </div>
-              
-              {/* Information overlay */}
-              <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-md">
-                <div className="flex items-center mb-2">
-                  <AlertCircle className="h-5 w-5 text-blue-500 mr-2" />
-                  <span className="text-sm font-medium">Map Information</span>
-                </div>
-                <p className="text-xs text-gray-500 mb-2">
-                  In the full implementation, this map will show:
-                </p>
-                <ul className="text-xs text-gray-500 list-disc pl-5 space-y-1">
-                  <li>Real-time driver locations</li>
-                  <li>Pickup and delivery points</li>
-                  <li>Optimized routes</li>
-                  <li>Geofencing notifications</li>
-                </ul>
-              </div>
-            </div>
-          </Card>
-        </div>
-        
-        <div className="lg:col-span-1">
-          <Card className="mb-6">
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold">Active Drivers</h2>
-            </div>
-            <div className="p-4">
-              {/* Driver list placeholder */}
-              <div className="space-y-4">
-                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                  <div className="p-2 rounded-full bg-green-100 mr-3">
-                    <Truck className="h-5 w-5 text-green-600" />
+              {/* Map error state */}
+              {mapError && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
+                    <div className="text-center p-6 bg-white rounded-lg shadow-lg">
+                      <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-red-600 mb-2">Map Error</h3>
+                      <p className="text-gray-600">{mapError.message}</p>
+                  <button 
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        onClick={() => setMapError(null)}
+                  >
+                        Retry
+                  </button>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">Driver 1</p>
-                    <p className="text-xs text-gray-500">Last updated: Just now</p>
-                  </div>
-                </div>
+                )}
                 
-                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                  <div className="p-2 rounded-full bg-green-100 mr-3">
-                    <Truck className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Driver 2</p>
-                    <p className="text-xs text-gray-500">Last updated: 5 min ago</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                  <div className="p-2 rounded-full bg-yellow-100 mr-3">
-                    <Truck className="h-5 w-5 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Driver 3</p>
-                    <p className="text-xs text-gray-500">Last updated: 15 min ago</p>
-                  </div>
-                </div>
-              </div>
+                {/* Map Component */}
+                <SimulatedVehicleMap
+                  height="70vh"
+                  width="100%"
+                  onMapReady={(map) => {
+                    console.log('Map ready', map);
+                    // Handle errors indirectly through the map's error event
+                    if (map) {
+                      map.on('error', (e: any) => {
+                        console.error('Map error:', e);
+                        const errorMessage = e.error?.message || 'Unknown map error';
+                        setMapError(new Error(errorMessage));
+                      });
+                    }
+                  }}
+                  enableControls={true}
+                  enableSearch={true}
+                  mapStyle="streets-v12"
+                />
             </div>
           </Card>
-          
-          <Card>
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold">Implementation Notes</h2>
-            </div>
-            <div className="p-4">
-              <p className="text-sm text-gray-600 mb-4">
-                This is a placeholder for the map integration feature. In the full implementation, we will:
-              </p>
-              <ul className="text-sm text-gray-600 list-disc pl-5 space-y-2">
-                <li>Integrate with Mapbox API</li>
-                <li>Implement real-time location updates</li>
-                <li>Create geofencing for pickup/delivery notifications</li>
-                <li>Add route optimization</li>
-                <li>Implement ETA calculations</li>
-              </ul>
-            </div>
-          </Card>
+          </div>
         </div>
-      </div>
+      </VehicleTrackingProvider>
     </div>
   );
 } 

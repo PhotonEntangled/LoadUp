@@ -1,106 +1,69 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { cn } from '../../lib/utils.js';
+"use client";
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
+import { Toast as ToastType } from './use-toast';
+import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
-  duration?: number;
+// Simple utility function to conditionally join class names
+const cn = (...classes: (string | boolean | undefined | null | {[key: string]: boolean})[]) => {
+  return classes
+    .filter(Boolean)
+    .map(cls => {
+      if (typeof cls === 'object' && cls !== null) {
+        return Object.entries(cls)
+          .filter(([_, value]) => Boolean(value))
+          .map(([key]) => key);
+      }
+      return cls;
+    })
+    .flat()
+    .join(' ');
+};
+
+interface ToastProps {
+  toast: ToastType;
+  onDismiss: (id: string) => void;
 }
 
-interface ToastContextType {
-  toasts: Toast[];
-  addToast: (message: string, type: ToastType, duration?: number) => void;
-  removeToast: (id: string) => void;
-}
-
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
-
-export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const addToast = (message: string, type: ToastType, duration = 5000) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
-
-  return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
-      {children}
-      <ToastContainer />
-    </ToastContext.Provider>
-  );
-}
-
-export function useToast() {
-  const context = useContext(ToastContext);
-  if (context === undefined) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
-}
-
-function ToastContainer() {
-  const { toasts, removeToast } = useToast();
-
-  return (
-    <div className="fixed bottom-0 right-0 z-50 m-4 flex flex-col space-y-2">
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
-      ))}
-    </div>
-  );
-}
-
-function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+export function Toast({ toast, onDismiss }: ToastProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  
   useEffect(() => {
-    if (toast.duration) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, toast.duration);
-      return () => clearTimeout(timer);
-    }
-  }, [toast, onClose]);
-
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 10);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   return (
     <div
       className={cn(
-        'flex w-72 items-center justify-between rounded-md p-4 shadow-md',
+        "max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto overflow-hidden transition-all transform",
+        "border border-gray-200",
         {
-          'bg-green-500 text-white': toast.type === 'success',
-          'bg-red-500 text-white': toast.type === 'error',
-          'bg-yellow-500 text-white': toast.type === 'warning',
-          'bg-blue-500 text-white': toast.type === 'info',
+          "translate-y-0 opacity-100": isVisible,
+          "translate-y-2 opacity-0": !isVisible,
+          "bg-red-50 border-red-200": toast.variant === "destructive",
+          "bg-green-50 border-green-200": toast.variant === "success",
+          "bg-yellow-50 border-yellow-200": toast.variant === "warning",
         }
       )}
     >
-      <p className="text-sm">{toast.message}</p>
-      <button
-        onClick={onClose}
-        className="ml-2 text-white hover:text-gray-200"
-        aria-label="Close"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
+      <div className="p-4">
+        <div className="flex items-start">
+          <div className="flex-1">
+            {toast.title && <div className="font-medium">{toast.title}</div>}
+            {toast.description && <div className="mt-1 text-sm text-gray-500">{toast.description}</div>}
+          </div>
+          <button
+            onClick={() => onDismiss(toast.id)}
+            className="ml-4 flex-shrink-0 rounded-md p-1 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 } 

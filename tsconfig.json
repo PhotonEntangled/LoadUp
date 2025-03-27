@@ -8,7 +8,7 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -20,10 +20,12 @@
       }
     ],
     "paths": {
-      "@loadup/*": ["packages/*/src"]
+      "@loadup/*": ["packages/*/src"],
+      "@/*": ["src/*"]
     },
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["packages/**/*", "__tests__/**/*", "e2e/**/*", ".next/types/**/*.ts"],
+  "include": ["packages/**/*", "__tests__/**/*", "e2e/**/*", ".next/types/**/*.ts", "src/**/*"],
   "exclude": ["node_modules", "dist", "**/dist/**"]
 }

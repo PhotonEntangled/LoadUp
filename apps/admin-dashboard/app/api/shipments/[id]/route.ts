@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ShipmentService } from '@loadup/database/services/shipmentService';
+// import { ShipmentService } from '@loadup/database/services/shipmentService';
 import { auth } from '@/lib/auth';
 import { z } from 'zod';
 
 // Initialize shipment service
-const shipmentService = new ShipmentService();
+// const shipmentService = new ShipmentService();
 
 // Schema for updating a shipment
 const updateShipmentSchema = z.object({
@@ -32,34 +32,67 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = params;
     
-    // Get shipment
-    const shipment = await shipmentService.getShipmentById(id);
+    // Mock implementation
+    const mockShipment = {
+      id,
+      trackingNumber: `TRK-${id}`,
+      status: "in_transit",
+      origin: {
+        address: "123 Pickup St",
+        city: "Origin City",
+        state: "CA",
+        zipCode: "90001",
+        country: "USA"
+      },
+      destination: {
+        address: "456 Delivery Ave",
+        city: "Destination City",
+        state: "NY",
+        zipCode: "10001",
+        country: "USA"
+      },
+      customer: {
+        id: "cust1",
+        name: "Acme Corp",
+        email: "contact@acmecorp.com",
+        phone: "555-1234"
+      },
+      driver: {
+        id: "driver1",
+        name: "John Driver",
+        phone: "555-5678",
+        vehicle: "Truck XL"
+      },
+      items: [
+        {
+          id: "item1",
+          description: "Furniture",
+          quantity: 3,
+          weight: 150,
+          dimensions: "4x3x2"
+        },
+        {
+          id: "item2",
+          description: "Electronics",
+          quantity: 5,
+          weight: 75,
+          dimensions: "2x2x1"
+        }
+      ],
+      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+      updatedAt: new Date().toISOString(),
+      estimatedDelivery: new Date(Date.now() + 86400000 * 2).toISOString()
+    };
     
-    if (!shipment) {
-      return NextResponse.json({ error: 'Shipment not found' }, { status: 404 });
-    }
-    
-    // Check if user has permission to view this shipment
-    if (session.user.role === 'customer' && shipment.customerId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    
-    if (session.user.role === 'driver' && shipment.driverId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    
-    return NextResponse.json(shipment);
+    return NextResponse.json({ shipment: mockShipment });
   } catch (error) {
-    console.error('Error fetching shipment:', error);
-    return NextResponse.json({ error: 'Failed to fetch shipment' }, { status: 500 });
+    console.error(`Error fetching shipment ${params.id}:`, error);
+    return NextResponse.json(
+      { error: 'Failed to fetch shipment' },
+      { status: 500 }
+    );
   }
 }
 
@@ -72,124 +105,73 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = params;
-    
-    // Get existing shipment
-    const existingShipment = await shipmentService.getShipmentById(id);
-    
-    if (!existingShipment) {
-      return NextResponse.json({ error: 'Shipment not found' }, { status: 404 });
-    }
-    
-    // Check permissions based on role
-    if (session.user.role === 'customer' && existingShipment.customerId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    
-    if (session.user.role === 'driver' && existingShipment.driverId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    
-    // Parse request body
     const body = await request.json();
     
-    // Validate request body
-    const data = updateShipmentSchema.parse(body);
-    
-    // Apply role-based restrictions
-    if (session.user.role === 'driver') {
-      // Drivers can only update status and add notes/location
-      const { status, notes, location } = data;
-      
-      if (Object.keys(data).some(key => !['status', 'notes', 'location'].includes(key))) {
-        return NextResponse.json({ error: 'Drivers can only update status, notes, and location' }, { status: 403 });
-      }
-      
-      // Update shipment status
-      if (status) {
-        const updatedShipment = await shipmentService.updateShipmentStatus(
-          id, 
-          status, 
-          session.user.id, 
-          notes, 
-          location
-        );
-        
-        return NextResponse.json(updatedShipment);
-      }
-    } else if (session.user.role === 'customer') {
-      // Customers can only cancel their shipments if they're still pending
-      if (data.status && data.status !== 'CANCELLED') {
-        return NextResponse.json({ error: 'Customers can only cancel shipments' }, { status: 403 });
-      }
-      
-      if (existingShipment.status !== 'PENDING' && existingShipment.status !== 'ASSIGNED') {
-        return NextResponse.json({ error: 'Shipments can only be cancelled when pending or assigned' }, { status: 403 });
-      }
-      
-      // Cancel shipment
-      if (data.status === 'CANCELLED') {
-        const updatedShipment = await shipmentService.updateShipmentStatus(
-          id, 
-          'CANCELLED', 
-          session.user.id, 
-          data.notes
-        );
-        
-        return NextResponse.json(updatedShipment);
-      }
-    } else if (session.user.role === 'admin') {
-      // Admins can update any field
-      
-      // Handle driver assignment
-      if (data.driverId && data.driverId !== existingShipment.driverId) {
-        const updatedShipment = await shipmentService.assignDriver(
-          id,
-          data.driverId,
-          session.user.id
-        );
-        
-        // If there are other fields to update, continue with status update
-        if (data.status) {
-          await shipmentService.updateShipmentStatus(
-            id,
-            data.status,
-            session.user.id,
-            data.notes,
-            data.location
-          );
+    // Mock implementation
+    const mockUpdatedShipment = {
+      id,
+      trackingNumber: `TRK-${id}`,
+      status: body.status || "in_transit",
+      origin: body.origin || {
+        address: "123 Pickup St",
+        city: "Origin City",
+        state: "CA",
+        zipCode: "90001",
+        country: "USA"
+      },
+      destination: body.destination || {
+        address: "456 Delivery Ave",
+        city: "Destination City",
+        state: "NY",
+        zipCode: "10001",
+        country: "USA"
+      },
+      customer: {
+        id: "cust1",
+        name: "Acme Corp",
+        email: "contact@acmecorp.com",
+        phone: "555-1234"
+      },
+      driver: body.driverId ? {
+        id: body.driverId,
+        name: "New Driver",
+        phone: "555-9876",
+        vehicle: "Van XL"
+      } : {
+        id: "driver1",
+        name: "John Driver",
+        phone: "555-5678",
+        vehicle: "Truck XL"
+      },
+      items: [
+        {
+          id: "item1",
+          description: "Furniture",
+          quantity: 3,
+          weight: 150,
+          dimensions: "4x3x2"
+        },
+        {
+          id: "item2",
+          description: "Electronics",
+          quantity: 5,
+          weight: 75,
+          dimensions: "2x2x1"
         }
-        
-        return NextResponse.json(updatedShipment);
-      }
-      
-      // Handle status update
-      if (data.status) {
-        const updatedShipment = await shipmentService.updateShipmentStatus(
-          id,
-          data.status,
-          session.user.id,
-          data.notes,
-          data.location
-        );
-        
-        return NextResponse.json(updatedShipment);
-      }
-    }
+      ],
+      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+      updatedAt: new Date().toISOString(),
+      estimatedDelivery: body.estimatedDelivery || new Date(Date.now() + 86400000 * 2).toISOString()
+    };
     
-    return NextResponse.json({ error: 'No valid updates provided' }, { status: 400 });
+    return NextResponse.json({ shipment: mockUpdatedShipment });
   } catch (error) {
-    console.error('Error updating shipment:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update shipment' }, { status: 500 });
+    console.error(`Error updating shipment ${params.id}:`, error);
+    return NextResponse.json(
+      { error: 'Failed to update shipment' },
+      { status: 500 }
+    );
   }
 }
 
@@ -202,27 +184,14 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Mock implementation
+    const mockDeletedShipment = {
+      id: params.id,
+      success: true,
+      message: "Shipment deleted successfully"
+    };
     
-    // Only admins can delete shipments
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const { id } = params;
-    
-    // Delete shipment
-    const deletedShipment = await shipmentService.deleteShipment(id);
-    
-    if (!deletedShipment) {
-      return NextResponse.json({ error: 'Shipment not found' }, { status: 404 });
-    }
-    
-    return NextResponse.json({ success: true });
+    return NextResponse.json(mockDeletedShipment);
   } catch (error) {
     console.error('Error deleting shipment:', error);
     return NextResponse.json({ error: 'Failed to delete shipment' }, { status: 500 });

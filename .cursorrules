@@ -1,50 +1,117 @@
-You are an expert **full-stack logistics AI assistant** for the LoadUp app, specialized in the following technologies:
+{
+  "name": "LoadUp Cursor SOP",
+  "version": "1.0.0",
+  "description": "Master Cursor rules for LoadUp logistics platform development. Applies business-wide logic across all dev and planning contexts.",
 
-- **Frontend:** React Native (Expo), Next.js, TailwindCSS, Zustand  
-- **Backend & DB:** Drizzle ORM, PostgreSQL, Node.js  
-- **AI & APIs:** Google Cloud Vision (OCR), Mapbox (Live Tracking), Stripe (Payments)  
+  "globalBehavior": {
+    "strategy": "Always approach prompts using sequential thinking first. Then, apply knowledge graph memory and MCP tools where appropriate before responding.",
+    "toolPriority": [
+      "sequentialthinking",
+      "knowledge-graph",
+      "browser-tools"
+    ],
+    "fallbackBehavior": "If you encounter unexpected behavior, unknown commands, or unregistered tools, notify the user. This may be due to MCP tool overload (currently 46/40 tools enabled). Recommend disabling any unused MCP modules."
+  },
 
-### **General Principles**
-- Always follow **best practices** for each framework.
-- Ensure **performance, maintainability, and scalability** in all solutions.
-- Prioritize **clean, readable, and reusable code**.
+  "promptHandling": {
+    "contextManagement": {
+      "shortPrompts": "Interpret using current graph state and planning files before expanding.",
+      "longPrompts": "Deconstruct into atomic tasks and track them with sequential thinking."
+    },
+    "graphUsage": {
+      "onPromptReceive": "Search knowledge graph for related nodes or tags.",
+      "onPromptComplete": "Update or create new graph entries. Never leave a completed task unrecorded.",
+      "nodeTags": ["bug", "milestone", "refactor", "firebase", "simulation", "tracking"]
+    },
+    "errorResponsePolicy": {
+      "default": "Diagnose root cause using MCP browser tools (console logs, network logs, element states). Use sequential thinking to isolate error path. Then log issue in graph under debug node.",
+      "reporting": "All recurring or unresolved errors must be logged in knowledge graph and linked to planning.md"
+    }
+  },
 
----
+  "toolUsage": {
+    "browser": {
+      "useOn": ["unclear crash origins", "maximum update errors", "loading failures"],
+      "defaultCommands": [
+        "getConsoleLogs",
+        "getSelectedElement",
+        "runAuditMode"
+      ]
+    },
+    "knowledge-graph": {
+      "requiredNodes": ["component", "bug", "plan", "decision"],
+      "habit": "Always link current prompt to a graph node. Never complete a task without syncing the graph."
+    },
+    "sequentialthinking": {
+      "mandatoryFor": ["multi-phase prompts", "planning", "debugging", "feature integration"]
+    }
+  },
 
-### **Frontend (React Native + Next.js + Zustand + TailwindCSS)**
-- Use **React Native best practices** with Expo for mobile apps.
-- Follow **Next.js file structure** for routing, SSR, and static generation.
-- Manage state using **Zustand**, avoiding unnecessary re-renders.
-- Write **TailwindCSS utility classes** efficiently for styling.
+  "devStrategy": {
+    "phasedDevelopment": {
+      "defaultPattern": "Plan > Mock > Stabilize > Expand > Integrate > Document",
+      "requireMockFirst": true,
+      "preferAtomism": true
+    },
+    "trackingPageStrategy": {
+      "priority": ["stability", "mock support", "real-time switching"],
+      "failurePolicy": "Fallback to mock mode using env flag or MCP.json if Firebase fails."
+    },
+    "firebaseStrategy": {
+      "tokenPolicy": "Avoid connecting if `USE_MOCK_ONLY_MODE` is true in mcp.json",
+      "integrationSteps": "Always test Firebase separately before full tracking page load."
+    }
+  },
 
----
+  "mapArchitecture": {
+    "coreFiles": {
+      "initialization": [
+        "src/components/map/SimulatedVehicleMap.tsx",
+        "src/utils/maps/MapManager.ts",
+        "src/utils/mapbox-token.ts"
+      ],
+      "markerCreation": [
+        "src/components/map/MapMarkerLayer.tsx",
+        "src/utils/map/vehicleMarkerUtils.ts",
+        "src/components/map/MapRouteLayer.tsx"
+      ],
+      "vehicleManagement": [
+        "src/store/useUnifiedVehicleStore.ts",
+        "src/services/VehicleTrackingService.ts",
+        "src/services/shipment/SimulationFromShipmentService.ts"
+      ]
+    },
+    "knownIssues": {
+      "duplicateMap": "Multiple map containers with similar IDs causing rendering issues",
+      "markerVisibility": "Inconsistent marker creation between components and CSS conflicts",
+      "animationButtons": "Connection issues between UI components and simulation services"
+    },
+    "bestPractices": {
+      "domManipulation": "Direct DOM manipulation is required and appropriate for Mapbox markers",
+      "layerArchitecture": "Separate map initialization from marker/route rendering for cleaner code",
+      "directionsApiStrategy": "Create a separate MapDirectionsLayer component following MapMarkerLayer pattern"
+    }
+  },
 
-### **Backend & Database (Node.js + Drizzle ORM + PostgreSQL)**
-- Use **Drizzle ORM** to define clean, type-safe database schemas.
-- Ensure database models are **optimized for logistics operations**.
-- Follow **best security practices** when handling sensitive shipment data.
-- Implement **structured queries** that scale with **PostgreSQL indexing**.
+  "fileBehavior": {
+    "watch": [
+      "PLANNING.md",
+      "implementation-plan-map-tracking.md",
+      "simulation_implementation_plan.md"
+    ],
+    "onUpdate": "Mention when any of these files are modified, and make a record in the graph when a milestone is completed."
+  },
 
----
-
-### **AI & APIs (Google Cloud Vision, Mapbox, Stripe)**
-- Extract structured text from images using **Google Cloud Vision OCR**.
-- Integrate **Mapbox** for real-time shipment tracking.
-- Handle payments and transactions securely using **Stripe API**.
-
----
-
-### **Workflow & Code Assistance**
-- When asked for **code**, generate **fully functional, clean, and DRY** implementations.
-- If required, create **full TypeScript types & Zod validations**.
-- When analyzing **.txt shipment files**, ensure **full standardization** before storage.
-- If a request is unclear, **ask clarifying questions** before proceeding.
-
----
-
-### **🚀 Key Capabilities This Rule Unlocks**
-- **Full-stack coding support** (React Native, Next.js, Drizzle ORM, Zustand)
-- **Database & API integration help** (PostgreSQL, Stripe, Mapbox)
-- **AI-powered OCR assistance** (Google Cloud Vision)
-- **Performance optimization tips** for frontend & backend
-
+  "mcpJsonSupport": {
+    "envFlags": {
+      "USE_MOCK_ONLY_MODE": {
+        "description": "Force all tracking features to use mock data only (no Firebase or WebSocket calls).",
+        "fallbackBehavior": "Skip real-time subscriptions. Use static or mock data instead."
+      },
+      "ENABLE_GRAPH_SUMMARY": {
+        "description": "Summarize knowledge graph node usage after every prompt.",
+        "default": false
+      }
+    }
+  }
+}

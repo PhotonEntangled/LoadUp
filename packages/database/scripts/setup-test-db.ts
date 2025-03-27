@@ -2,7 +2,7 @@ import pkg from 'pg';
 const { Client } = pkg;
 import dotenv from 'dotenv';
 import path from 'path';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle } from '@loadup/database/dist/drizzle.js';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { createInterface } from 'readline';
 import { stdin as input, stdout as output } from 'process';

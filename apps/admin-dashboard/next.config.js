@@ -1,10 +1,82 @@
 /** @type {import('next').NextConfig} */
+
+// Add Sentry configuration
+const { withSentryConfig } = require('@sentry/nextjs');
+
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   experimental: {
-    serverActions: true,
+    // Server Actions are available by default in Next.js 14.1.0
+    instrumentationHook: true
+  },
+  // Add Vercel-specific configurations
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
+  compress: true,
+  // Add output export configuration
+  output: 'standalone',
+  // Add rewrites for API (if needed)
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 
+          process.env.NODE_ENV === 'production'
+            ? `${process.env.API_URL || 'https://api.loadup.com/api'}/:path*`
+            : 'http://localhost:3001/api/:path*',
+      },
+    ];
+  },
+  // Enable Vercel Analytics
+  analyticsId: process.env.VERCEL_ANALYTICS_ID,
+  // Ignore build errors from external dependencies
+  webpack: (config, { isServer }) => {
+    // Filter out certain warnings in the build from node_modules
+    config.infrastructureLogging = {
+      level: 'error',
+    };
+
+    if (!isServer) {
+      // Fixes npm packages that depend on `fs` module
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        module: false,
+      };
+    }
+
+    return config;
   },
 };
 
-module.exports = nextConfig; 
+// Only use Sentry if DSN is provided
+if (!process.env.SENTRY_DSN) {
+  module.exports = process.env.ANALYZE === 'true'
+    ? require('@next/bundle-analyzer')({ enabled: true })(nextConfig)
+    : nextConfig;
+} else {
+  // Sentry configuration for Next.js
+  const sentryWebpackPluginOptions = {
+    // Additional config options for the Sentry Webpack plugin
+    silent: true, // Suppresses all logs
+    dryRun: false,
+    
+    // For Next.js 14, we should use the instrumentation hook instead of the webpack plugins
+    disableServerWebpackPlugin: true,
+    disableClientWebpackPlugin: true,
+    
+    // Allow Sentry to handle errors gracefully
+    errorHandler: (err, invokeErr, compilation) => {
+      compilation.warnings.push('Sentry webpack plugin error: ' + err.message);
+      return null; // Don't fail the build for Sentry errors
+    },
+  };
+
+  // Export with Sentry configuration applied
+  module.exports = process.env.ANALYZE === 'true'
+    ? require('@next/bundle-analyzer')({
+        enabled: true,
+      })(withSentryConfig(nextConfig, sentryWebpackPluginOptions))
+    : withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+} 

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { UserRole } from "@/auth";
 
 // Shipment type definition
 type Shipment = {
@@ -215,7 +216,7 @@ export default function ShipmentDetailPage() {
         default:
           return [];
       }
-    } else if (userRole === "customer") {
+    } else if (userRole === UserRole.USER) {
       // Customers can only cancel pending or assigned shipments
       if (["PENDING", "ASSIGNED"].includes(currentStatus)) {
         return [{ value: "CANCELLED", label: "Cancelled" }];
@@ -285,7 +286,7 @@ export default function ShipmentDetailPage() {
       return ["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(currentStatus);
     }
     
-    if (userRole === "customer" && shipment.customerId === session.user.id) {
+    if (userRole === UserRole.USER && shipment.customerId === session.user.id) {
       return ["PENDING", "ASSIGNED"].includes(currentStatus);
     }
     

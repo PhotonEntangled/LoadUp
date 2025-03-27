@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Search, Filter } from 'lucide-react';
 import { format } from 'date-fns';
+import { UserRole } from "@/auth";
 
 // Status badge colors
 const statusColors: Record<string, string> = {
@@ -222,7 +223,7 @@ export default function ShipmentsPage() {
         <h1 className="text-3xl font-bold">Shipments</h1>
         
         {/* Only show create button for admins and customers */}
-        {(session?.user?.role === 'admin' || session?.user?.role === 'customer') && (
+        {(session?.user?.role === UserRole.ADMIN || session?.user?.role === UserRole.USER) && (
           <Button onClick={handleCreateShipment}>
             <Plus className="h-4 w-4 mr-2" />
             Create Shipment

@@ -1,0 +1,295 @@
+/**
+ * BACKUP FILE - Original SimulationEngine.ts
+ * 
+ * This file is kept as a reference only. The actual implementation has been
+ * removed to rebuild it from scratch.
+ */
+
+/**
+ * SimulationEngine
+ * 
+ * Core engine for handling the vehicle simulation. This class manages:
+ * - Animation frame loop for smooth updates
+ * - Time control (speed, pause)
+ * - Vehicle movement calculations
+ * - Stop arrivals and departures
+ * - Geofence detection
+ */
+
+import { useSimulationStore } from '../store/useSimulationStore';
+import { SimulationVehicle, SimulationStop } from '../types/simulation';
+import { 
+  calculateNewPosition, 
+  calculateBearing, 
+  calculateDistance,
+  isInGeofence 
+} from '../utils/geoUtils';
+
+class SimulationEngine {
+  private isRunning: boolean = false;
+  private speed: number = 1;
+  private lastTickTime: number = 0;
+  private animationFrameId: number | null = null;
+  
+  // Constants for simulation behavior
+  private readonly TICK_INTERVAL_MS = 100; // Update at most every 100ms
+  private readonly DEFAULT_VEHICLE_SPEED = 40; // km/h
+  private readonly LOADING_TIME_MS = 5 * 60 * 1000; // 5 minutes
+  private readonly UNLOADING_TIME_MS = 3 * 60 * 1000; // 3 minutes
+  
+  constructor() {
+    this.tick = this.tick.bind(this);
+  }
+  
+  /**
+   * Start the simulation
+   */
+  start() {
+    if (this.isRunning) return;
+    
+    const store = useSimulationStore.getState();
+    this.isRunning = true;
+    this.speed = store.speed;
+    this.lastTickTime = performance.now();
+    
+    // Start the animation frame loop
+    this.animationFrameId = requestAnimationFrame(this.tick);
+    
+    // Update the store state
+    store.start();
+    
+    console.log('Simulation started with speed:', this.speed);
+  }
+  
+  /**
+   * Stop the simulation
+   */
+  stop() {
+    if (!this.isRunning) return;
+    
+    this.isRunning = false;
+    
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    
+    // Update the store state
+    useSimulationStore.getState().stop();
+    
+    console.log('Simulation stopped');
+  }
+  
+  /**
+   * Set the simulation speed multiplier
+   * @param speed Speed multiplier (1 = real time, 2 = 2x speed, etc.)
+   */
+  setSpeed(speed: number) {
+    this.speed = speed;
+    useSimulationStore.getState().setSpeed(speed);
+    console.log('Simulation speed set to:', speed);
+  }
+  
+  /**
+   * Reset the simulation to initial state
+   */
+  reset() {
+    this.stop();
+    useSimulationStore.getState().reset();
+    console.log('Simulation reset');
+  }
+  
+  /**
+   * The main tick function called on each animation frame
+   */
+  private tick(timestamp: number) {
+    if (!this.isRunning) return;
+    
+    const elapsed = timestamp - this.lastTickTime;
+    
+    // Only update if enough time has passed
+    if (elapsed >= this.TICK_INTERVAL_MS) {
+      // Convert to seconds and apply speed multiplier
+      const simulationElapsed = (elapsed / 1000) * this.speed;
+      
+      this.lastTickTime = timestamp;
+      this.updateSimulation(simulationElapsed);
+    }
+    
+    // Request the next frame
+    this.animationFrameId = requestAnimationFrame(this.tick);
+  }
+  
+  /**
+   * Update all simulation elements based on elapsed time
+   * @param deltaTimeSeconds Elapsed time in seconds (adjusted for simulation speed)
+   */
+  private updateSimulation(deltaTimeSeconds: number) {
+    const store = useSimulationStore.getState();
+    const { vehicles, currentTime } = store;
+    
+    // Update simulation time
+    const newTime = new Date(currentTime.getTime() + (deltaTimeSeconds * 1000));
+    store.setCurrentTime(newTime);
+    
+    // Process each vehicle
+    vehicles.forEach(vehicle => {
+      this.updateVehicle(vehicle, deltaTimeSeconds);
+    });
+  }
+  
+  /**
+   * Update a single vehicle's position and state
+   * @param vehicle The vehicle to update
+   * @param deltaTimeSeconds Elapsed time in seconds
+   */
+  private updateVehicle(vehicle: SimulationVehicle, deltaTimeSeconds: number) {
+    // Skip vehicles that aren't moving
+    if (vehicle.status !== 'moving') {
+      this.handleStationaryVehicle(vehicle, deltaTimeSeconds);
+      return;
+    }
+    
+    // Skip vehicles without routes
+    if (!vehicle.route || vehicle.route.completed) return;
+    
+    // Get the current destination
+    const currentStopIndex = vehicle.route.currentStopIndex;
+    const currentStop = vehicle.route.stops[currentStopIndex];
+    
+    if (!currentStop) return;
+    
+    // Calculate distance to destination
+    const distanceToStop = calculateDistance(
+      vehicle.location.latitude,
+      vehicle.location.longitude,
+      currentStop.location.latitude,
+      currentStop.location.longitude
+    );
+    
+    // Calculate bearing to destination
+    const bearingToStop = calculateBearing(
+      vehicle.location.latitude,
+      vehicle.location.longitude,
+      currentStop.location.latitude,
+      currentStop.location.longitude
+    );
+    
+    // Update vehicle heading (with some smoothing to look natural)
+    const headingDiff = ((bearingToStop - vehicle.heading + 540) % 360) - 180;
+    const newHeading = vehicle.heading + (headingDiff * Math.min(1, deltaTimeSeconds * 0.5));
+    
+    // Set vehicle speed (in km/h)
+    const speed = vehicle.speed || this.DEFAULT_VEHICLE_SPEED;
+    
+    // Calculate movement distance for this update (km)
+    const movementDistance = (speed * deltaTimeSeconds) / 3600;
+    
+    // Check if we've arrived at the destination
+    if (distanceToStop <= (currentStop.geofenceRadius / 1000) || 
+        distanceToStop <= movementDistance) {
+      // We've arrived, handle the arrival
+      this.handleStopArrival(vehicle, currentStop);
+    } else {
+      // Keep moving toward the destination
+      const newPosition = calculateNewPosition(
+        vehicle.location.latitude,
+        vehicle.location.longitude,
+        bearingToStop,
+        movementDistance
+      );
+      
+      // Update the vehicle in the store
+      useSimulationStore.getState().updateVehicle(vehicle.id, {
+        location: newPosition,
+        heading: newHeading,
+        speed
+      });
+    }
+  }
+  
+  /**
+   * Handle a vehicle that's stationary (loading, unloading, etc.)
+   * @param vehicle The stationary vehicle
+   * @param deltaTimeSeconds Elapsed time in seconds
+   */
+  private handleStationaryVehicle(vehicle: SimulationVehicle, deltaTimeSeconds: number) {
+    if (!vehicle.route) return;
+    
+    const store = useSimulationStore.getState();
+    const { currentTime } = store;
+    
+    // Check if vehicle is loading or unloading
+    if (vehicle.status === 'loading' || vehicle.status === 'unloading') {
+      const currentStop = vehicle.route.stops[vehicle.route.currentStopIndex];
+      if (!currentStop) return;
+      
+      // If we don't have an arrival time, set it
+      if (!currentStop.arrivalTime) {
+        store.updateStop(vehicle.id, currentStop.id, {
+          arrivalTime: new Date(currentTime)
+        });
+        return;
+      }
+      
+      // Calculate how long we've been at this stop
+      const timeAtStop = currentTime.getTime() - currentStop.arrivalTime.getTime();
+      const requiredTime = vehicle.status === 'loading' 
+        ? this.LOADING_TIME_MS 
+        : this.UNLOADING_TIME_MS;
+      
+      // Check if we've spent enough time at this stop
+      if (timeAtStop >= requiredTime) {
+        // Set departure time
+        store.updateStop(vehicle.id, currentStop.id, {
+          departureTime: new Date(currentTime),
+          completed: true
+        });
+        
+        // Start moving to the next stop or complete route
+        if (vehicle.route.currentStopIndex < vehicle.route.stops.length - 1) {
+          // Move to next stop
+          store.advanceToNextStop(vehicle.id);
+          store.updateVehicle(vehicle.id, { status: 'moving' });
+        } else {
+          // Route completed
+          store.updateRoute(vehicle.id, { completed: true });
+          store.updateVehicle(vehicle.id, { status: 'idle' });
+        }
+      }
+    }
+  }
+  
+  /**
+   * Handle vehicle arrival at a stop
+   * @param vehicle The vehicle that arrived
+   * @param stop The stop at which the vehicle arrived
+   */
+  private handleStopArrival(vehicle: SimulationVehicle, stop: SimulationStop) {
+    const store = useSimulationStore.getState();
+    
+    // Update vehicle position to exactly match the stop
+    store.updateVehicle(vehicle.id, {
+      location: stop.location,
+      speed: 0,
+      status: stop.type === 'pickup' ? 'loading' : 'unloading'
+    });
+    
+    // Record the arrival geofence event
+    const arrivalEvent: GeofenceEvent = {
+      id: uuidv4(),
+      vehicleId: vehicle.id,
+      stopId: stop.id,
+      type: 'arrival',
+      timestamp: new Date(store.currentTime),
+      location: stop.location
+    };
+    
+    // TODO: Store the geofence event
+    console.log('Geofence arrival event:', arrivalEvent);
+  }
+}
+
+// Export a singleton instance to be used app-wide
+const simulationEngine = new SimulationEngine();
+export default simulationEngine; 

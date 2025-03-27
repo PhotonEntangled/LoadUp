@@ -115,7 +115,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Set environment variables for testing
-process.env.MAPBOX_API_KEY = 'test_mapbox_key';
+process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN = 'test_mapbox_key';
 process.env.GOOGLE_CLOUD_VISION_API_KEY = 'test_vision_key';
 process.env.STRIPE_SECRET_KEY = 'test_stripe_key';
 process.env.STRIPE_WEBHOOK_SECRET = 'test_webhook_secret';

@@ -2,32 +2,30 @@ import { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { z } from "zod";
 import { signInUser } from "./supabase";
-
-// Define role types
-export type UserRole = 'admin' | 'driver' | 'customer';
+import { UserRole } from "@/auth";
 
 // Define role-based route access
-const roleBasedAccess: Record<string, UserRole[]> = {
-  '/dashboard': ['admin', 'driver', 'customer'],
-  '/dashboard/admin': ['admin'],
-  '/dashboard/drivers': ['admin'],
-  '/dashboard/customers': ['admin'],
-  '/dashboard/shipments': ['admin', 'driver'],
-  '/dashboard/settings': ['admin'],
-  '/dashboard/profile': ['admin', 'driver', 'customer'],
+const roleBasedAccess: Record<string, string[]> = {
+  '/dashboard': [UserRole.ADMIN, UserRole.DRIVER, UserRole.USER],
+  '/dashboard/admin': [UserRole.ADMIN],
+  '/dashboard/drivers': [UserRole.ADMIN],
+  '/dashboard/customers': [UserRole.ADMIN],
+  '/dashboard/shipments': [UserRole.ADMIN, UserRole.DRIVER],
+  '/dashboard/settings': [UserRole.ADMIN],
+  '/dashboard/profile': [UserRole.ADMIN, UserRole.DRIVER, UserRole.USER],
 };
 
 // Helper function to check if a user has access to a route
 const hasAccess = (pathname: string, userRole?: string): boolean => {
   // Check exact path match
   if (roleBasedAccess[pathname] && userRole) {
-    return roleBasedAccess[pathname].includes(userRole as UserRole);
+    return roleBasedAccess[pathname].includes(userRole);
   }
   
   // Check parent paths
   for (const path in roleBasedAccess) {
     if (pathname.startsWith(path) && userRole) {
-      return roleBasedAccess[path].includes(userRole as UserRole);
+      return roleBasedAccess[path].includes(userRole);
     }
   }
   
@@ -44,17 +42,21 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role || "customer";
-        token.email = user.email;
-        token.name = user.name;
+        token.id = user.id as string;
+        // Convert role to UserRole enum value or default to USER
+        const role = user.role || "user";
+        token.role = (role === "admin" ? UserRole.ADMIN : 
+                     role === "driver" ? UserRole.DRIVER : 
+                     UserRole.USER) as UserRole;
+        token.email = user.email as string;
+        token.name = user.name as string;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        session.user.role = token.role as UserRole;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
       }

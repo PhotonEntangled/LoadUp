@@ -1,4 +1,5 @@
-import { Client } from 'pg';
+import pg from 'pg';
+const { Client } = pg;
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { setupTestDatabase, teardownTestDatabase } from './setup-db.js';
 

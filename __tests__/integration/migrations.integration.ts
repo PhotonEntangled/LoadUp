@@ -1,4 +1,5 @@
-import { Client } from 'pg';
+import pg from 'pg';
+const { Client } = pg;
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import path from 'path';
