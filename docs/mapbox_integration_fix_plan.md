@@ -4,10 +4,10 @@
 
 After analyzing the console errors and implementation patterns, we've identified several key issues with our current Mapbox integration:
 
-1. **Ineffective Rate Limiting**
-   - Each component instance implements its own rate limiting
-   - Multiple instances make parallel requests, quickly hitting API limits
-   - Using custom fetch implementation instead of official Mapbox SDKs
+1. **Duplicate API Requests**
+   - Multiple components requesting the same routes simultaneously
+   - Missing effective debounce mechanism for identical requests
+   - Lack of request memoization/caching for repeated routes
 
 2. **React Component Update Loops**
    - MapDirectionsLayer triggers excessive API calls on prop changes
@@ -15,156 +15,15 @@ After analyzing the console errors and implementation patterns, we've identified
    - State updates causing cascading component re-renders
 
 3. **Store Integration Problems**
-   - Inconsistent access of vehicle store (array vs. Record structure)
-   - Type mismatches causing runtime errors
+   - Inconsistent access of vehicle store (some code using array methods on Record structure)
+   - For backward compatibility, we need to support both Array and Record formats
 
-## Industry Standard Solution
+## Simplified High-Leverage Solutions
 
-### 1. Use Official Mapbox SDKs
-
-The Mapbox documentation recommends using their official SDKs which provide built-in:
-- Rate limiting
-- Retry logic
-- Request batching
-- Caching
+### 1. Fix Store Data Access Pattern
 
 ```typescript
-// Replace our custom MapDirectionsService with official SDK
-import { DirectionsService } from '@mapbox/mapbox-sdk/services/directions';
-
-const directionsClient = new DirectionsService({ accessToken: mapboxToken });
-```
-
-### 2. Implement Request Batching and Queue
-
-```typescript
-// Centralized request manager
-class MapboxRequestManager {
-  private queue: Array<{ request: any, resolve: Function, reject: Function }> = [];
-  private processing = false;
-  private rateLimitRemaining = 300;
-  private resetTime = Date.now() + 60000;
-  
-  // Add request to queue
-  public enqueue(request: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.queue.push({ request, resolve, reject });
-      this.processQueue();
-    });
-  }
-  
-  // Process queue with rate limiting
-  private async processQueue() {
-    if (this.processing || this.queue.length === 0) return;
-    
-    this.processing = true;
-    
-    // Check rate limits
-    if (this.rateLimitRemaining <= 5) {
-      const now = Date.now();
-      if (now < this.resetTime) {
-        console.log(`Rate limit reached, pausing requests for ${Math.ceil((this.resetTime - now)/1000)}s`);
-        setTimeout(() => {
-          this.processing = false;
-          this.processQueue();
-        }, this.resetTime - now);
-        return;
-      }
-      this.rateLimitRemaining = 300;
-    }
-    
-    // Process next request
-    const { request, resolve, reject } = this.queue.shift()!;
-    
-    try {
-      const response = await request();
-      
-      // Update rate limit info from headers
-      if (response.headers) {
-        const remaining = response.headers.get('X-Rate-Limit-Remaining');
-        const reset = response.headers.get('X-Rate-Limit-Reset');
-        
-        if (remaining) this.rateLimitRemaining = parseInt(remaining, 10);
-        if (reset) this.resetTime = parseInt(reset, 10) * 1000;
-      }
-      
-      resolve(response);
-    } catch (error) {
-      reject(error);
-    } finally {
-      this.processing = false;
-      setTimeout(() => this.processQueue(), 200); // Add small delay between requests
-    }
-  }
-}
-
-export const mapboxRequestManager = new MapboxRequestManager();
-```
-
-### 3. Move Data Fetching Out of Component Lifecycle
-
-Use React Query or a similar data fetching library to manage API requests outside of the component lifecycle:
-
-```typescript
-// Using React Query for data fetching
-import { useQuery } from 'react-query';
-
-function useMapboxDirections(origin, destination, options = {}) {
-  return useQuery(
-    ['directions', origin, destination, options],
-    () => directionsClient.getDirections({
-      points: [origin, destination],
-      profile: options.profile || 'driving',
-      geometries: 'geojson'
-    }),
-    { 
-      // Cache results for 1 hour
-      staleTime: 60 * 60 * 1000,
-      // Retry failed requests
-      retry: 3,
-      // Use our request manager for rate limiting
-      queryFn: (key) => mapboxRequestManager.enqueue(() => /* API call */)
-    }
-  );
-}
-```
-
-### 4. Refactor Components to Prevent Update Loops
-
-```typescript
-// Refactored MapDirectionsLayer
-const MapDirectionsLayer = React.memo(({ origin, destination, ...props }) => {
-  // Use proper key for query to prevent unnecessary refetches
-  const queryKey = useMemo(() => 
-    JSON.stringify({ origin, destination, ...props }),
-    [origin, destination, props.profile]
-  );
-  
-  // Use custom hook that handles data fetching
-  const { data, isLoading, error } = useMapboxDirections(origin, destination, props);
-  
-  // Return null during loading or on error
-  if (isLoading) return null;
-  if (error) return null;
-  
-  // Properly memoize route elements to prevent recreation
-  const routeElements = useMemo(() => {
-    if (!data) return null;
-    return (
-      <Source id="directions-source" type="geojson" data={data.geoJson}>
-        <Layer {...layerProps} />
-      </Source>
-    );
-  }, [data]);
-  
-  return routeElements;
-});
-```
-
-### 5. Fix Store Integration
-
-```typescript
-// Fix store access to properly handle Record structure
+// Helper to access vehicle store consistently, supporting both formats
 function getVehicleFromStore(store, vehicleId) {
   const vehicles = store.getState().vehicles;
   
@@ -180,28 +39,217 @@ function getVehicleFromStore(store, vehicleId) {
   
   return null;
 }
+
+// Helper to update vehicle in store
+function updateVehicleInStore(store, vehicle) {
+  const currentVehicles = store.getState().vehicles;
+  
+  // Handle array format
+  if (Array.isArray(currentVehicles)) {
+    const updatedVehicles = currentVehicles.filter(v => v.id !== vehicle.id);
+    updatedVehicles.push(vehicle);
+    store.setState({ vehicles: updatedVehicles });
+    return;
+  }
+  
+  // Handle Record format
+  if (currentVehicles && typeof currentVehicles === 'object') {
+    store.setState({
+      vehicles: {
+        ...currentVehicles,
+        [vehicle.id]: vehicle
+      }
+    });
+    return;
+  }
+  
+  // Initialize if empty
+  if (!currentVehicles) {
+    store.setState({
+      vehicles: { [vehicle.id]: vehicle }
+    });
+  }
+}
 ```
 
-## Implementation Plan
+### 2. Implement Request Memoization
 
-1. **Phase 1: Stop the bleeding**
-   - Fix immediate store structure integration issues
-   - Implement central request queue for rate limiting
-   - Add proper error boundaries to prevent component crashes
+```typescript
+// Add memoization to MapDirectionsService
+class MapDirectionsService {
+  private memoCache = new Map<string, {
+    timestamp: number,
+    data: RouteInfo,
+    expires: number
+  }>();
+  private cacheDuration = 5 * 60 * 1000; // 5 minutes
+  
+  // Create cache key from request parameters
+  private createCacheKey(origin, destination, options): string {
+    return JSON.stringify({
+      origin,
+      destination,
+      options
+    });
+  }
+  
+  // Get directions with memoization
+  async getDirections(route, options = {}): Promise<RouteInfo> {
+    const cacheKey = this.createCacheKey(route.origin, route.destination, options);
+    
+    // Check cache first
+    const cached = this.memoCache.get(cacheKey);
+    const now = Date.now();
+    
+    if (cached && now < cached.expires) {
+      console.log('[MapDirectionsService] Using cached route data');
+      return cached.data;
+    }
+    
+    // If not in cache or expired, fetch from API
+    const result = await this.fetchDirectionsFromAPI(route, options);
+    
+    // Cache the result
+    this.memoCache.set(cacheKey, {
+      timestamp: now,
+      data: result,
+      expires: now + this.cacheDuration
+    });
+    
+    return result;
+  }
+}
+```
 
-2. **Phase 2: Modernize the architecture**
-   - Integrate official Mapbox SDKs
-   - Implement React Query for data fetching
-   - Move API logic to dedicated services
+### 3. Add True Debounce Mechanism
 
-3. **Phase 3: Optimize and stabilize**
-   - Add comprehensive caching
-   - Implement request batching and deduplication
-   - Add monitoring for API usage
+```typescript
+// Add proper debounce to MapDirectionsLayer
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Layer, Source } from 'react-map-gl';
+import { debounce } from 'lodash'; // Use standard debounce utility
 
-## Benefits of this Approach
+const MapDirectionsLayer = ({ origin, destination, waypoints = [], ...props }) => {
+  // State for route data
+  const [route, setRoute] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Create a stable cache key for this route request
+  const routeKey = useMemo(() => {
+    return JSON.stringify({ origin, destination, waypoints });
+  }, [origin, destination, waypoints]);
+  
+  // Create a debounced fetch function that only triggers once per key change
+  const debouncedFetchRoute = useCallback(
+    debounce(async (routeKey) => {
+      if (!origin || !destination) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Parse the route key
+        const { origin: parsedOrigin, destination: parsedDestination, waypoints: parsedWaypoints } = 
+          JSON.parse(routeKey);
+        
+        // Get route data
+        const routeData = await mapDirectionsService.getDirections({
+          origin: parsedOrigin,
+          destination: parsedDestination,
+          waypoints: parsedWaypoints
+        }, props);
+        
+        setRoute(routeData);
+        if (props.onRouteLoaded) {
+          props.onRouteLoaded(routeData);
+        }
+      } catch (err) {
+        console.error('[MapDirectionsLayer] Error loading route:', err);
+        setError(err);
+        if (props.onRouteError) {
+          props.onRouteError(err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }, 300), // 300ms debounce
+    [] // Stable reference
+  );
+  
+  // Trigger the debounced function when route key changes
+  useEffect(() => {
+    debouncedFetchRoute(routeKey);
+    
+    // Clean up
+    return () => {
+      debouncedFetchRoute.cancel();
+    };
+  }, [routeKey, debouncedFetchRoute]);
+  
+  // Render logic remains the same...
+};
+```
 
-1. **Reliability**: Proper rate limiting prevents API errors
-2. **Performance**: Caching and batching reduce API calls
-3. **Maintainability**: Using standard libraries reduces custom code
-4. **Scalability**: Architecture supports increasing route complexity 
+### 4. Simplify API Error Handling
+
+```typescript
+// Better error handling for Mapbox API
+async fetchDirectionsFromAPI(route, options) {
+  // Track API calls for rate limiting awareness
+  const now = Date.now();
+  this.lastRequestTime = now;
+  
+  try {
+    // Build the request URL & fetch data
+    const response = await fetch(url);
+    
+    // Track rate limit info
+    if (response.headers) {
+      const remaining = response.headers.get('X-Rate-Limit-Remaining');
+      if (remaining) this.rateLimitRemaining = parseInt(remaining, 10);
+    }
+    
+    // Handle common error cases
+    if (response.status === 429) {
+      console.warn('[MapDirectionsService] Rate limit exceeded, using fallback');
+      return this.createFallbackRoute(route);
+    }
+    
+    if (!response.ok) {
+      throw new Error(`Mapbox API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return this.processMapboxResponse(data, route);
+  } catch (error) {
+    console.error('[MapDirectionsService] API error:', error);
+    // Return fallback/mock route on any error
+    return this.createFallbackRoute(route);
+  }
+}
+```
+
+## Implementation Priority
+
+1. **Phase 1: Immediate Fixes** (Highest Priority)
+   - Fix store access pattern to handle both Array and Record formats
+   - Add basic memoization to prevent duplicate requests
+   - Fix component update loops to prevent infinite rendering
+
+2. **Phase 2: Optimization**
+   - Implement proper debounce mechanism
+   - Add more sophisticated request caching
+   - Improve error handling with better fallbacks
+
+3. **Phase 3: Long-term Improvements**
+   - Consider adopting Mapbox SDK if complexity increases
+   - Add monitoring for API usage tracking
+   - Optimize batch requests for multiple routes
+
+## Benefits of This Approach
+
+1. **Simplicity**: Focus on standard techniques without architectural changes
+2. **Performance**: Dramatically reduce API calls through memoization and debounce
+3. **Compatibility**: Support both Array and Record formats for backward compatibility
+4. **Maintainability**: Use standard libraries like lodash for debouncing 
