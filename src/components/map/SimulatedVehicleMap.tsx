@@ -8,20 +8,46 @@ import { Vehicle, SimulatedVehicle } from '../../types/vehicle';
 import { mapManager } from '../../utils/maps/MapManager';
 import { useUnifiedVehicleStore } from '../../store/useUnifiedVehicleStore';
 import { useMapViewStore } from '../../store/map/useMapViewStore';
-import { getMapboxPublicToken } from '../../utils/mapbox-token';
+import { getMapboxPublicToken, validateMapboxToken } from '../../utils/mapbox-token';
 import { 
   VEHICLE_MAP_ID, 
   DEFAULT_MAP_CENTER, 
   DEFAULT_MAP_ZOOM 
 } from '../../utils/maps/constants';
 import VehicleMarkerLayer from './VehicleMarkerLayer';
-import MapRouteLayer from './MapRouteLayer';
 import MapDirectionsLayer from './MapDirectionsLayer';
 import styles from './SimulatedVehicleMap.module.css';
 
 // Use type imports to avoid linter errors
 type MapRef = import('react-map-gl').MapRef;
 type ViewStateChangeEvent = import('react-map-gl').ViewStateChangeEvent;
+
+// Enhanced vehicle type for components that need route data
+interface VehicleWithRoute {
+  id: string;
+  type: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  route?: {
+    start: {
+      latitude: number;
+      longitude: number;
+      name?: string;
+    };
+    end: {
+      latitude: number;
+      longitude: number;
+      name?: string;
+    };
+    stops?: Array<{
+      latitude: number;
+      longitude: number;
+      name?: string;
+    }>;
+  };
+}
 
 // Define extended SimulatedVehicle type with routeData property
 interface ExtendedSimulatedVehicle extends SimulatedVehicle {
@@ -46,11 +72,53 @@ function isSimulatedVehicleWithRoute(vehicle: Vehicle): vehicle is ExtendedSimul
 
 // Type guard to check if a vehicle has real route data
 function hasRealRouteData(vehicle: Vehicle): vehicle is ExtendedSimulatedVehicle & { route: NonNullable<SimulatedVehicle['route']> } {
-  return ('routeData' in vehicle && 
-         (vehicle as any).routeData?.coordinates && 
-         Array.isArray((vehicle as any).routeData?.coordinates) &&
-         (vehicle as any).routeData?.coordinates.length > 0) &&
-         isSimulatedVehicleWithRoute(vehicle);
+  if (!vehicle) return false;
+  
+  // Check for routeData property with coordinates (primary method)
+  if ('routeData' in vehicle && 
+      (vehicle as any).routeData?.coordinates && 
+      Array.isArray((vehicle as any).routeData?.coordinates) &&
+      (vehicle as any).routeData?.coordinates.length >= 2) {
+    
+    // Check all coordinates are valid numbers
+    const coords = (vehicle as any).routeData.coordinates;
+    const allValid = coords.every((coord: any) => 
+      Array.isArray(coord) && 
+      coord.length === 2 && 
+      typeof coord[0] === 'number' && !isNaN(coord[0]) &&
+      typeof coord[1] === 'number' && !isNaN(coord[1])
+    );
+    
+    if (allValid) {
+      // Log success for debugging
+      console.log(`[SimulatedVehicleMap] Found valid route data for vehicle ${vehicle.id} with ${coords.length} coordinates`);
+      return true;
+    }
+  }
+  
+  // Fallback to checking for route with stops
+  if ('route' in vehicle && 
+      (vehicle as any).route?.stops && 
+      Array.isArray((vehicle as any).route?.stops) &&
+      (vehicle as any).route?.stops.length >= 2) {
+    
+    // All stops should have valid locations
+    const stops = (vehicle as any).route.stops;
+    const allValid = stops.every((stop: any) => 
+      stop?.location?.latitude !== undefined && 
+      stop?.location?.longitude !== undefined &&
+      !isNaN(stop.location.latitude) && 
+      !isNaN(stop.location.longitude)
+    );
+    
+    if (allValid) {
+      console.log(`[SimulatedVehicleMap] Using fallback route data from stops for vehicle ${vehicle.id}`);
+      return true;
+    }
+  }
+  
+  // No valid route data found
+  return false;
 }
 
 // Hardcoded valid token as fallback
@@ -79,6 +147,17 @@ interface SimulatedVehicleMapProps {
   rotateToMatchBearing?: boolean;
   autoFitBounds?: boolean; // New prop to control auto-fit behavior
 }
+
+// Vehicle animation speed options
+const SPEED_OPTIONS = [
+  { label: 'Slow (1×)', value: 1 },
+  { label: 'Normal (5×)', value: 5 },
+  { label: 'Fast (10×)', value: 10 },
+  { label: 'Very Fast (20×)', value: 20 },
+];
+
+// Default to normal speed (more realistic)
+const DEFAULT_ANIMATION_SPEED = 5;
 
 // Map component for vehicle tracking simulation using react-map-gl
 const SimulatedVehicleMap: React.FC<SimulatedVehicleMapProps> = ({
@@ -119,6 +198,9 @@ const SimulatedVehicleMap: React.FC<SimulatedVehicleMapProps> = ({
     pitch: 0
   });
   
+  // Add state for animation speed
+  const [animationSpeed, setAnimationSpeed] = useState<number>(DEFAULT_ANIMATION_SPEED);
+  
   // Debug coordinates conversion
   useEffect(() => {
     console.log('[SimulatedVehicleMap] Using coordinates:', {
@@ -149,33 +231,60 @@ const SimulatedVehicleMap: React.FC<SimulatedVehicleMapProps> = ({
     }
   }, [vehicles]);
   
-  // Initialize mapbox token
+  // Initialize mapbox token with detailed error handling
   useEffect(() => {
-    const token = getMapboxPublicToken(FALLBACK_MAPBOX_TOKEN);
-    console.log(`[SimulatedVehicleMap] Using Mapbox token: ${token.substring(0, 9)}...`);
-    setMapboxToken(token);
+    // Initialize mapbox token with detailed error handling
+    try {
+      const token = getMapboxPublicToken(FALLBACK_MAPBOX_TOKEN);
+      
+      // Validate token
+      const validation = validateMapboxToken(token);
+      if (!validation.valid) {
+        console.error(`[SimulatedVehicleMap] Invalid Mapbox token: ${validation.reason}`);
+        setMapLoadError(`Invalid Mapbox token: ${validation.reason}`);
+      } else {
+        console.log(`[SimulatedVehicleMap] Using valid Mapbox token: ${token.substring(0, 9)}...`);
+        setMapboxToken(token);
+      }
+    } catch (error) {
+      console.error('[SimulatedVehicleMap] Error initializing Mapbox token:', error);
+      setMapLoadError('Error initializing map: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }, []);
+  
+  // Handle map load event
+  const handleMapLoad = useCallback(() => {
+    console.log(`[SimulatedVehicleMap] Map loaded event fired (ID: ${VEHICLE_MAP_ID})`);
+    setIsMapLoaded(true);
+    console.log(`[SimulatedVehicleMap] isMapLoaded state set to true.`);
+  }, []);
+  
+  // Handle map errors
+  const handleMapError = useCallback((error: any) => {
+    console.error('[SimulatedVehicleMap] Mapbox error:', error);
+    setMapLoadError(`Map error: ${error?.message || 'Unknown error'}`);
   }, []);
   
   // Register map with map manager when loaded
   useEffect(() => {
     if (!mapRef.current || !isMapLoaded || initializedRef.current) return;
     
-    console.log(`[SimulatedVehicleMap] Registering map with MapManager (ID: ${VEHICLE_MAP_ID})`);
-    
-    // Set initialization flag to prevent duplicate registration
-    initializedRef.current = true;
+    console.log(`[SimulatedVehicleMap] Attempting to register map with MapManager (ID: ${VEHICLE_MAP_ID})`);
     
     // Register map with map manager
     const mapInstance = mapRef.current.getMap();
-    mapManager.registerMap(VEHICLE_MAP_ID, mapInstance);
+    console.log('[SimulatedVehicleMap] mapInstance before registration:', mapInstance);
     
-    // Update viewport in store
-    setViewport({
-      center: [viewState.longitude, viewState.latitude],
-      zoom: viewState.zoom,
-      bearing: viewState.bearing,
-      pitch: viewState.pitch
-    });
+    // Check if mapInstance seems valid
+    if (!mapInstance || typeof mapInstance.getCanvas !== 'function') {
+      console.error('[SimulatedVehicleMap] Invalid mapInstance detected before registration (getCanvas check failed)!');
+      return;
+    }
+    
+    // Set initialization flag to prevent duplicate registration
+    initializedRef.current = true;
+    mapManager.registerMap(VEHICLE_MAP_ID, mapInstance);
+    console.log(`[SimulatedVehicleMap] Map registered successfully.`);
     
     // Clean up on unmount
     return () => {
@@ -183,7 +292,7 @@ const SimulatedVehicleMap: React.FC<SimulatedVehicleMapProps> = ({
       mapManager.unregisterMap(VEHICLE_MAP_ID);
       initializedRef.current = false;
     };
-  }, [isMapLoaded, setViewport, viewState.bearing, viewState.latitude, viewState.longitude, viewState.pitch, viewState.zoom]);
+  }, [isMapLoaded]);
   
   // Handle vehicle selection and click events
   const handleVehicleClick = useCallback((vehicle: Vehicle) => {
@@ -225,18 +334,6 @@ const SimulatedVehicleMap: React.FC<SimulatedVehicleMapProps> = ({
       pitch: e.viewState.pitch
     });
   }, [setViewport]);
-  
-  // Handle map load event
-  const handleMapLoad = useCallback(() => {
-    console.log(`[SimulatedVehicleMap] Map loaded successfully (ID: ${VEHICLE_MAP_ID})`);
-    setIsMapLoaded(true);
-  }, []);
-  
-  // Handle map errors
-  const handleMapError = useCallback((error: any) => {
-    console.error('[SimulatedVehicleMap] Mapbox error:', error);
-    setMapLoadError(`Map error: ${error?.message || 'Unknown error'}`);
-  }, []);
   
   // Fit bounds to show all vehicles when vehicles change, but only if:
   // 1. autoFitBounds is true OR we haven't done the initial fit yet
@@ -402,148 +499,225 @@ const SimulatedVehicleMap: React.FC<SimulatedVehicleMapProps> = ({
     return markers;
   }, [vehicles, showDestinationMarkers, styles.startMarker, styles.endMarker, styles.pulseDot]);
 
-  // Filter vehicles with real routes (using the improved hasRealRouteData function)
+  // Filter vehicles with real routes
   const vehiclesWithRealRoutes = useMemo(() => {
     if (!useRealRoutes) return [];
     return vehicles.filter(hasRealRouteData);
   }, [vehicles, useRealRoutes]);
   
+  // Pre-calculate direction layers to avoid type issues
+  const directionLayers = useMemo(() => {
+    if (!enableRoutes || !useRealRoutes || vehicles.length === 0) {
+      return null;
+    }
+
+    return vehicles.map(vehicle => {
+      // Skip vehicles without location
+      if (!vehicle.location) {
+        return null;
+      }
+      
+      // Get route data
+      const routeData = (vehicle as any).routeData;
+      const route = (vehicle as any).route;
+      
+      // Skip if no route data
+      if (!route || !routeData) {
+        return null;
+      }
+      
+      // Get start and end coordinates
+      let origin: [number, number] | undefined;
+      let destination: [number, number] | undefined;
+      
+      // Get coordinates from routeData if available
+      if (routeData.coordinates && routeData.coordinates.length >= 2) {
+        origin = routeData.coordinates[0];
+        destination = routeData.coordinates[routeData.coordinates.length - 1];
+      }
+      // Fall back to route stops
+      else if (route.stops && route.stops.length >= 2) {
+        const startStop = route.stops[0];
+        const endStop = route.stops[route.stops.length - 1];
+        origin = [startStop.location.longitude, startStop.location.latitude];
+        destination = [endStop.location.longitude, endStop.location.latitude];
+      }
+      
+      // Skip if no valid coordinates
+      if (!origin || !destination) return null;
+            
+      return (
+        <MapDirectionsLayer
+          key={`directions-${vehicle.id}`}
+          origin={origin}
+          destination={destination}
+          color={routeData.color || '#00bfff'}
+          width={routeData.width || 4}
+          animated={true}
+          pulsing={true}
+          showStartEnd={showDestinationMarkers}
+        />
+      );
+    }).filter(Boolean);
+  }, [enableRoutes, useRealRoutes, vehicles, showDestinationMarkers]);
+  
+  // Handler for clearing all vehicles
+  const handleClearAllVehicles = useCallback(() => {
+    const state = useUnifiedVehicleStore.getState();
+    const vehicles = state.getFilteredVehicles();
+    
+    // Remove each vehicle one by one
+    vehicles.forEach(vehicle => {
+      state.removeVehicle(vehicle.id);
+    });
+  }, []);
+  
+  // Handler for changing animation speed
+  const handleSpeedChange = useCallback((speed: number) => {
+    setAnimationSpeed(speed);
+    
+    // Update speed in simulation service
+    // This will be picked up by the animation loop in SimulationFromShipmentService
+    try {
+      window.sessionStorage.setItem('vehicle-animation-speed', speed.toString());
+      console.log(`[SimulatedVehicleMap] Set animation speed to ${speed}x`);
+    } catch (error) {
+      console.error('[SimulatedVehicleMap] Failed to save animation speed:', error);
+    }
+  }, []);
+  
+  // Log the calculated layers just before rendering
+  console.log('[SimulatedVehicleMap] Calculated Layers:', {
+    markerLayersCount: routeMarkers?.length ?? 0,
+    directionLayersCount: directionLayers?.length ?? 0,
+    // Example: Log details of the first direction layer if it exists
+    firstDirectionLayerProps: directionLayers?.[0]?.props ?? null,
+    // Example: Log details of the first marker layer if it exists
+    firstMarkerLayerProps: routeMarkers?.[0]?.props ?? null
+  });
+
   // Render the component
   return (
-    <div
-      ref={mapContainerRef}
-      className={`${styles.mapContainer} ${className || ''} map-container`}
-      style={{
-        width: typeof width === 'number' ? `${width}px` : width,
-        height: typeof height === 'number' ? `${height}px` : height,
-        position: 'relative',
-        minHeight: '500px', // Ensure minimum height for visibility
-        background: '#e5e5e5', // Light gray background to see container bounds
-        border: '1px solid #ccc', // Add border to see container
-      }}
-    >
-      {headerContent && (
-        <div className={styles.header}>
-          {headerContent}
-        </div>
-      )}
+    <>
+      {(() => { 
+        console.log('[SimulatedVehicleMap] Rendering - Key Info:', { 
+          isMapLoaded, 
+          numVehicles: vehicles.length, 
+          hasDirectionLayers: !!directionLayers && directionLayers.length > 0,
+          // Note: Logging full directionLayers object might be too verbose
+        }); 
+        return null; 
+      })()}
+      <div ref={mapContainerRef} className={styles.mapContainer} style={{ width, height }}>
+        {headerContent && <div className={styles.header}>{headerContent}</div>}
       
-      {mapboxToken ? (
-        <ReactMapGL
-          id={VEHICLE_MAP_ID}
-          ref={mapRef}
-          mapboxAccessToken={mapboxToken}
-          {...viewState}
-          style={{ width: '100%', height: '100%' }}
-          mapStyle="mapbox://styles/mapbox/streets-v11"
-          attributionControl={attribution}
-          interactive={!disableMapBoxInteraction}
-          onMove={handleViewStateChange}
-          onLoad={handleMapLoad}
-          onError={handleMapError}
-        >
-          {zoomControl && (
-            <NavigationControl position="top-right" />
-          )}
-          
-          {isMapLoaded && (
+        {mapLoadError && (
+          <div className={styles.errorOverlay}>
+            <h3>Map Error</h3>
+            <p>{mapLoadError}</p>
+          </div>
+        )}
+        
+        {mapboxToken && (
+          <ReactMapGL
+            ref={mapRef}
+            mapboxAccessToken={mapboxToken}
+            initialViewState={viewState}
+            mapStyle="mapbox://styles/mapbox/streets-v11"
+            style={{ width: '100%', height: '100%' }}
+            onMove={handleViewStateChange}
+            onLoad={handleMapLoad}
+            onError={handleMapError}
+            interactiveLayerIds={disableMapBoxInteraction ? [] : undefined}
+            attributionControl={attribution}
+          >
             <>
-              {/* Vehicle Markers */}
+              {/* Direction layers */}
+              {directionLayers}
+              
+              {/* Vehicle markers */}
               <VehicleMarkerLayer
                 vehicles={vehicles}
-                selectedVehicleId={selectedVehicle?.id}
                 onVehicleClick={handleVehicleClick}
                 onVehicleHover={handleVehicleHover}
+                selectedVehicleId={selectedVehicle?.id}
                 rotateToMatchBearing={rotateToMatchBearing}
               />
               
-              {/* Routes - Choose between simple routes and real-world routes */}
-              {enableRoutes && (
-                <>
-                  {useRealRoutes ? (
-                    // Real-world routes from Mapbox Directions API for vehicles with isRealRoute flag
-                    vehiclesWithRealRoutes.map(vehicle => (
-                      <MapDirectionsLayer
-                        key={`directions-${vehicle.id}`}
-                        origin={vehicle.route.stops[0]?.location ? 
-                          [vehicle.route.stops[0].location.longitude, vehicle.route.stops[0].location.latitude] : 
-                          undefined}
-                        destination={vehicle.route.stops[1]?.location ?
-                          [vehicle.route.stops[1].location.longitude, vehicle.route.stops[1].location.latitude] :
-                          undefined}
-                        color={vehicle.routeData?.color || '#00FF00'}
-                        width={vehicle.routeData?.width || 4}
-                        animated={true}
-                        pulsing={false} // Disable pulsing to avoid errors
-                        showStartEnd={false} // We handle start/end markers separately
-                        useMockData={vehicle.routeData?.isRealRoute === false} // Use mock data if not a real route
-                      />
-                    ))
-                  ) : (
-                    // Fallback to simple straight-line routes
-                    <MapRouteLayer
-                      mapId={VEHICLE_MAP_ID}
-                      vehicles={vehicles.filter(v => 'route' in v || 'routeData' in v)}
-                    />
-                  )}
-                </>
+              {/* Navigation controls */}
+              {zoomControl && (
+                <NavigationControl position="top-right" showCompass showZoom />
               )}
               
-              {/* Start/End Destination Markers */}
-              {routeMarkers}
+              {/* Map controls panel */}
+              <div style={{
+                position: 'absolute',
+                bottom: '16px',
+                right: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                zIndex: 1000
+              }}>
+                {/* Speed control buttons */}
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '4px',
+                  padding: '8px',
+                  boxShadow: '0 0 10px rgba(0,0,0,0.2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+                    Animation Speed
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {SPEED_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleSpeedChange(option.value)}
+                        style={{
+                          padding: '4px 8px',
+                          backgroundColor: animationSpeed === option.value ? '#007BFF' : '#e0e0e0',
+                          color: animationSpeed === option.value ? 'white' : 'black',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: animationSpeed === option.value ? 'bold' : 'normal'
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Clear all vehicles button */}
+                {vehicles.length > 0 && (
+                  <button
+                    onClick={handleClearAllVehicles}
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: '#f54a4a',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      boxShadow: '0 0 10px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    Clear All Vehicles
+                  </button>
+                )}
+              </div>
             </>
-          )}
-        </ReactMapGL>
-      ) : (
-        <div className={styles.mapLoadingError}>
-          {mapLoadError || 'Loading map...'}
-        </div>
-      )}
-      
-      {mapLoadError && (
-        <div className={styles.mapLoadingError}>
-          {mapLoadError}
-          <br />
-          <button 
-            onClick={() => window.location.reload()}
-            style={{
-              marginTop: '10px',
-              padding: '5px 10px',
-              background: '#4a80f5',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Reload Page
-          </button>
-          
-          <button 
-            onClick={() => {
-              const map = mapManager.getMap(VEHICLE_MAP_ID);
-              if (map) {
-                console.log('Map instance:', map);
-                console.log('Vehicle count:', vehicles.length);
-                console.log('Selected vehicle:', selectedVehicle);
-                console.log('View state:', viewState);
-                alert('Map diagnostics logged to console');
-              }
-            }}
-            style={{
-              padding: '5px 10px',
-              background: '#f44336',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Debug Map
-          </button>
-        </div>
-      )}
-    </div>
+          </ReactMapGL>
+        )}
+      </div>
+    </>
   );
 };
 

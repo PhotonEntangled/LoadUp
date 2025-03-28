@@ -8,6 +8,7 @@ import { useUnifiedVehicleStore } from '../../../../src/store/useUnifiedVehicleS
 import { Vehicle as UnifiedVehicle } from '../../../../src/types/vehicle';
 import SimulatedVehicleMap from '../../../../src/components/map/SimulatedVehicleMap';
 import { VEHICLE_MAP_ID } from '../../../../src/utils/maps/constants';
+import { SimulationControlPanel } from '@/components/simulation/SimulationControlPanel';
 
 /**
  * Debug component to show map ID and help diagnose duplicate map issues
@@ -191,68 +192,6 @@ const VehicleStoreSync: React.FC = () => {
 };
 
 /**
- * Debug component to help diagnose map rendering issues
- */
-const MapDebugInfo = () => {
-  const [debugInfo, setDebugInfo] = useState({
-    mapContainerSize: { width: 0, height: 0 },
-    tokenLoaded: false,
-    mapInitialized: false,
-    vehicleCount: 0
-  });
-  
-  // Update debug info
-  useEffect(() => {
-    const mapContainer = document.querySelector('.map-container');
-    const mapElement = document.getElementById('map');
-    
-    // Get the unified store state
-    const storeState = useUnifiedVehicleStore.getState();
-    const vehicles = storeState.getFilteredVehicles();
-    
-    setDebugInfo({
-      mapContainerSize: {
-        width: mapContainer ? mapContainer.clientWidth : 0,
-        height: mapContainer ? mapContainer.clientHeight : 0
-      },
-      tokenLoaded: Boolean(window.mapboxgl && window.mapboxgl.accessToken),
-      mapInitialized: Boolean(mapElement),
-      vehicleCount: vehicles.length
-    });
-    
-    // Update every second
-    const intervalId = setInterval(() => {
-      const mapContainer = document.querySelector('.map-container');
-      const mapElement = document.getElementById('map');
-      const storeState = useUnifiedVehicleStore.getState();
-      const vehicles = storeState.getFilteredVehicles();
-      
-      setDebugInfo({
-        mapContainerSize: {
-          width: mapContainer ? mapContainer.clientWidth : 0,
-          height: mapContainer ? mapContainer.clientHeight : 0
-        },
-        tokenLoaded: Boolean(window.mapboxgl && window.mapboxgl.accessToken),
-        mapInitialized: Boolean(mapElement),
-        vehicleCount: vehicles.length
-      });
-    }, 1000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
-  
-  return (
-    <div className="absolute top-0 right-0 bg-black bg-opacity-70 text-white p-2 z-50 text-xs">
-      <h4 className="font-bold">Map Debug Info</h4>
-      <div>Container: {debugInfo.mapContainerSize.width}x{debugInfo.mapContainerSize.height}px</div>
-      <div>Token Loaded: {debugInfo.tokenLoaded ? '✅' : '❌'}</div>
-      <div>Map Initialized: {debugInfo.mapInitialized ? '✅' : '❌'}</div>
-      <div>Vehicle Count: {debugInfo.vehicleCount}</div>
-    </div>
-  );
-};
-
-/**
  * Stabilized Vehicle Tracking Page - Demonstrates the map integration with live tracking
  * Features a single test vehicle with a simple movement simulation
  */
@@ -337,7 +276,6 @@ export default function StabilizedVehicleTrackingPage() {
                 {/* EMERGENCY FIX: Temporarily replace SimulatedVehicleMap with SimpleMapWithMarker */}
                 <SimulatedVehicleMap />
                 <MapIDDebug />
-                <MapDebugInfo />
                 
                 {/* Notification overlay */}
                 {notification && (

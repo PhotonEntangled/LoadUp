@@ -224,25 +224,30 @@ const VehicleMarker = React.memo(({
   
   // Memoize the marker style object to prevent re-renders
   const markerStyle = useMemo((): CSSProperties => ({
-    backgroundColor: color,
-    width: `${size}px`,
-    height: `${size}px`,
+    // --- BEGIN AGGRESSIVE STYLE INJECTION ---
+    // Keep existing styles but override/add for debugging
+    backgroundColor: 'magenta', // Highly visible background
+    width: `${size || 50}px`,    // Ensure size
+    height: `${size || 50}px`,   // Ensure size
     borderRadius: '50%',
-    display: 'flex',
+    display: 'flex',           // Ensure display is correct
     justifyContent: 'center',
     alignItems: 'center',
-    border: isSelected ? '3px solid white' : '1px solid rgba(0,0,0,0.2)',
+    border: isSelected ? '3px solid lime' : '2px solid lime', // Visible border always
     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
     cursor: 'pointer',
     fontSize: visuals.fontSize || 16,
-    transform: markerStatus === 'moving' ? 'scale(1.1)' : 'scale(1)',
+    transform: 'scale(1.1)', // Keep it scaled up
     transition: 'all 0.3s ease',
-    zIndex: isSelected ? 100 : 10,
-    position: 'relative',
+    zIndex: 9999,            // Force high z-index
+    position: 'relative',    // Ensure positioning context
     boxSizing: 'border-box',
-    // Add outline for debugging
-    outline: '3px solid red',
-  }), [color, size, isSelected, markerStatus, visuals.fontSize]);
+    opacity: 1,              // Force opacity
+    outline: '3px solid cyan', // Change outline color for confirmation
+    pointerEvents: 'auto',   // Ensure interaction
+    overflow: 'visible',       // Prevent clipping
+    // --- END AGGRESSIVE STYLE INJECTION ---
+  }), [size, isSelected, visuals.fontSize]); // Reduced dependencies for debugging if needed
   
   // Return the marker component
   return (

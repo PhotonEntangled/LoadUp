@@ -169,8 +169,8 @@ const MapRouteLayer: React.FC<MapRouteLayerProps> = ({
       // Use get expression to read properties from the feature
       'line-width': ['get', 'width'],
       'line-color': ['get', 'color'],
-      'line-opacity': 0.7,
-      'line-dasharray': [0.5, 1.5], // Make routes slightly dashed for visibility
+      'line-opacity': 0.8,
+      'line-blur': 0.5,
     },
   };
   
@@ -181,40 +181,57 @@ const MapRouteLayer: React.FC<MapRouteLayerProps> = ({
     // Debug route data if there are routes but they aren't showing
     if (routeGeoJSON.features.length > 0) {
       console.log(`[MapRouteLayer] First route sample:`, routeGeoJSON.features[0]);
-    } else if (vehicles.length > 0) {
-      console.log(`[MapRouteLayer] No routes found in ${vehicles.length} vehicles`);
-      if ('route' in vehicles[0]) {
-        console.log(`[MapRouteLayer] First vehicle has route property:`, (vehicles[0] as any).route);
-      } else {
-        console.log(`[MapRouteLayer] First vehicle is missing route property`);
-      }
+    } else {
+      console.warn('[MapRouteLayer] No routes to render. This may indicate a problem with route data.');
     }
-  }, [routeGeoJSON.features.length, vehicles]);
+  }, [routeGeoJSON]);
   
-  // Create an outline layer to make routes more visible
+  // Create an outline layer for better visibility
   const outlineLayer: LineLayer = {
     id: 'route-outlines',
     type: 'line',
     paint: {
-      'line-width': ['+', ['get', 'width'], 2],
+      'line-width': ['*', ['get', 'width'], 1.5],
       'line-color': '#ffffff',
-      'line-opacity': 0.5,
-      'line-blur': 1,
+      'line-opacity': 0.6,
+      'line-blur': 2,
     },
   };
   
-  // Return null if no routes
+  // Create a pulsing layer for emphasis
+  const pulsingLayer: LineLayer = {
+    id: 'route-pulsing',
+    type: 'line',
+    paint: {
+      'line-width': ['get', 'width'],
+      'line-color': ['get', 'color'],
+      'line-opacity': [
+        'interpolate',
+        ['linear'],
+        ['%', ['*', ['time'], 0.01], 1.0],
+        0, 0.3,
+        0.5, 0.6,
+        1, 0.3
+      ],
+      'line-blur': 2,
+    },
+  };
+  
+  // Skip rendering if no features
   if (routeGeoJSON.features.length === 0) {
     return null;
   }
   
-  // Render routes
   return (
     <Source id="vehicle-routes" type="geojson" data={routeGeoJSON}>
-      {/* Add outline layer first (underneath) */}
-      <Layer {...outlineLayer} />
-      {/* Then add the main route line on top */}
-      <Layer {...lineLayer} />
+      {/* Outline first (below) for contrast */}
+      <Layer {...outlineLayer} beforeId="road-label" />
+      
+      {/* Main route line */}
+      <Layer {...lineLayer} beforeId="road-label" />
+      
+      {/* Pulsing effect on top */}
+      <Layer {...pulsingLayer} beforeId="road-label" />
     </Source>
   );
 };

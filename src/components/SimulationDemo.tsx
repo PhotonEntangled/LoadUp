@@ -76,87 +76,46 @@ const SimulationDemo: React.FC<SimulationDemoProps> = ({ className, onZoomToVehi
   const [animationControls, setAnimationControls] = useState<Record<string, { stop: () => void }>>({});
   const [deliveredVehicles, setDeliveredVehicles] = useState<Record<string, boolean>>({});
   const [showHelpText, setShowHelpText] = useState(true);
-  const [selectedStyle, setSelectedStyle] = useState<'default' | 'highlight' | 'subtle'>('default');
-  const [useRealRouting, setUseRealRouting] = useState(false);
+  
+  // Use fixed settings instead of UI controls
+  const selectedStyle = 'default';
+  const useRealRouting = true;
   
   // Get vehicles from store for display
   const getFilteredVehicles = useUnifiedVehicleStore(state => state.getFilteredVehicles);
   const clearVehicle = useUnifiedVehicleStore(state => state.removeVehicle);
   const updateVehicle = useUnifiedVehicleStore(state => state.updateVehicle);
 
-  // Create a static vehicle from shipment
-  const handleCreateStaticVehicle = useCallback(async () => {
-    setShowHelpText(false);
-    
+  // Create & animate vehicle with current settings
+  const handleCreateAndAnimateVehicle = async () => {
     try {
-      // Create vehicle but don't animate it
-      const vehicle = await createVehicleFromShipment(mockShipment, {
-        initialStatus: 'loading',
+      setShowHelpText(false);
+      
+      // Create and animate a vehicle from the mockShipment
+      const { vehicle, stop } = await createAndAnimateVehicle(mockShipment, {
         ...VISUALIZATION_PRESETS[selectedStyle],
+        useMockRoute: !useRealRouting, // Use real routing by default
+        speed: 60 // Normal speed
       });
       
       if (vehicle) {
-        console.log('Created static vehicle:', vehicle);
+        // Add to animation controls
+        setAnimationControls(prev => ({
+          ...prev,
+          [vehicle.id]: { stop }
+        }));
         
-        // Update vehicles list
-        setVehicles(prev => [...prev, vehicle as ExtendedSimulatedVehicle]);
+        console.log('Vehicle is now animating');
         
-        // Zoom to the vehicle location
+        // Auto-zoom to the new vehicle
         if (onZoomToVehicle && vehicle.location) {
           onZoomToVehicle(vehicle.location);
         }
       }
     } catch (error) {
-      console.error('Error creating static vehicle:', error);
-    }
-  }, [selectedStyle, onZoomToVehicle]);
-
-  // Create and animate a vehicle
-  const handleCreateAndAnimateVehicle = useCallback(async () => {
-    setShowHelpText(false);
-    
-    try {
-      // Get the visual style options
-      const visualOptions = VISUALIZATION_PRESETS[selectedStyle];
-      
-      // Create and animate a vehicle
-      const result = await createAndAnimateVehicle(mockShipment, {
-        speed: 60, // 60 km/h
-        updateInterval: 1000, // 1 second updates
-        useMockRoute: !useRealRouting, // Use real or mock routing based on toggle
-        ...visualOptions,
-      });
-      
-      const animatedVehicle = result.vehicle;
-      const stopAnimation = result.stop;
-      
-      if (animatedVehicle) {
-        console.log('Created and animated vehicle:', animatedVehicle);
-        
-        // Update vehicles list
-        setVehicles(prev => [...prev, animatedVehicle as ExtendedSimulatedVehicle]);
-        
-        // Store animation controls
-        setAnimationControls(prev => ({
-          ...prev,
-          [animatedVehicle.id]: { stop: stopAnimation }
-        }));
-        
-        // Set default animation speed
-        setAnimationSpeeds(prev => ({
-          ...prev,
-          [animatedVehicle.id]: 1
-        }));
-        
-        // Zoom to the vehicle location
-        if (onZoomToVehicle && animatedVehicle.location) {
-          onZoomToVehicle(animatedVehicle.location);
-        }
-      }
-    } catch (error) {
       console.error('Error creating and animating vehicle:', error);
     }
-  }, [selectedStyle, useRealRouting, onZoomToVehicle]);
+  };
 
   // Remove a vehicle
   const handleRemoveVehicle = useCallback((vehicleId: string) => {
@@ -247,68 +206,92 @@ const SimulationDemo: React.FC<SimulationDemoProps> = ({ className, onZoomToVehi
     }
   }, [getFilteredVehicles, vehicles.length]);
 
+  // Handler for simulating shipment upload (now the main button)
+  const handleSimulateShipment = async () => {
+    try {
+      setShowHelpText(false);
+      
+      // Create and animate a vehicle from the mockShipment
+      const { vehicle, stop } = await createAndAnimateVehicle(mockShipment, {
+        ...VISUALIZATION_PRESETS[selectedStyle],
+        useMockRoute: false, // Always use real routing
+        speed: 80, // Faster speed for demo
+      });
+      
+      if (vehicle) {
+        // Add to animation controls
+        setAnimationControls(prev => ({
+          ...prev,
+          [vehicle.id]: { stop }
+        }));
+        
+        console.log(`Simulated shipment ${mockShipment.orderId} created`);
+        
+        // Auto-zoom to the new vehicle
+        if (onZoomToVehicle && vehicle.location) {
+          onZoomToVehicle(vehicle.location);
+        }
+      }
+    } catch (error) {
+      console.error('Error simulating shipment:', error);
+    }
+  };
+
   // Render component
   return (
     <div className={className || ''}>
-      <div className="simulation-controls">
+      <div className="simulation-controls" style={{ padding: '15px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
         <h3>Vehicle Simulation</h3>
         
         {showHelpText && (
-          <div className="help-text">
+          <div className="help-text" style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
             <p>
-              <strong>Getting Started:</strong> Press one of the buttons below to create a simulated vehicle.
-              You can create static vehicles or animate them along a route.
+              <strong>Getting Started:</strong> Press the button below to create a simulated vehicle 
+              that follows a real-world route from origin to destination.
             </p>
           </div>
         )}
         
-        <div className="button-group">
-          <button 
-            className="create-button" 
-            onClick={handleCreateStaticVehicle}
-          >
-            Create Static Vehicle
-          </button>
-          
-          <button 
-            className="animate-button" 
-            onClick={handleCreateAndAnimateVehicle}
-          >
-            Create & Animate Vehicle
-          </button>
-          
-          {vehicles.length > 0 && (
-            <button 
-              className="clear-button" 
-              onClick={handleClearAllVehicles}
-            >
-              Clear All Vehicles
-            </button>
-          )}
-        </div>
+        {/* Primary action button */}
+        <button 
+          onClick={handleSimulateShipment}
+          style={{
+            backgroundColor: '#FF9800',
+            color: 'white',
+            fontWeight: 'bold',
+            padding: '12px 15px',
+            marginBottom: '15px',
+            width: '100%',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          ⚡ Simulate Shipment Upload
+        </button>
         
-        <div className="options-group">
-          <label>
-            <input
-              type="checkbox"
-              checked={useRealRouting}
-              onChange={() => setUseRealRouting(!useRealRouting)}
-            />
-            Use Real-World Routing
-          </label>
-          
-          <div className="style-selector">
-            <span>Style:</span>
-            <select
-              value={selectedStyle}
-              onChange={(e) => setSelectedStyle(e.target.value as any)}
-            >
-              <option value="default">Default</option>
-              <option value="highlight">Highlight</option>
-              <option value="subtle">Subtle</option>
-            </select>
-          </div>
-        </div>
+        {vehicles.length > 0 && (
+          <button 
+            onClick={handleClearAllVehicles}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: '#f54a4a',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              marginTop: '8px',
+              width: '100%'
+            }}
+          >
+            Clear All Vehicles
+          </button>
+        )}
         
         {vehicles.length > 0 && (
           <div className="vehicle-list">

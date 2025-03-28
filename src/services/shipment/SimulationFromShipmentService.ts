@@ -68,6 +68,61 @@ interface SimulationOptions {
   routeLineColor?: string;
   routeLineWidth?: number;
   useMockRoute?: boolean;
+  routeLineGlow?: boolean;
+  emoji?: string;
+  zoomDependent?: boolean;
+}
+
+// Extended simulated vehicle with route data
+interface ExtendedSimulatedVehicle extends SimulatedVehicle {
+  routeData?: RouteData;
+  route?: {
+    id: string;
+    stops: Array<{
+      id: string;
+      location: Location;
+      type: string;
+    }>;
+    currentStopIndex: number;
+  };
+}
+
+// Route data structure
+interface RouteData {
+  id: string;
+  type: string;
+  coordinates: [number, number][];
+  color: string;
+  width: number;
+  glow?: boolean;
+  isRealRoute?: boolean;
+}
+
+// Animation options
+interface AnimationOptions {
+  onProgress?: (data: {
+    vehicleId: string;
+    progress: number;
+    currentPosition: Location;
+    speed: number;
+    heading: number;
+  }) => void;
+  onComplete?: () => void;
+}
+
+// Animation progress data
+interface AnimationProgressData {
+  vehicleId: string;
+  progress: number;
+  currentPosition: Location;
+  speed: number;
+  heading: number;
+}
+
+// Helper function to safely get the mapStore
+function getMapStore() {
+  const win = typeof window !== 'undefined' ? window : {} as any;
+  return win.mapStore || null;
 }
 
 // Get the mapStore if available
@@ -99,6 +154,70 @@ export class SimulationFromShipmentService {
       SimulationFromShipmentService.instance = new SimulationFromShipmentService();
     }
     return SimulationFromShipmentService.instance;
+  }
+
+  /**
+   * Fetch a route from the Mapbox Directions API
+   * @param start The start location
+   * @param end The end location
+   * @returns The route data
+   */
+  private async fetchDirectionsRoute(
+    start: { latitude: number; longitude: number }, 
+    end: { latitude: number; longitude: number },
+    options: { useMock?: boolean } = {}
+  ): Promise<RouteInfo | null> {
+    try {
+      // Skip API call if mock is specified
+      if (options.useMock) {
+        return null;
+      }
+      
+      // Check if coordinates are valid
+      if (!this.validateCoordinates(start) || !this.validateCoordinates(end)) {
+        console.error('[SimulationFromShipmentService] Invalid coordinates for route fetching');
+        return null;
+      }
+
+      // Generate cache key
+      const cacheKey = `${start.latitude},${start.longitude}-${end.latitude},${end.longitude}`;
+          
+      // Check cache first
+      if (this.routeCache.has(cacheKey)) {
+        const routeData = this.routeCache.get(cacheKey)!;
+        console.log('[SimulationFromShipmentService] Using cached route');
+        return routeData;
+      }
+      
+      // Format coordinates for Mapbox API
+      const origin: [number, number] = [start.longitude, start.latitude];
+      const destination: [number, number] = [end.longitude, end.latitude];
+      
+      // Call MapDirectionsService to get route
+      console.log('[SimulationFromShipmentService] Fetching route from Mapbox API');
+      const routeData = await mapDirectionsService.getRoute(
+        origin,
+        destination,
+        {
+          profile: 'driving',
+          steps: true,
+          overview: 'full',
+          annotations: ['speed', 'duration', 'distance'],
+          // No need to set useMock here since we've already checked above
+        }
+      );
+      
+      // Log fetched route data before caching
+      console.log('[SimulationFromShipmentService] Fetched routeData from API:', routeData);
+            
+      // Cache the result
+      this.routeCache.set(cacheKey, routeData);
+      
+      return routeData;
+    } catch (error) {
+      console.error('[SimulationFromShipmentService] Error fetching route:', error);
+      return null;
+    }
   }
 
   /**
@@ -168,36 +287,21 @@ export class SimulationFromShipmentService {
 
       // Fetch route from Mapbox Directions API
       let routeData: RouteInfo | null = null;
-      let routeCoordinates: Coordinate[] = [];
+      let routeCoordinates: [number, number][] = [];
+      
       try {
         // Only fetch route if not using mock routes
         if (!options.useMockRoute) {
-          const cacheKey = `${shipment.route.start.latitude},${shipment.route.start.longitude}-${shipment.route.end.latitude},${shipment.route.end.longitude}`;
-          
-          // Check cache first
-          if (this.routeCache.has(cacheKey)) {
-            routeData = this.routeCache.get(cacheKey)!;
-            console.log('[SimulationFromShipmentService] Using cached route for', shipment.orderId);
-          } else {
-            // Call MapDirectionsService to get route
-            routeData = await mapDirectionsService.getRoute(
-              [shipment.route.start.longitude, shipment.route.start.latitude],
-              [shipment.route.end.longitude, shipment.route.end.latitude],
-              {
-                profile: 'driving',
-                steps: true,
-                overview: 'full',
-                annotations: ['speed', 'duration', 'distance']
-              }
-            );
-            
-            // Cache the route
-            this.routeCache.set(cacheKey, routeData);
-            console.log('[SimulationFromShipmentService] Fetched and cached route for', shipment.orderId);
-          }
+          routeData = await this.fetchDirectionsRoute(
+            shipment.route.start,
+            shipment.route.end,
+            { useMock: options.useMockRoute }
+          );
           
           if (routeData) {
-            routeCoordinates = routeData.coordinates;
+            routeCoordinates = routeData.coordinates as [number, number][];
+            console.log('[SimulationFromShipmentService] Using real-world route with', 
+              routeCoordinates.length, 'coordinates');
           }
         }
       } catch (error) {
@@ -206,13 +310,17 @@ export class SimulationFromShipmentService {
       }
 
       // If route fetching failed or mock route option is set, create fallback route
-      if (!routeData || options.useMockRoute || routeCoordinates.length === 0) {
+      if (!routeData || options.useMockRoute || routeCoordinates.length < 2) {
         console.log('[SimulationFromShipmentService] Using straight line route fallback');
         routeCoordinates = [
           [shipment.route.start.longitude, shipment.route.start.latitude],
           [shipment.route.end.longitude, shipment.route.end.latitude]
         ];
       }
+
+      // Default route color and width with enhanced visibility
+      const ROUTE_LINE_COLOR = options.routeLineColor || '#00FF00'; // Bright green
+      const ROUTE_LINE_WIDTH = options.routeLineWidth || 5; // Thicker line
 
       // Create the simulated vehicle with extended driver info
       const vehicle: SimulatedVehicle & { 
@@ -240,6 +348,17 @@ export class SimulationFromShipmentService {
           width: number;
           glow?: boolean;
           isRealRoute?: boolean;
+        };
+        // Add shipment data for info display
+        shipment?: {
+          orderId: string;
+          poNumber: string;
+          shipDate: string;
+          origin: string;
+          destination: string;
+          contact: string;
+          remarks: string;
+          weight: number;
         };
       } = {
         id: vehicleId,
@@ -287,82 +406,88 @@ export class SimulationFromShipmentService {
           color: options.color || '#00BFFF',  // Bright neon blue color
           showTooltip: options.showTooltip ?? true,
           icon: options.icon || 'truck',  // Default icon
-          emoji: '🚚',  // Truck emoji for better visibility
+          emoji: options.emoji || '🚚',  // Truck emoji for better visibility
           fontSize: 24,  // Larger font size for emoji
           highlightColor: '#ffff00',  // Yellow highlight for selection
           showRouteLine: options.showRouteLine ?? true,  // Show route line by default
-          routeLineColor: options.routeLineColor || ROUTE_LINE_COLOR, // Bright green route line
-          routeLineWidth: options.routeLineWidth || ROUTE_LINE_WIDTH, // Thicker line for visibility
-          zoomDependent: true, // Enable zoom-dependent styling
+          routeLineColor: ROUTE_LINE_COLOR, // Bright green route line
+          routeLineWidth: ROUTE_LINE_WIDTH, // Thicker line for visibility
+          zoomDependent: options.zoomDependent !== false, // Enable zoom-dependent styling
         },
-        // Add route data for map rendering
+        // Add explicit route data for map rendering - CRITICAL for visualization
         routeData: {
           id: `route-${vehicleId}`,
-          type: 'line',
-          coordinates: routeCoordinates.map(coord => [coord[0], coord[1]]),
-          color: options.routeLineColor || ROUTE_LINE_COLOR,
-          width: options.routeLineWidth || ROUTE_LINE_WIDTH,
-          glow: true,
-          isRealRoute: !options.useMockRoute && routeData !== null
+          type: 'LineString',
+          coordinates: routeCoordinates,
+          color: ROUTE_LINE_COLOR,
+          width: ROUTE_LINE_WIDTH,
+          glow: options.routeLineGlow !== false,
+          isRealRoute: true,
+        },
+        // Add shipment data for info display
+        shipment: {
+          orderId: shipment.orderId,
+          poNumber: shipment.poNumber,
+          shipDate: shipment.shipDate || new Date().toISOString().split('T')[0],
+          origin: shipment.originPO,
+          destination: shipment.destination,
+          contact: shipment.contact,
+          remarks: shipment.remarks,
+          weight: shipment.weight
         }
       };
       
-      // Store in our local map of simulated vehicles
-      this.simulatedVehicles.set(vehicleId, vehicle as SimulatedVehicle);
-      
-      // Add to unified vehicle store
-      if (useUnifiedVehicleStore) {
-        try {
-          const store = useUnifiedVehicleStore.getState();
-          store.addVehicle(vehicle as SimulatedVehicle);
-        } catch (error) {
-          console.error('[SimulationFromShipmentService] Error adding vehicle to unified store:', error);
-        }
+      // Verify route data before saving
+      if (!vehicle.routeData || !Array.isArray(vehicle.routeData.coordinates) || 
+          vehicle.routeData.coordinates.length < 2) {
+        console.error('[SimulationFromShipmentService] Invalid route data structure:', vehicle.routeData);
+        // Set a minimal valid route as fallback
+        vehicle.routeData = {
+          id: `route-${vehicleId}`,
+          type: 'LineString',
+          coordinates: [
+            [shipment.route.start.longitude, shipment.route.start.latitude],
+            [shipment.route.end.longitude, shipment.route.end.latitude]
+          ],
+          color: ROUTE_LINE_COLOR,
+          width: ROUTE_LINE_WIDTH,
+          glow: true,
+          isRealRoute: false
+        };
       }
       
-      // Add to mapStore if available
-      if (mapStore) {
-        try {
-          // Get current vehicles from mapStore
-          const mapVehicles = [...(mapStore.getState().vehicles || [])];
-          
-          // Convert vehicle to mapStore format
-          const mapVehicle: MapVehicle & { 
-            isSimulated?: boolean; 
-            status?: string;
-            routeData?: any;
-            visuals?: any;
-          } = {
-            id: vehicle.id,
-            name: vehicle.id,
-            type: (vehicle.type || 'truck') as any,
-            licensePlate: vehicle.id,
-            currentLocation: vehicle.location ? {
-              latitude: vehicle.location.latitude,
-              longitude: vehicle.location.longitude,
-              heading: vehicle.heading || 0,
-              timestamp: vehicle.lastUpdated || new Date(),
-            } : undefined,
-            isSimulated: vehicle.isSimulated,
-            status: vehicle.status,
-            routeData: vehicle.routeData,
-            visuals: vehicle.visuals
-          };
-          
-          // Add to list of vehicles in mapStore
-          mapVehicles.push(mapVehicle);
-          console.log(`[SimulationFromShipmentService] Adding vehicle ${vehicle.id} to mapStore`);
-          
-          // Update the store
-          mapStore.setState({ vehicles: mapVehicles });
-        } catch (error) {
-          console.error('[SimulationFromShipmentService] Error adding vehicle to mapStore:', error);
-        }
-      }
+      // Log the constructed routeData object
+      console.log('[SimulationFromShipmentService] Constructed routeData for vehicle:', vehicle.id, vehicle.routeData);
 
-      return vehicle as SimulatedVehicle;
+      // Track the vehicle in our local map
+      this.simulatedVehicles.set(vehicleId, vehicle);
+      
+      const cachedRoute = this.routeCache.get(shipment.orderId);
+
+      // Create the final vehicle object for the store, mapping RouteInfo to the expected routeData structure
+      const vehicleToStore: ExtendedSimulatedVehicle = {
+        ...vehicle, // Spread the base vehicle properties
+        routeData: cachedRoute ? {
+          id: cachedRoute.id,
+          type: 'LineString',
+          coordinates: cachedRoute.coordinates,
+          color: '#007cff',
+          width: 4,
+          isRealRoute: true
+        } : undefined
+      };
+
+      // ---> ADD LOGGING HERE <---
+      console.log('[SimulationFromShipmentService] Vehicle before adding to store:', JSON.stringify(vehicleToStore, null, 2));
+      
+      // Add to store
+      useUnifiedVehicleStore.getState().addOrUpdateVehicle(vehicleToStore);
+
+      console.log(`[SimulationFromShipmentService] Added/Updated vehicle ${vehicleToStore.id} to store from shipment ${shipment.orderId}`);
+
+      return vehicle;
     } catch (error) {
-      console.error('Error creating vehicle from shipment:', error);
+      console.error('[SimulationFromShipmentService] Error creating vehicle from shipment:', error);
       return null;
     }
   }
@@ -482,208 +607,220 @@ export class SimulationFromShipmentService {
   }
 
   /**
-   * Animate a vehicle along its route
-   * @param vehicleId ID of the vehicle to animate
-   * @param options Animation options
-   * @returns Object with stop function
+   * Animates a vehicle along a route
    */
-  public animateVehicle(
-    vehicleId: string,
-    options: { speed?: number; updateInterval?: number } = {}
+  private animateVehicle(
+    vehicle: ExtendedSimulatedVehicle,
+    routeData: RouteData,
+    options: AnimationOptions = {}
   ): { stop: () => void } {
-    const vehicle = this.simulatedVehicles.get(vehicleId);
+    const { onProgress, onComplete } = options;
     
-    // Return if vehicle not found
-    if (!vehicle) {
-      console.error(`[SimulationFromShipmentService] Vehicle ${vehicleId} not found for animation`);
+    // Get the coordinates from the route
+    const { coordinates } = routeData;
+    
+    if (!coordinates || coordinates.length < 2) {
+      console.error('[SimulationFromShipmentService] Cannot animate vehicle: no valid coordinates');
       return { stop: () => {} };
     }
     
-    // Stop any existing animation
-    this.stopAnimation(vehicleId);
-    
-    // Get route and stops from vehicle
-    const routeData = (vehicle as any).routeData;
-    const coordinates = routeData?.coordinates || [];
-    
-    // If no coordinates are available, fall back to start/end points
-    if (!coordinates || coordinates.length < 2) {
-      console.warn(`[SimulationFromShipmentService] No route coordinates for vehicle ${vehicleId}, using fallback`);
-      if (vehicle.route && vehicle.route.stops && vehicle.route.stops.length >= 2) {
-        const start = vehicle.route.stops[0].location;
-        const end = vehicle.route.stops[1].location;
-        
-        // Create basic straight line route
-        coordinates.push([start.longitude, start.latitude]);
-        coordinates.push([end.longitude, end.latitude]);
-      } else {
-        console.error(`[SimulationFromShipmentService] Cannot animate vehicle ${vehicleId} - no route data`);
-        return { stop: () => {} };
+    // Get animation speed from sessionStorage, or use a reasonable default
+    let speedMultiplier = 5; // Default reasonable speed
+    try {
+      const storedSpeed = window.sessionStorage.getItem('vehicle-animation-speed');
+      if (storedSpeed) {
+        const parsedSpeed = parseInt(storedSpeed, 10);
+        if (!isNaN(parsedSpeed) && parsedSpeed > 0) {
+          speedMultiplier = parsedSpeed;
+        }
       }
+    } catch (error) {
+      console.warn('[SimulationFromShipmentService] Could not read animation speed from sessionStorage:', error);
     }
     
-    // Assign speed based on options or defaults
-    const speedKmPerHour = options.speed || 60;  // Default 60 km/h
-    const updateIntervalMs = options.updateInterval || 100;  // Default 100ms update
+    // Animation variables
+    let currentIndex = 0;
+    let running = true;
+    let lastTimestamp = performance.now();
+    let totalDistance = 0;
     
-    // Initialize animation variables
-    let currentStep = 0;
-    const totalSteps = coordinates.length;
-    
-    // Calculate distance and duration for straight line path
-    const getTotalDistance = () => {
-      let distance = 0;
-      for (let i = 1; i < coordinates.length; i++) {
-        const prev = { latitude: coordinates[i-1][1], longitude: coordinates[i-1][0] };
-        const curr = { latitude: coordinates[i][1], longitude: coordinates[i][0] };
-        distance += this.calculateDistance(prev, curr);
-      }
-      return distance;
-    };
-    
-    const totalDistance = getTotalDistance();
-    const totalAnimationTimeSeconds = (totalDistance / speedKmPerHour) * 3600;
-    
-    if (DEBUG) {
-      console.log('[SimulationFromShipmentService] Animation parameters:');
-      console.log('  - Distance:', totalDistance.toFixed(2), 'km');
-      console.log('  - Speed:', speedKmPerHour, 'km/h');
-      console.log('  - Estimated time:', (totalAnimationTimeSeconds / 60).toFixed(2), 'minutes');
-      console.log('  - Total steps:', totalSteps);
+    // Calculate real-world distances between all points
+    const segmentDistances: number[] = [];
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      const distance = this.calculateDistance(
+        coordinates[i][1], coordinates[i][0],
+        coordinates[i+1][1], coordinates[i+1][0]
+      );
+      segmentDistances.push(distance);
+      totalDistance += distance;
     }
     
-    // Update vehicle with initial state
-    const initialVehicle: SimulatedVehicle = { 
-      ...vehicle,
-      location: {
-        latitude: coordinates[0][1],
-        longitude: coordinates[0][0]
-      },
-      status: 'moving',
-      speed: speedKmPerHour,
-      lastUpdated: new Date(),
-      isSimulated: true
-    };
+    // Calculate realistic travel durations for each segment in seconds
+    // Assuming average speed of 60 km/h = 16.7 m/s in urban areas
+    const averageSpeed = 16.7; // meters per second
+    const segmentDurations: number[] = segmentDistances.map(distance => distance / averageSpeed);
     
-    this.updateVehicleInStore(initialVehicle);
+    // Animation timing variables
+    const frameDuration = 1000 / 30; // Target 30 FPS
+    let animationDuration = segmentDurations.reduce((sum, d) => sum + d, 0) * 1000; // in ms
     
-    // Animation function for real route with multiple coordinates
-    const animate = () => {
-      // Animation complete - vehicle arrived at destination
-      if (currentStep >= totalSteps - 1) {
-        // Create a new vehicle object for the final state
-        const currentVehicle = this.simulatedVehicles.get(vehicleId);
-        if (!currentVehicle) return;
+    // Apply speed multiplier to make animation faster/slower
+    animationDuration = animationDuration / speedMultiplier;
+    
+    console.log(`[SimulationFromShipmentService] Starting animation with ${coordinates.length} points, ${totalDistance.toFixed(0)}m distance, ${(animationDuration/1000).toFixed(1)}s duration (${speedMultiplier}x speed)`);
+    
+    // Update vehicle status to 'moving' (Corrected from 'in_transit')
+    this.updateVehicleStatus(vehicle.id, 'moving');
+    
+    // Animation loop
+    const animate = (timestamp: number) => {
+      if (!running) return;
+      
+      // Calculate elapsed time since last frame
+      const deltaTime = timestamp - lastTimestamp;
+      lastTimestamp = timestamp;
+      
+      // Check if we need to update the animation speed from sessionStorage
+      try {
+        const storedSpeed = window.sessionStorage.getItem('vehicle-animation-speed');
+        if (storedSpeed) {
+          const parsedSpeed = parseInt(storedSpeed, 10);
+          if (!isNaN(parsedSpeed) && parsedSpeed > 0 && parsedSpeed !== speedMultiplier) {
+            // Update speed multiplier
+            speedMultiplier = parsedSpeed;
+            console.log(`[SimulationFromShipmentService] Updated animation speed to ${speedMultiplier}x`);
+          }
+        }
+      } catch (error) {
+        // Ignore errors reading from sessionStorage
+      }
+      
+      // Move to next position based on elapsed time and speed
+      // Calculate progress proportional to realistic travel time
+      let elapsedDistance = 0;
+      let targetSegment = 0;
+      
+      // Find which segment we're currently in
+      let progressWithinSegment = 0;
+      let timeInCurrentSegment = 0;
+      
+      for (let i = 0; i < segmentDurations.length; i++) {
+        // Adjust segment duration based on speed multiplier
+        const adjustedDuration = segmentDurations[i] * 1000 / speedMultiplier;
         
-        const finalVehicle: SimulatedVehicle = { 
-          ...currentVehicle,
-          location: {
-            latitude: coordinates[totalSteps-1][1],
-            longitude: coordinates[totalSteps-1][0]
-          },
-          status: 'unloading',
-          speed: 0,
-          lastUpdated: new Date(),
-          isSimulated: true
-        };
+        if (timeInCurrentSegment + adjustedDuration >= deltaTime) {
+          // We're in this segment
+          targetSegment = i;
+          progressWithinSegment = deltaTime / (adjustedDuration);
+          break;
+        }
         
-        if (DEBUG) console.log('[SimulationFromShipmentService] Vehicle', vehicleId, 'reached destination');
+        timeInCurrentSegment += adjustedDuration;
+      }
+      
+      // Ensure we don't exceed the array bounds
+      if (currentIndex + 1 >= coordinates.length) {
+        // Animation complete
+        running = false;
         
-        this.updateVehicleInStore(finalVehicle);
-        this.stopAnimation(vehicleId);
+        // Set final position
+        this.updateVehiclePosition(
+          vehicle.id,
+          coordinates[coordinates.length - 1][1],
+          coordinates[coordinates.length - 1][0],
+          0 // No movement, so speed is 0
+        );
+        
+        // Update vehicle status to 'delivered'
+        this.updateVehicleStatus(vehicle.id, 'delivered');
+        
+        // Fire completion callback
+        if (onComplete) {
+          onComplete();
+        }
+        
+        console.log(`[SimulationFromShipmentService] Animation complete for vehicle ${vehicle.id}`);
         return;
       }
 
-      // Get latest vehicle state
-      const currentVehicle = this.simulatedVehicles.get(vehicleId);
-      if (!currentVehicle) return;
+      // Calculate interpolated position
+      const start = coordinates[currentIndex];
+      const end = coordinates[currentIndex + 1];
       
-      // Move to next coordinate
-      currentStep += 1;
+      // Calculate heading (bearing) between points
+      const bearing = this.calculateBearing(
+        start[1], start[0],
+        end[1], end[0]
+      );
       
-      // Calculate heading between current and next positions
-      const heading = currentStep < totalSteps - 1 ? 
-        this.calculateHeadingFromCoordinates(
-          { latitude: coordinates[currentStep][1], longitude: coordinates[currentStep][0] },
-          { latitude: coordinates[currentStep+1][1], longitude: coordinates[currentStep+1][0] }
-        ) : currentVehicle.heading;
+      // Interpolate between current segment
+      const lat = start[1] + progressWithinSegment * (end[1] - start[1]);
+      const lng = start[0] + progressWithinSegment * (end[0] - start[0]);
       
-      // Create a new vehicle object for this update
-      const updatedVehicle: SimulatedVehicle = { 
-        ...currentVehicle,
-        location: {
-          latitude: coordinates[currentStep][1],
-          longitude: coordinates[currentStep][0]
-        },
-        heading,
-        speed: speedKmPerHour,
-        lastUpdated: new Date(),
-        isSimulated: true
-      };
+      // Calculate simulated speed based on the current segment's distance and duration
+      // This gives us a realistic speed in m/s, which we convert to km/h
+      const segmentDistance = segmentDistances[currentIndex];
+      const segmentDuration = segmentDurations[currentIndex];
+      const speed = (segmentDistance / segmentDuration) * 3.6; // Convert m/s to km/h
       
-      // Update vehicle in store
-      this.updateVehicleInStore(updatedVehicle);
+      // Update vehicle position
+      this.updateVehiclePosition(vehicle.id, lat, lng, speed, bearing);
       
-      // Calculate delay based on distance to next point
-      let nextDelay = updateIntervalMs;
-      if (currentStep < totalSteps - 1) {
-        const curr = { latitude: coordinates[currentStep][1], longitude: coordinates[currentStep][0] };
-        const next = { latitude: coordinates[currentStep+1][1], longitude: coordinates[currentStep+1][0] };
-        const segmentDistance = this.calculateDistance(curr, next);
-        
-        // Calculate time required to travel this segment at the current speed
-        const segmentTimeSeconds = (segmentDistance / speedKmPerHour) * 3600;
-        
-        // Adjust delay based on segment time, but keep it reasonable
-        nextDelay = Math.max(50, Math.min(1000, segmentTimeSeconds * 1000 / 10));
+      // Call progress callback
+      if (onProgress) {
+        const overallProgress = currentIndex / (coordinates.length - 1);
+        onProgress({
+          vehicleId: vehicle.id,
+          progress: overallProgress,
+          currentPosition: { latitude: lat, longitude: lng },
+          speed,
+          heading: bearing
+        });
       }
       
-      // Request next animation frame
-      const timerId = setTimeout(animate, nextDelay);
-      this.updateIntervals.set(vehicleId, timerId);
+      // Move to next segment if we've completed the current one
+      if (progressWithinSegment >= 1) {
+        currentIndex++;
+      }
+      
+      // Continue animation
+      if (running) {
+        requestAnimationFrame(animate);
+      }
     };
     
-    // Start animation loop
-    const timerId = setTimeout(animate, updateIntervalMs);
-    this.updateIntervals.set(vehicleId, timerId);
+    // Start animation
+    requestAnimationFrame(animate);
     
-    // Return control object with stop function
+    // Return control object
     return {
-      stop: () => this.stopAnimation(vehicleId)
+      stop: () => {
+        running = false;
+        console.log(`[SimulationFromShipmentService] Animation stopped for vehicle ${vehicle.id}`);
+      }
     };
   }
 
   /**
-   * Stop animation for a vehicle
+   * Calculate distance between two points in meters
    */
-  private stopAnimation(vehicleId: string): void {
-    // Clear interval
-    const intervalId = this.updateIntervals.get(vehicleId);
-    if (intervalId) {
-      clearTimeout(intervalId);
-      this.updateIntervals.delete(vehicleId);
-    }
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ): number {
+    const R = 6371e3; // Earth radius in meters
+    const φ1 = this.deg2rad(lat1);
+    const φ2 = this.deg2rad(lat2);
+    const Δφ = this.deg2rad(lat2 - lat1);
+    const Δλ = this.deg2rad(lon2 - lon1);
 
-    // Cancel animation frame
-    const frameId = this.animationFrameIds.get(vehicleId);
-    if (frameId) {
-      cancelAnimationFrame(frameId);
-      this.animationFrameIds.delete(vehicleId);
-    }
-  }
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-  /**
-   * Calculate distance between two locations in kilometers
-   */
-  private calculateDistance(point1: Location, point2: Location): number {
-    const R = 6371; // Earth's radius in km
-    const dLat = this.deg2rad(point2.latitude - point1.latitude);
-    const dLon = this.deg2rad(point2.longitude - point1.longitude);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(point1.latitude)) * Math.cos(this.deg2rad(point2.latitude)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
 
@@ -695,17 +832,55 @@ export class SimulationFromShipmentService {
   }
 
   /**
+   * Calculate bearing between two points in degrees
+   */
+  private calculateBearing(
+    lat1: number,
+    lon1: number, 
+    lat2: number,
+    lon2: number
+  ): number {
+    const φ1 = this.deg2rad(lat1);
+    const φ2 = this.deg2rad(lat2);
+    const Δλ = this.deg2rad(lon2 - lon1);
+
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) -
+            Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    const θ = Math.atan2(y, x);
+
+    return (θ * 180 / Math.PI + 360) % 360; // in degrees
+  }
+
+  /**
    * Update vehicle in the store
    */
   private updateVehicleInStore(vehicle: SimulatedVehicle): void {
+    // Log the vehicle object being sent to the store
+    console.log('[SimulationFromShipmentService] Updating vehicle in store:', vehicle.id, vehicle);
+    
+    if (!useUnifiedVehicleStore) {
+      console.error('[SimulationFromShipmentService] useUnifiedVehicleStore is not available.');
+      return;
+    }
+    
     try {
-      // Update the unified vehicle store - uses Record<string, Vehicle> structure
-      const store = useUnifiedVehicleStore.getState();
-      store.updateVehicle(vehicle.id, vehicle);
+      // 1. First update the unified vehicle store (primary store)
+      try {
+        const store = useUnifiedVehicleStore.getState();
+        if (store && typeof store.updateVehicle === 'function') {
+          store.updateVehicle(vehicle.id, vehicle);
+        } else if (store && typeof store.addOrUpdateVehicle === 'function') {
+          store.addOrUpdateVehicle(vehicle);
+        } else {
+          console.warn('[SimulationFromShipmentService] Unable to find valid update method in unified store');
+        }
+      } catch (error) {
+        console.error('[SimulationFromShipmentService] Error updating unified store:', error);
+      }
       
-      // Also update the map store to prevent synchronization issues
-      // Convert the vehicle to map store format - only include properties from the MapVehicle interface
-      const mapVehicle: MapVehicle = {
+      // 2. Create a compatible vehicle object for the map store
+      const vehicleForMapStore = {
         id: vehicle.id,
         name: vehicle.id,
         type: (vehicle.type || 'truck') as 'truck' | 'van' | 'car' | 'motorcycle',
@@ -716,49 +891,84 @@ export class SimulationFromShipmentService {
           heading: vehicle.heading || 0,
           timestamp: vehicle.lastUpdated || new Date(),
         } : undefined,
-        // No additional properties that don't exist in MapVehicle type
+        // Add these properties to ensure compatibility with both stores
+        isSimulated: vehicle.isSimulated,
+        status: vehicle.status,
+        routeData: (vehicle as any).routeData
       };
       
-      // Only update mapStore if it's available
+      // 3. Update the map store if available
       if (mapStore) {
         try {
-          // FIXED: Handle mapStore.getState().vehicles as a Record, not array
           const mapState = mapStore.getState();
           
-          // Check if mapState.vehicles is available and in the right format
-          if (!mapState || typeof mapState.setVehicles !== 'function') {
-            console.warn('[SimulationFromShipmentService] mapStore has invalid structure, skipping update');
+          // Apply different update strategies depending on the store's structure
+          if (!mapState) {
+            console.warn('[SimulationFromShipmentService] mapStore state is unavailable');
             return;
           }
           
-          // Get current vehicles (handle both array and record formats)
-          const currentVehicles = mapState.vehicles || {};
-          let updatedVehicles;
-          
-          // Handle based on the actual type of currentVehicles
-          if (Array.isArray(currentVehicles)) {
-            // If it's an array, update or add the vehicle
-            updatedVehicles = currentVehicles.filter((v: MapVehicle) => v.id !== vehicle.id);
-            updatedVehicles.push(mapVehicle);
-          } else if (typeof currentVehicles === 'object') {
-            // If it's an object/record, directly update the vehicle entry
-            updatedVehicles = {
-              ...currentVehicles,
-              [vehicle.id]: mapVehicle
-            };
+          // Direct store action methods - try each method in order of preference
+          if (typeof mapState.updateVehicle === 'function') {
+            // Method 1: updateVehicle(id, data)
+            mapState.updateVehicle(vehicle.id, vehicleForMapStore);
+          } else if (typeof mapState.addOrUpdateVehicle === 'function') {
+            // Method 2: addOrUpdateVehicle(vehicle)
+            mapState.addOrUpdateVehicle(vehicleForMapStore);
+          } else if (typeof mapState.addVehicle === 'function') {
+            // Method 3: addVehicle(vehicle)
+            mapState.addVehicle(vehicleForMapStore);
+          } else if (typeof mapState.setVehicles === 'function' && mapState.vehicles) {
+            // Method 4: Rebuild entire vehicles collection and setVehicles()
+            
+            // Handle both array and object structures
+            let updatedVehicles;
+            
+            if (Array.isArray(mapState.vehicles)) {
+              // For array structure, filter + add
+              updatedVehicles = [
+                ...mapState.vehicles.filter((v: any) => v.id !== vehicle.id),
+                vehicleForMapStore
+              ];
+            } else if (typeof mapState.vehicles === 'object') {
+              // For object structure, spread + update
+              updatedVehicles = {
+                ...mapState.vehicles,
+                [vehicle.id]: vehicleForMapStore
+              };
+            } else {
+              // Fallback to single-item array
+              updatedVehicles = [vehicleForMapStore];
+            }
+            
+            // Update the entire collection
+            mapState.setVehicles(updatedVehicles);
           } else {
-            // Fallback to a new array with just this vehicle
-            updatedVehicles = [mapVehicle];
+            // Last resort: direct state mutation
+            console.warn('[SimulationFromShipmentService] Using direct state mutation (not recommended)');
+            if (mapState.vehicles) {
+              if (Array.isArray(mapState.vehicles)) {
+                // Remove existing entry if present
+                mapState.vehicles = mapState.vehicles.filter((v: any) => v.id !== vehicle.id);
+                // Add updated vehicle
+                mapState.vehicles.push(vehicleForMapStore);
+              } else if (typeof mapState.vehicles === 'object') {
+                // Direct object update
+                mapState.vehicles[vehicle.id] = vehicleForMapStore;
+              }
+            } else {
+              // Create new vehicles collection
+              mapState.vehicles = typeof mapState.vehicles === 'object' 
+                ? { [vehicle.id]: vehicleForMapStore } 
+                : [vehicleForMapStore];
+            }
           }
-          
-          // Update the map store
-          mapState.setVehicles(updatedVehicles);
         } catch (error) {
           console.error('[SimulationFromShipmentService] Error updating mapStore:', error);
         }
       }
     } catch (error) {
-      console.error('[SimulationFromShipmentService] Error updating vehicle in store:', error);
+      console.error('[SimulationFromShipmentService] Error in updateVehicleInStore:', error);
     }
   }
 
@@ -812,6 +1022,94 @@ export class SimulationFromShipmentService {
     
     return heading;
   }
+
+  /**
+   * Stop animation for a vehicle
+   */
+  private stopAnimation(vehicleId: string): void {
+    // Clear interval
+    const intervalId = this.updateIntervals.get(vehicleId);
+    if (intervalId) {
+      clearInterval(intervalId);
+      this.updateIntervals.delete(vehicleId);
+      console.log(`[SimulationFromShipmentService] Animation stopped for vehicle ${vehicleId}`);
+    }
+  }
+
+  /**
+   * Updates a vehicle's position
+   */
+  private updateVehiclePosition(
+    vehicleId: string,
+    latitude: number,
+    longitude: number,
+    speed: number,
+    heading?: number
+  ): void {
+    const vehicle = this.simulatedVehicles.get(vehicleId);
+    if (!vehicle) return;
+    
+    // Create a new vehicle object with updated properties
+    const updatedVehicle = {
+      ...vehicle,
+      location: {
+        latitude,
+        longitude
+      },
+      heading: heading !== undefined ? heading : vehicle.heading,
+      speed,
+      lastUpdated: new Date()
+    };
+    
+    // Update in store
+    this.updateVehicleInStore(updatedVehicle);
+  }
+
+  /**
+   * Updates a vehicle's status
+   */
+  private updateVehicleStatus(
+    vehicleId: string,
+    status: VehicleStatus
+  ): void {
+    const vehicle = this.simulatedVehicles.get(vehicleId);
+    if (!vehicle) return;
+    
+    // Create a new vehicle object with updated status
+    const updatedVehicle = {
+      ...vehicle,
+      status,
+      lastUpdated: new Date()
+    };
+    
+    // Update in store
+    this.updateVehicleInStore(updatedVehicle);
+  }
+
+  /**
+   * Public wrapper to start vehicle animation.
+   * @param vehicleId The ID of the vehicle to animate.
+   * @param options Animation options.
+   * @returns Control object with stop function, or null if animation can't start.
+   */
+  public startAnimation(
+    vehicleId: string,
+    options: AnimationOptions = {}
+  ): { stop: () => void } | null {
+    const vehicle = this.simulatedVehicles.get(vehicleId) as ExtendedSimulatedVehicle;
+    if (!vehicle) {
+      console.error(`[SimulationFromShipmentService] Cannot start animation: Vehicle ${vehicleId} not found`);
+      return null;
+    }
+
+    const routeData = vehicle.routeData;
+    if (!routeData || !routeData.coordinates || routeData.coordinates.length < 2) {
+      console.error(`[SimulationFromShipmentService] Cannot start animation for ${vehicleId}: Invalid route data`, routeData);
+      return null;
+    }
+
+    return this.animateVehicle(vehicle, routeData, options);
+  }
 }
 
 /**
@@ -833,9 +1131,15 @@ export async function createVehicleFromShipment(
  * @param options Animation and simulation options
  * @returns Object with the vehicle and stop function
  */
+// Define a type for the combined options including AnimationOptions
+interface CreateAndAnimateOptions extends SimulationOptions, AnimationOptions {
+  speed?: number; 
+  updateInterval?: number;
+}
+
 export async function createAndAnimateVehicle(
   shipment: ParsedShipment,
-  options: SimulationOptions & { speed?: number; updateInterval?: number } = {}
+  options: CreateAndAnimateOptions = {}
 ): Promise<{ vehicle: SimulatedVehicle | null; stop: () => void }> {
   const service = SimulationFromShipmentService.getInstance();
   
@@ -856,10 +1160,20 @@ export async function createAndAnimateVehicle(
     return { vehicle: null, stop: () => {} };
   }
   
-  const animation = service.animateVehicle(vehicle.id, options);
+  // Ensure routeData exists before attempting animation
+  if (!vehicle.routeData) {
+    console.error(`[SimulationFromShipmentService] Cannot animate vehicle ${vehicle.id}: Missing routeData.`);
+    return { vehicle, stop: () => {} }; // Return vehicle but no-op stop function
+  }
+  
+  // Use the public startAnimation method
+  const animationControl = service.startAnimation(vehicle.id, {
+    onProgress: options.onProgress,
+    onComplete: options.onComplete
+  });
   
   return {
     vehicle,
-    stop: animation.stop
+    stop: animationControl ? animationControl.stop : () => {}
   };
 } 

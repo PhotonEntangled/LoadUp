@@ -90,11 +90,19 @@ The current implementation in `MapMarkerLayer.tsx` follows this pattern by:
 
 ## 📈 Next Steps for Integration
 
-Based on the current architecture and issues, the recommended approach for integrating the Directions API is:
+1. ~~Fix the duplicate map issue first~~ *(Resolved)*
+2. ~~Ensure marker creation works consistently~~ *(Resolved for base vehicle, DirectionsLayer markers also working)*
+3. ~~Create a separate `MapDirectionsLayer` component~~ *(Implemented and working)*
+4. ~~Have the directions layer subscribe to the same map instance via MapManager~~ *(Working)*
+5. **Fix route accuracy:** Update `MapDirectionsService.ts` to request `overview: 'full'` for better road following. *(Implemented)*
+6. **Investigate UI Update:** The "Active Vehicles" list doesn't update when a simulated shipment vehicle is added.
+7. **Investigate Vehicle Movement:** Check if animation logic exists and why the vehicle isn't moving along the route.
+8. **Prepare Pull Request:** Stage, commit, and push current progress.
 
-1. Fix the duplicate map issue first
-2. Ensure marker creation works consistently
-3. Create a separate `MapDirectionsLayer` component following the pattern of `MapMarkerLayer`
-4. Have the directions layer subscribe to the same map instance via MapManager
+This approach maintains separation of concerns while leveraging the existing architecture.
 
-This approach maintains separation of concerns while leveraging the existing architecture. 
+## 🧩 Recently Added/Modified Key Files
+
+- `src/components/map/MapDirectionsLayer.tsx`: Renders the route line and start/end markers for a specific vehicle. Receives `routeData` and interacts with `MapDirectionsService`. Uses styles from `MapDirectionsLayer.module.css`.
+- `src/components/map/MapDirectionsLayer.module.css`: Contains CSS styles specifically for the start and end markers used by `MapDirectionsLayer.tsx`.
+- `src/services/maps/MapDirectionsService.ts`: Handles fetching route data from Mapbox Directions API. Updated to request `overview: 'full'` for better route geometry accuracy. 

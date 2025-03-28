@@ -115,13 +115,22 @@ export class SimpleMockVehicleService {
    * Add or update a mock vehicle
    */
   public addMockVehicle(vehicle: RealVehicle): void {
+    console.log(`[SimpleMockVehicleService.addMockVehicle] Adding vehicle ID: ${vehicle.id}, type: ${vehicle.type}, status: ${vehicle.status}`);
+    console.log(`[SimpleMockVehicleService.addMockVehicle] Vehicle location: ${JSON.stringify(vehicle.location)}`);
+    
     this.mockVehicles[vehicle.id] = vehicle;
     
     // Immediately update the store
     const updates: Record<string, RealVehicle> = {
       [vehicle.id]: vehicle
     };
+    
+    console.log(`[SimpleMockVehicleService.addMockVehicle] Updating store with vehicle: ${vehicle.id}`);
     this.store.updateVehicleBatch(updates);
+    console.log(`[SimpleMockVehicleService.addMockVehicle] Store updated, total vehicles: ${Object.keys(this.mockVehicles).length}`);
+    
+    // Force an immediate update to ensure the vehicle is visible
+    this.sendUpdate();
   }
   
   /**
@@ -156,7 +165,10 @@ export class SimpleMockVehicleService {
    * Send an update to the store with the current vehicle state
    */
   private sendUpdate(): void {
+    console.log(`[SimpleMockVehicleService.sendUpdate] Running update, isRunning: ${this.isRunning}, vehicleCount: ${Object.keys(this.mockVehicles).length}`);
+    
     if (!this.isRunning || Object.keys(this.mockVehicles).length === 0) {
+      console.log('[SimpleMockVehicleService.sendUpdate] No vehicles or service not running, skipping update');
       return;
     }
     
@@ -183,8 +195,10 @@ export class SimpleMockVehicleService {
       this.mockVehicles[id] = updatedVehicle;
     });
     
+    console.log(`[SimpleMockVehicleService.sendUpdate] Sending batch update with ${Object.keys(updatedVehicles).length} vehicles`);
     // Send batch update to store
     this.store.updateVehicleBatch(updatedVehicles);
+    console.log(`[SimpleMockVehicleService.sendUpdate] Batch update complete`);
   }
   
   /**
@@ -262,6 +276,12 @@ export function createSimpleMockVehicleService(store: MockVehicleStoreActions) {
         };
         service.addMockVehicle(vehicle);
       });
+    },
+    
+    // ADDED: Expose addMockVehicle method to allow adding test vehicles
+    addMockVehicle: (vehicle: RealVehicle) => {
+      console.log(`[SimpleMockVehicleService] Adding mock vehicle: ${vehicle.id}`);
+      service.addMockVehicle(vehicle);
     }
   };
 } 
