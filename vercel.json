@@ -13,12 +13,6 @@
   "env": {
     "NEXT_PUBLIC_API_URL": "/api"
   },
-  "queues": {
-    "simulation-tick-queue": {
-      "path": "/api/simulation/tick",
-      "contentType": "application/json"
-    }
-  },
   "crons": [
     {
       "path": "/api/simulation/enqueue-ticks",
