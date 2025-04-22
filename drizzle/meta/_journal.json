@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1744160321240,
+      "tag": "0000_confused_loners",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1744269471272,
+      "tag": "0001_nostalgic_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1744379155041,
+      "tag": "0002_clear_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1744401946641,
+      "tag": "0003_reflective_ben_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1744402724825,
+      "tag": "0004_keen_the_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1744403987174,
+      "tag": "0005_past_captain_britain",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1744412855812,
+      "tag": "0006_alter_fk_deferrable",
+      "breakpoints": true
+    }
+  ]
+}

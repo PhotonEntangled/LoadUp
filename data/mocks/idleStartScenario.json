@@ -1,0 +1,26 @@
+[
+  {
+    "scenarioId": "idle-start-001",
+    "shipmentId": "SHP-IDLE-TEST",
+    "originCoordinates": [101.3860, 3.0021],
+    "destinationCoordinates": [103.7414, 1.4927],
+    "requestedDeliveryDate": "2024-09-15T17:00:00.000Z",
+    "customerPoNumber": "PO-IDLE-111",
+    "customerShipmentNumber": "CSN-IDLE-222",
+    "primaryItemDescription": "Standard Goods - Idle Start Test",
+    "totalWeight": 600,
+    "remarks": "Test case: Simulation starts from Idle state. Route should be fetched.",
+    "driverName": "Alice Idle",
+    "driverPhone": "555-000-1111",
+    "driverIc": "S9988771A",
+    "truckId": "TRK-IDLE",
+    "originAddressString": "Idle Origin Warehouse, Shah Alam, Selangor",
+    "destinationAddressString": "Idle Destination Point, Johor Bahru, Johor",
+    "recipientName": "Bob Receiver",
+    "recipientPhone": "555-111-2222",
+    "routeGeometry": null,
+    "initialStatus": "Idle",
+    "initialTraveledDistance": 0,
+    "initialBearing": 0
+  }
+] 

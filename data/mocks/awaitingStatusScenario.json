@@ -1,0 +1,26 @@
+[
+  {
+    "scenarioId": "awaiting-status-001",
+    "shipmentId": "SHP-AWAIT-TEST",
+    "originCoordinates": null, 
+    "destinationCoordinates": null,
+    "requestedDeliveryDate": "2024-09-18T12:00:00.000Z",
+    "customerPoNumber": "PO-AWAIT-777",
+    "customerShipmentNumber": "CSN-AWAIT-888",
+    "primaryItemDescription": "Unknown Goods - Awaiting Status Test",
+    "totalWeight": null,
+    "remarks": "Test case: Simulation starts in AWAITING_STATUS. Controls should be disabled, no route shown.",
+    "driverName": "Gary Ghost",
+    "driverPhone": "555-666-7777",
+    "driverIc": "S1122334G",
+    "truckId": "TRK-AWAIT",
+    "originAddressString": "Awaiting Status Origin",
+    "destinationAddressString": "Awaiting Status Destination",
+    "recipientName": "Heidi Hidden",
+    "recipientPhone": "555-777-8888",
+    "routeGeometry": null,
+    "initialStatus": "AWAITING_STATUS", 
+    "initialTraveledDistance": 0,
+    "initialBearing": 0 
+  }
+] 

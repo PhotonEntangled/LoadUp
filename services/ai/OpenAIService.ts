@@ -6,9 +6,11 @@
  * and calculating confidence scores.
  */
 
-import { ShipmentData } from '../../apps/admin-dashboard/lib/document-processing';
-import { ERD_SCHEMA_FIELDS } from './schema-reference';
 import OpenAI from 'openai';
+import { logger } from '@/utils/logger';
+import { ShipmentData } from '@/types/shipment';
+import { AIMappedField } from '@/types/shipment';
+import { ERD_SCHEMA_FIELDS } from '@/services/ai/schema-reference';
 
 interface FieldMappingResult {
   mappedField: string;

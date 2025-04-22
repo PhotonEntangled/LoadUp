@@ -1,0 +1,25 @@
+[
+  {
+    "scenarioId": "mid-trip-001",
+    "shipmentId": "SHP-MIDTRIP-TEST",
+    "originCoordinates": [101.711861, 3.157764],
+    "destinationCoordinates": [103.86000, 1.28250],
+    "requestedDeliveryDate": "2024-09-16T10:00:00.000Z",
+    "customerPoNumber": "PO-MIDTRIP-333",
+    "customerShipmentNumber": "CSN-MIDTRIP-444",
+    "primaryItemDescription": "Assorted Goods - Mid-Trip Test",
+    "totalWeight": 750,
+    "remarks": "Test case: Simulation starts En Route, 150km completed.",
+    "driverName": "Charlie Midway",
+    "driverPhone": "555-222-3333",
+    "driverIc": "S7766553C",
+    "truckId": "TRK-MIDWAY",
+    "originAddressString": "Midway Origin Point, Shah Alam, Selangor",
+    "destinationAddressString": "Midway Destination Point, Johor Bahru, Johor",
+    "recipientName": "Diana Delivery",
+    "recipientPhone": "555-333-4444",
+    "routeGeometry": null,
+    "initialStatus": "En Route",
+    "initialTraveledDistance": 150000
+  }
+] 

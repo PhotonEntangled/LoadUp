@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 // Auto-Think Rule
 When continuing development or interpreting user intent, always follow this principle:

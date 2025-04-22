@@ -1,0 +1,2 @@
+ALTER TABLE "document_shipment_map" ADD CONSTRAINT "document_shipment_map_document_id_shipment_id_pk" PRIMARY KEY("document_id","shipment_id");--> statement-breakpoint
+ALTER TABLE "document_shipment_map" DROP COLUMN "id";

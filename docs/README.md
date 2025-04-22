@@ -29,10 +29,6 @@ This directory contains documentation for the LoadUp project. Below is an overvi
 - [USER_GUIDE.md](./USER_GUIDE.md) - User guide for the application
 - [RBAC_IMPLEMENTATION.md](./RBAC_IMPLEMENTATION.md) - Role-based access control implementation details
 
-## Demo
-
-- [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) - Script for demonstrating the application
-- [DEMO_DATA_SETUP.md](./DEMO_DATA_SETUP.md) - Guide for setting up demo data
 
 ## Pull Request Process
 
@@ -47,4 +43,4 @@ This directory contains documentation for the LoadUp project. Below is an overvi
 
 ## Changelog
 
-For a complete list of changes, see the [CHANGELOG.md](../CHANGELOG.md) file in the root directory. 
+For a complete list of changes, see the [CHANGELOG.md](../CHANGELOG.md) file in the docs directory. 

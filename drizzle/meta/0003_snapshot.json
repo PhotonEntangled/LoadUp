@@ -1,0 +1,3768 @@
+{
+  "id": "902a7c11-f452-40f9-9fd3-0808f3cc84ea",
+  "prevId": "ee281071-e27c-4f38-b2d2-5a3250d8d235",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.addresses": {
+      "name": "addresses",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "street1": {
+          "name": "street1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "street2": {
+          "name": "street2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "postal_code": {
+          "name": "postal_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric(9, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric(9, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_input": {
+          "name": "raw_input",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolution_method": {
+          "name": "resolution_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolution_confidence": {
+          "name": "resolution_confidence",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bookings": {
+      "name": "bookings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "booking_description": {
+          "name": "booking_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modified_by": {
+          "name": "modified_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bookings_created_by_users_id_fk": {
+          "name": "bookings_created_by_users_id_fk",
+          "tableFrom": "bookings",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bookings_modified_by_users_id_fk": {
+          "name": "bookings_modified_by_users_id_fk",
+          "tableFrom": "bookings",
+          "tableTo": "users",
+          "columnsFrom": [
+            "modified_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cargo_descriptions": {
+      "name": "cargo_descriptions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cargo_statuses": {
+      "name": "cargo_statuses",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "quantity_of_damaged_items": {
+          "name": "quantity_of_damaged_items",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity_of_lost_items": {
+          "name": "quantity_of_lost_items",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cargo_values": {
+      "name": "cargo_values",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cargo_description_id": {
+          "name": "cargo_description_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cargo_values_cargo_description_id_cargo_descriptions_id_fk": {
+          "name": "cargo_values_cargo_description_id_cargo_descriptions_id_fk",
+          "tableFrom": "cargo_values",
+          "tableTo": "cargo_descriptions",
+          "columnsFrom": [
+            "cargo_description_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.custom_booking_details": {
+      "name": "custom_booking_details",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "shipment_id": {
+          "name": "shipment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "booking_id": {
+          "name": "booking_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sovylnvoice_number": {
+          "name": "sovylnvoice_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loadup_job_number": {
+          "name": "loadup_job_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planned_pickup_date": {
+          "name": "planned_pickup_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planned_delivery_date": {
+          "name": "planned_delivery_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modified_by": {
+          "name": "modified_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "custom_booking_details_shipment_id_shipments_erd_id_fk": {
+          "name": "custom_booking_details_shipment_id_shipments_erd_id_fk",
+          "tableFrom": "custom_booking_details",
+          "tableTo": "shipments_erd",
+          "columnsFrom": [
+            "shipment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "custom_booking_details_booking_id_bookings_id_fk": {
+          "name": "custom_booking_details_booking_id_bookings_id_fk",
+          "tableFrom": "custom_booking_details",
+          "tableTo": "bookings",
+          "columnsFrom": [
+            "booking_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "custom_booking_details_modified_by_users_id_fk": {
+          "name": "custom_booking_details_modified_by_users_id_fk",
+          "tableFrom": "custom_booking_details",
+          "tableTo": "users",
+          "columnsFrom": [
+            "modified_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.custom_shipment_detail_document_requirements": {
+      "name": "custom_shipment_detail_document_requirements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "custom_shipment_detail_id": {
+          "name": "custom_shipment_detail_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "document_requirement_id": {
+          "name": "document_requirement_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "custom_shipment_detail_document_requirements_custom_shipment_detail_id_custom_shipment_details_id_fk": {
+          "name": "custom_shipment_detail_document_requirements_custom_shipment_detail_id_custom_shipment_details_id_fk",
+          "tableFrom": "custom_shipment_detail_document_requirements",
+          "tableTo": "custom_shipment_details",
+          "columnsFrom": [
+            "custom_shipment_detail_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "custom_shipment_detail_document_requirements_document_requirement_id_document_requirements_id_fk": {
+          "name": "custom_shipment_detail_document_requirements_document_requirement_id_document_requirements_id_fk",
+          "tableFrom": "custom_shipment_detail_document_requirements",
+          "tableTo": "document_requirements",
+          "columnsFrom": [
+            "document_requirement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.custom_shipment_details": {
+      "name": "custom_shipment_details",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "custom_booking_details_id": {
+          "name": "custom_booking_details_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_id": {
+          "name": "shipment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customer_document_number": {
+          "name": "customer_document_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customer_shipment_number": {
+          "name": "customer_shipment_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sovy_job_no": {
+          "name": "sovy_job_no",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transporter_rate": {
+          "name": "total_transporter_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transporter_man_power_rate": {
+          "name": "total_transporter_man_power_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transporter_drop_point_rate": {
+          "name": "total_transporter_drop_point_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transporter_staging_rate": {
+          "name": "total_transporter_staging_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transporter_ph_rate": {
+          "name": "total_transporter_ph_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transporter_waiting_rate": {
+          "name": "total_transporter_waiting_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_shipper_staging_rate": {
+          "name": "total_shipper_staging_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_shipper_ph_rate": {
+          "name": "total_shipper_ph_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_shipper_man_power_rate": {
+          "name": "total_shipper_man_power_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_shipper_waiting_rate": {
+          "name": "total_shipper_waiting_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_shipper_rate": {
+          "name": "total_shipper_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transporter_additional_rate": {
+          "name": "total_transporter_additional_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stackable": {
+          "name": "stackable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hazardous_id": {
+          "name": "hazardous_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "manpower": {
+          "name": "manpower",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "special_requirement": {
+          "name": "special_requirement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "master_transporter_id": {
+          "name": "master_transporter_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cargo_value_id": {
+          "name": "cargo_value_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pod_status": {
+          "name": "pod_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "remarks": {
+          "name": "remarks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_shipper_additional_rate": {
+          "name": "total_shipper_additional_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_shipper_drop_point_rate": {
+          "name": "total_shipper_drop_point_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trip_id": {
+          "name": "trip_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "early_inbound_date": {
+          "name": "early_inbound_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "late_inbound_date": {
+          "name": "late_inbound_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "early_outbound_date": {
+          "name": "early_outbound_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "late_outbound_date": {
+          "name": "late_outbound_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transport_cost": {
+          "name": "total_transport_cost",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transport_distance": {
+          "name": "total_transport_distance",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transport_duration": {
+          "name": "total_transport_duration",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transport_segments": {
+          "name": "total_transport_segments",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transport_weight": {
+          "name": "total_transport_weight",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_transport_volume": {
+          "name": "total_transport_volume",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_hazardous": {
+          "name": "total_hazardous",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profitability": {
+          "name": "profitability",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_insight": {
+          "name": "total_insight",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_hazardous_add_on_profile": {
+          "name": "total_hazardous_add_on_profile",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_insight2": {
+          "name": "total_insight2",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trip_rate": {
+          "name": "trip_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "drop_charge": {
+          "name": "drop_charge",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "manpower_charge": {
+          "name": "manpower_charge",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_charge": {
+          "name": "total_charge",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "misc_trip_rate": {
+          "name": "misc_trip_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "misc_drop": {
+          "name": "misc_drop",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "misc_manpower": {
+          "name": "misc_manpower",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "misc_total": {
+          "name": "misc_total",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "carrier_name": {
+          "name": "carrier_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "carrier_phone": {
+          "name": "carrier_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "truck_id": {
+          "name": "truck_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_trip_rate_input": {
+          "name": "raw_trip_rate_input",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_drop_charge_input": {
+          "name": "raw_drop_charge_input",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_manpower_charge_input": {
+          "name": "raw_manpower_charge_input",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_total_charge_input": {
+          "name": "raw_total_charge_input",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "custom_shipment_details_custom_booking_details_id_custom_booking_details_id_fk": {
+          "name": "custom_shipment_details_custom_booking_details_id_custom_booking_details_id_fk",
+          "tableFrom": "custom_shipment_details",
+          "tableTo": "custom_booking_details",
+          "columnsFrom": [
+            "custom_booking_details_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "custom_shipment_details_shipment_id_shipments_erd_id_fk": {
+          "name": "custom_shipment_details_shipment_id_shipments_erd_id_fk",
+          "tableFrom": "custom_shipment_details",
+          "tableTo": "shipments_erd",
+          "columnsFrom": [
+            "shipment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "custom_shipment_details_hazardous_id_hazardous_id_fk": {
+          "name": "custom_shipment_details_hazardous_id_hazardous_id_fk",
+          "tableFrom": "custom_shipment_details",
+          "tableTo": "hazardous",
+          "columnsFrom": [
+            "hazardous_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "custom_shipment_details_master_transporter_id_transporters_id_fk": {
+          "name": "custom_shipment_details_master_transporter_id_transporters_id_fk",
+          "tableFrom": "custom_shipment_details",
+          "tableTo": "transporters",
+          "columnsFrom": [
+            "master_transporter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "custom_shipment_details_cargo_value_id_cargo_values_id_fk": {
+          "name": "custom_shipment_details_cargo_value_id_cargo_values_id_fk",
+          "tableFrom": "custom_shipment_details",
+          "tableTo": "cargo_values",
+          "columnsFrom": [
+            "cargo_value_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "custom_shipment_details_trip_id_trips_id_fk": {
+          "name": "custom_shipment_details_trip_id_trips_id_fk",
+          "tableFrom": "custom_shipment_details",
+          "tableTo": "trips",
+          "columnsFrom": [
+            "trip_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.custom_trip_details": {
+      "name": "custom_trip_details",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "type_of_goods": {
+          "name": "type_of_goods",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "track_and_trace_url": {
+          "name": "track_and_trace_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipper_additional_rate": {
+          "name": "shipper_additional_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipper_drop_point_rate": {
+          "name": "shipper_drop_point_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipper_man_power_rate": {
+          "name": "shipper_man_power_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipper_ph_rate": {
+          "name": "shipper_ph_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipper_rate": {
+          "name": "shipper_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipper_staging_rate": {
+          "name": "shipper_staging_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipper_waiting_rate": {
+          "name": "shipper_waiting_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transporter_additional_rate": {
+          "name": "transporter_additional_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transporter_drop_point_rate": {
+          "name": "transporter_drop_point_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transporter_man_power_rate": {
+          "name": "transporter_man_power_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transporter_ph_rate": {
+          "name": "transporter_ph_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transporter_rate": {
+          "name": "transporter_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transporter_staging_rate": {
+          "name": "transporter_staging_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transporter_waiting_rate": {
+          "name": "transporter_waiting_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trip_id": {
+          "name": "trip_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "custom_trip_details_created_by_users_id_fk": {
+          "name": "custom_trip_details_created_by_users_id_fk",
+          "tableFrom": "custom_trip_details",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "custom_trip_details_trip_id_trips_id_fk": {
+          "name": "custom_trip_details_trip_id_trips_id_fk",
+          "tableFrom": "custom_trip_details",
+          "tableTo": "trips",
+          "columnsFrom": [
+            "trip_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.document_batches": {
+      "name": "document_batches",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "document_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "file_count": {
+          "name": "file_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processed_count": {
+          "name": "processed_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "processing_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDING'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "document_batches_created_by_users_id_fk": {
+          "name": "document_batches_created_by_users_id_fk",
+          "tableFrom": "document_batches",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.document_requirements": {
+      "name": "document_requirements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observation": {
+          "name": "observation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.document_shipment_map": {
+      "name": "document_shipment_map",
+      "schema": "",
+      "columns": {
+        "document_id": {
+          "name": "document_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shipment_id": {
+          "name": "shipment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "document_shipment_map_document_id_documents_id_fk": {
+          "name": "document_shipment_map_document_id_documents_id_fk",
+          "tableFrom": "document_shipment_map",
+          "tableTo": "documents",
+          "columnsFrom": [
+            "document_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "document_shipment_map_shipment_id_shipments_erd_id_fk": {
+          "name": "document_shipment_map_shipment_id_shipments_erd_id_fk",
+          "tableFrom": "document_shipment_map",
+          "tableTo": "shipments_erd",
+          "columnsFrom": [
+            "shipment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "document_shipment_map_document_id_shipment_id_pk": {
+          "name": "document_shipment_map_document_id_shipment_id_pk",
+          "columns": [
+            "document_id",
+            "shipment_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.documents": {
+      "name": "documents",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "filename": {
+          "name": "filename",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_path": {
+          "name": "file_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "file_type": {
+          "name": "file_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "file_size": {
+          "name": "file_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "document_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'UPLOADED'"
+        },
+        "upload_date": {
+          "name": "upload_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "parsed_date": {
+          "name": "parsed_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_count": {
+          "name": "shipment_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uploaded_by_id": {
+          "name": "uploaded_by_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "documents_uploaded_by_id_users_id_fk": {
+          "name": "documents_uploaded_by_id_users_id_fk",
+          "tableFrom": "documents",
+          "tableTo": "users",
+          "columnsFrom": [
+            "uploaded_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "documents_batch_id_document_batches_id_fk": {
+          "name": "documents_batch_id_document_batches_id_fk",
+          "tableFrom": "documents",
+          "tableTo": "document_batches",
+          "columnsFrom": [
+            "batch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.drivers": {
+      "name": "drivers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "drivers_email_unique": {
+          "name": "drivers_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dropoff_config_groups": {
+      "name": "dropoff_config_groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "trip_config_id": {
+          "name": "trip_config_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dropoff_config_groups_trip_config_id_trip_configs_id_fk": {
+          "name": "dropoff_config_groups_trip_config_id_trip_configs_id_fk",
+          "tableFrom": "dropoff_config_groups",
+          "tableTo": "trip_configs",
+          "columnsFrom": [
+            "trip_config_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dropoff_configs": {
+      "name": "dropoff_configs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "dropoff_config_group_id": {
+          "name": "dropoff_config_group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "dropoff_config_position": {
+          "name": "dropoff_config_position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modified_by": {
+          "name": "modified_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dropoff_configs_dropoff_config_group_id_dropoff_config_groups_id_fk": {
+          "name": "dropoff_configs_dropoff_config_group_id_dropoff_config_groups_id_fk",
+          "tableFrom": "dropoff_configs",
+          "tableTo": "dropoff_config_groups",
+          "columnsFrom": [
+            "dropoff_config_group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dropoff_configs_created_by_users_id_fk": {
+          "name": "dropoff_configs_created_by_users_id_fk",
+          "tableFrom": "dropoff_configs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dropoff_configs_modified_by_users_id_fk": {
+          "name": "dropoff_configs_modified_by_users_id_fk",
+          "tableFrom": "dropoff_configs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "modified_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dropoffs": {
+      "name": "dropoffs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "dropoff_config_id": {
+          "name": "dropoff_config_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "address_id": {
+          "name": "address_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cargo_status_id": {
+          "name": "cargo_status_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dropoff_position": {
+          "name": "dropoff_position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_weight": {
+          "name": "shipment_weight",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_volume": {
+          "name": "shipment_volume",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity_of_items": {
+          "name": "quantity_of_items",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_palettes": {
+          "name": "total_palettes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activity_status": {
+          "name": "activity_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customer_delivery_number": {
+          "name": "customer_delivery_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "item_unit_id": {
+          "name": "item_unit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "map_to_pickup_position": {
+          "name": "map_to_pickup_position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actual_date_time_of_arrival": {
+          "name": "actual_date_time_of_arrival",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actual_date_time_of_departure": {
+          "name": "actual_date_time_of_departure",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dropoff_date": {
+          "name": "dropoff_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_date_time_of_arrival": {
+          "name": "estimated_date_time_of_arrival",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_date_time_of_departure": {
+          "name": "estimated_date_time_of_departure",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customer_po_numbers": {
+          "name": "customer_po_numbers",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recipient_contact_name": {
+          "name": "recipient_contact_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recipient_contact_phone": {
+          "name": "recipient_contact_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modified_by": {
+          "name": "modified_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_id": {
+          "name": "shipment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dropoffs_dropoff_config_id_dropoff_configs_id_fk": {
+          "name": "dropoffs_dropoff_config_id_dropoff_configs_id_fk",
+          "tableFrom": "dropoffs",
+          "tableTo": "dropoff_configs",
+          "columnsFrom": [
+            "dropoff_config_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dropoffs_address_id_addresses_id_fk": {
+          "name": "dropoffs_address_id_addresses_id_fk",
+          "tableFrom": "dropoffs",
+          "tableTo": "addresses",
+          "columnsFrom": [
+            "address_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dropoffs_cargo_status_id_cargo_statuses_id_fk": {
+          "name": "dropoffs_cargo_status_id_cargo_statuses_id_fk",
+          "tableFrom": "dropoffs",
+          "tableTo": "cargo_statuses",
+          "columnsFrom": [
+            "cargo_status_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dropoffs_item_unit_id_item_units_id_fk": {
+          "name": "dropoffs_item_unit_id_item_units_id_fk",
+          "tableFrom": "dropoffs",
+          "tableTo": "item_units",
+          "columnsFrom": [
+            "item_unit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dropoffs_created_by_users_id_fk": {
+          "name": "dropoffs_created_by_users_id_fk",
+          "tableFrom": "dropoffs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dropoffs_modified_by_users_id_fk": {
+          "name": "dropoffs_modified_by_users_id_fk",
+          "tableFrom": "dropoffs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "modified_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dropoffs_shipment_id_shipments_erd_id_fk": {
+          "name": "dropoffs_shipment_id_shipments_erd_id_fk",
+          "tableFrom": "dropoffs",
+          "tableTo": "shipments_erd",
+          "columnsFrom": [
+            "shipment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.epods": {
+      "name": "epods",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_by_id": {
+          "name": "created_by_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modified_by_id": {
+          "name": "modified_by_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dropoff_id": {
+          "name": "dropoff_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "blob_name": {
+          "name": "blob_name",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resource_type": {
+          "name": "resource_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pod_returned": {
+          "name": "pod_returned",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "epods_created_by_id_users_id_fk": {
+          "name": "epods_created_by_id_users_id_fk",
+          "tableFrom": "epods",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "epods_modified_by_id_users_id_fk": {
+          "name": "epods_modified_by_id_users_id_fk",
+          "tableFrom": "epods",
+          "tableTo": "users",
+          "columnsFrom": [
+            "modified_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "epods_dropoff_id_dropoffs_id_fk": {
+          "name": "epods_dropoff_id_dropoffs_id_fk",
+          "tableFrom": "epods",
+          "tableTo": "dropoffs",
+          "columnsFrom": [
+            "dropoff_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.equipment_requirements": {
+      "name": "equipment_requirements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "custom_shipment_detail_id": {
+          "name": "custom_shipment_detail_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_or_non_lease": {
+          "name": "lease_or_non_lease",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "liftgate": {
+          "name": "liftgate",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "liftgate_quantity": {
+          "name": "liftgate_quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pallet_jack": {
+          "name": "pallet_jack",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pallet_jack_quantity": {
+          "name": "pallet_jack_quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "equipment_requirements_custom_shipment_detail_id_custom_shipment_details_id_fk": {
+          "name": "equipment_requirements_custom_shipment_detail_id_custom_shipment_details_id_fk",
+          "tableFrom": "equipment_requirements",
+          "tableTo": "custom_shipment_details",
+          "columnsFrom": [
+            "custom_shipment_detail_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "equipment_requirements_custom_shipment_detail_id_unique": {
+          "name": "equipment_requirements_custom_shipment_detail_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "custom_shipment_detail_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hazardous": {
+      "name": "hazardous",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.item_units": {
+      "name": "item_units",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.items": {
+      "name": "items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "shipment_id": {
+          "name": "shipment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_number": {
+          "name": "item_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lot_serial_number": {
+          "name": "lot_serial_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uom": {
+          "name": "uom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight": {
+          "name": "weight",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bin": {
+          "name": "bin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "items_shipment_id_shipments_erd_id_fk": {
+          "name": "items_shipment_id_shipments_erd_id_fk",
+          "tableFrom": "items",
+          "tableTo": "shipments_erd",
+          "columnsFrom": [
+            "shipment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pickup_config_groups": {
+      "name": "pickup_config_groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "trip_config_id": {
+          "name": "trip_config_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pickup_config_groups_trip_config_id_trip_configs_id_fk": {
+          "name": "pickup_config_groups_trip_config_id_trip_configs_id_fk",
+          "tableFrom": "pickup_config_groups",
+          "tableTo": "trip_configs",
+          "columnsFrom": [
+            "trip_config_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pickup_configs": {
+      "name": "pickup_configs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "pickup_config_group_id": {
+          "name": "pickup_config_group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "pickup_config_position": {
+          "name": "pickup_config_position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modified_by": {
+          "name": "modified_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pickup_configs_pickup_config_group_id_pickup_config_groups_id_fk": {
+          "name": "pickup_configs_pickup_config_group_id_pickup_config_groups_id_fk",
+          "tableFrom": "pickup_configs",
+          "tableTo": "pickup_config_groups",
+          "columnsFrom": [
+            "pickup_config_group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pickup_configs_created_by_users_id_fk": {
+          "name": "pickup_configs_created_by_users_id_fk",
+          "tableFrom": "pickup_configs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pickup_configs_modified_by_users_id_fk": {
+          "name": "pickup_configs_modified_by_users_id_fk",
+          "tableFrom": "pickup_configs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "modified_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pickups": {
+      "name": "pickups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "pickup_config_id": {
+          "name": "pickup_config_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "address_id": {
+          "name": "address_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cargo_status_id": {
+          "name": "cargo_status_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pickup_position": {
+          "name": "pickup_position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pickup_date": {
+          "name": "pickup_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_weight": {
+          "name": "shipment_weight",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_volume": {
+          "name": "shipment_volume",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity_of_items": {
+          "name": "quantity_of_items",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_palettes": {
+          "name": "total_palettes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activity_status": {
+          "name": "activity_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "item_unit_id": {
+          "name": "item_unit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actual_date_time_of_arrival": {
+          "name": "actual_date_time_of_arrival",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actual_date_time_of_departure": {
+          "name": "actual_date_time_of_departure",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_date_time_of_arrival": {
+          "name": "estimated_date_time_of_arrival",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_date_time_of_departure": {
+          "name": "estimated_date_time_of_departure",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modified_by": {
+          "name": "modified_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_id": {
+          "name": "shipment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pickups_pickup_config_id_pickup_configs_id_fk": {
+          "name": "pickups_pickup_config_id_pickup_configs_id_fk",
+          "tableFrom": "pickups",
+          "tableTo": "pickup_configs",
+          "columnsFrom": [
+            "pickup_config_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pickups_address_id_addresses_id_fk": {
+          "name": "pickups_address_id_addresses_id_fk",
+          "tableFrom": "pickups",
+          "tableTo": "addresses",
+          "columnsFrom": [
+            "address_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pickups_cargo_status_id_cargo_statuses_id_fk": {
+          "name": "pickups_cargo_status_id_cargo_statuses_id_fk",
+          "tableFrom": "pickups",
+          "tableTo": "cargo_statuses",
+          "columnsFrom": [
+            "cargo_status_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pickups_item_unit_id_item_units_id_fk": {
+          "name": "pickups_item_unit_id_item_units_id_fk",
+          "tableFrom": "pickups",
+          "tableTo": "item_units",
+          "columnsFrom": [
+            "item_unit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pickups_created_by_users_id_fk": {
+          "name": "pickups_created_by_users_id_fk",
+          "tableFrom": "pickups",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pickups_modified_by_users_id_fk": {
+          "name": "pickups_modified_by_users_id_fk",
+          "tableFrom": "pickups",
+          "tableTo": "users",
+          "columnsFrom": [
+            "modified_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pickups_shipment_id_shipments_erd_id_fk": {
+          "name": "pickups_shipment_id_shipments_erd_id_fk",
+          "tableFrom": "pickups",
+          "tableTo": "shipments_erd",
+          "columnsFrom": [
+            "shipment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shipments_erd": {
+      "name": "shipments_erd",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "booking_id": {
+          "name": "booking_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_document_id": {
+          "name": "source_document_id",
+          "type": "varchar(25)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_date_created": {
+          "name": "shipment_date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "shipment_date_modified": {
+          "name": "shipment_date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "shipment_description": {
+          "name": "shipment_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_document_number": {
+          "name": "shipment_document_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modified_by": {
+          "name": "modified_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "shipments_erd_booking_id_bookings_id_fk": {
+          "name": "shipments_erd_booking_id_bookings_id_fk",
+          "tableFrom": "shipments_erd",
+          "tableTo": "bookings",
+          "columnsFrom": [
+            "booking_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "shipments_erd_source_document_id_documents_id_fk": {
+          "name": "shipments_erd_source_document_id_documents_id_fk",
+          "tableFrom": "shipments_erd",
+          "tableTo": "documents",
+          "columnsFrom": [
+            "source_document_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "shipments_erd_modified_by_users_id_fk": {
+          "name": "shipments_erd_modified_by_users_id_fk",
+          "tableFrom": "shipments_erd",
+          "tableTo": "users",
+          "columnsFrom": [
+            "modified_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trailer_sizes": {
+      "name": "trailer_sizes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trailer_types": {
+      "name": "trailer_types",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trailers": {
+      "name": "trailers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "transporter_id": {
+          "name": "transporter_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "trailer_size_id": {
+          "name": "trailer_size_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trailer_type_id": {
+          "name": "trailer_type_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight": {
+          "name": "weight",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dimension": {
+          "name": "dimension",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registration_number": {
+          "name": "registration_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permit_number": {
+          "name": "permit_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permit_expiry_date": {
+          "name": "permit_expiry_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "inspection_expiry_date": {
+          "name": "inspection_expiry_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "trailers_transporter_id_transporters_id_fk": {
+          "name": "trailers_transporter_id_transporters_id_fk",
+          "tableFrom": "trailers",
+          "tableTo": "transporters",
+          "columnsFrom": [
+            "transporter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trailers_trailer_size_id_trailer_sizes_id_fk": {
+          "name": "trailers_trailer_size_id_trailer_sizes_id_fk",
+          "tableFrom": "trailers",
+          "tableTo": "trailer_sizes",
+          "columnsFrom": [
+            "trailer_size_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trailers_trailer_type_id_trailer_types_id_fk": {
+          "name": "trailers_trailer_type_id_trailer_types_id_fk",
+          "tableFrom": "trailers",
+          "tableTo": "trailer_types",
+          "columnsFrom": [
+            "trailer_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transporters": {
+      "name": "transporters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trip_configs": {
+      "name": "trip_configs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trip_pods": {
+      "name": "trip_pods",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "dropoff_id": {
+          "name": "dropoff_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "resource_url_string": {
+          "name": "resource_url_string",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pod_returned": {
+          "name": "pod_returned",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "trip_pods_dropoff_id_dropoffs_id_fk": {
+          "name": "trip_pods_dropoff_id_dropoffs_id_fk",
+          "tableFrom": "trip_pods",
+          "tableTo": "dropoffs",
+          "columnsFrom": [
+            "dropoff_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trips": {
+      "name": "trips",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "trip_config_id": {
+          "name": "trip_config_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "material": {
+          "name": "material",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "material_type": {
+          "name": "material_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "material_transporter": {
+          "name": "material_transporter",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sealed": {
+          "name": "sealed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trip_status": {
+          "name": "trip_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "truck_id": {
+          "name": "truck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "driver_id": {
+          "name": "driver_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "driver_name": {
+          "name": "driver_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resource_track_ids": {
+          "name": "resource_track_ids",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "remarks": {
+          "name": "remarks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_insured": {
+          "name": "total_insured",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "trips_trip_config_id_trip_configs_id_fk": {
+          "name": "trips_trip_config_id_trip_configs_id_fk",
+          "tableFrom": "trips",
+          "tableTo": "trip_configs",
+          "columnsFrom": [
+            "trip_config_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trips_material_transporter_transporters_id_fk": {
+          "name": "trips_material_transporter_transporters_id_fk",
+          "tableFrom": "trips",
+          "tableTo": "transporters",
+          "columnsFrom": [
+            "material_transporter"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trips_truck_id_vehicles_id_fk": {
+          "name": "trips_truck_id_vehicles_id_fk",
+          "tableFrom": "trips",
+          "tableTo": "vehicles",
+          "columnsFrom": [
+            "truck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trips_driver_id_drivers_id_fk": {
+          "name": "trips_driver_id_drivers_id_fk",
+          "tableFrom": "trips",
+          "tableTo": "drivers",
+          "columnsFrom": [
+            "driver_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.truck_brands": {
+      "name": "truck_brands",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.truck_lengths": {
+      "name": "truck_lengths",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.truck_models": {
+      "name": "truck_models",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.truck_payloads": {
+      "name": "truck_payloads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.truck_sizes": {
+      "name": "truck_sizes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.truck_types": {
+      "name": "truck_types",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'CUSTOMER'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.vehicles": {
+      "name": "vehicles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "plate_number": {
+          "name": "plate_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_created": {
+          "name": "date_created",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "date_modified": {
+          "name": "date_modified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "truck_length_id": {
+          "name": "truck_length_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "truck_size_id": {
+          "name": "truck_size_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "truck_type_id": {
+          "name": "truck_type_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "truck_brand_id": {
+          "name": "truck_brand_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "truck_model_id": {
+          "name": "truck_model_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "truck_payload_id": {
+          "name": "truck_payload_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_bonded": {
+          "name": "is_bonded",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registration_number": {
+          "name": "registration_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight": {
+          "name": "weight",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dimension": {
+          "name": "dimension",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "road_tax_expiry_date": {
+          "name": "road_tax_expiry_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "inspection_expiry_date": {
+          "name": "inspection_expiry_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "vehicles_truck_length_id_truck_lengths_id_fk": {
+          "name": "vehicles_truck_length_id_truck_lengths_id_fk",
+          "tableFrom": "vehicles",
+          "tableTo": "truck_lengths",
+          "columnsFrom": [
+            "truck_length_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "vehicles_truck_size_id_truck_sizes_id_fk": {
+          "name": "vehicles_truck_size_id_truck_sizes_id_fk",
+          "tableFrom": "vehicles",
+          "tableTo": "truck_sizes",
+          "columnsFrom": [
+            "truck_size_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "vehicles_truck_type_id_truck_types_id_fk": {
+          "name": "vehicles_truck_type_id_truck_types_id_fk",
+          "tableFrom": "vehicles",
+          "tableTo": "truck_types",
+          "columnsFrom": [
+            "truck_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "vehicles_truck_brand_id_truck_brands_id_fk": {
+          "name": "vehicles_truck_brand_id_truck_brands_id_fk",
+          "tableFrom": "vehicles",
+          "tableTo": "truck_brands",
+          "columnsFrom": [
+            "truck_brand_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "vehicles_truck_model_id_truck_models_id_fk": {
+          "name": "vehicles_truck_model_id_truck_models_id_fk",
+          "tableFrom": "vehicles",
+          "tableTo": "truck_models",
+          "columnsFrom": [
+            "truck_model_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "vehicles_truck_payload_id_truck_payloads_id_fk": {
+          "name": "vehicles_truck_payload_id_truck_payloads_id_fk",
+          "tableFrom": "vehicles",
+          "tableTo": "truck_payloads",
+          "columnsFrom": [
+            "truck_payload_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "vehicles_plate_number_unique": {
+          "name": "vehicles_plate_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "plate_number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.document_source": {
+      "name": "document_source",
+      "schema": "public",
+      "values": [
+        "OCR_IMAGE",
+        "EXCEL_TXT",
+        "MANUAL_ENTRY",
+        "API"
+      ]
+    },
+    "public.document_status": {
+      "name": "document_status",
+      "schema": "public",
+      "values": [
+        "UPLOADED",
+        "PROCESSING",
+        "PROCESSED",
+        "ERROR"
+      ]
+    },
+    "public.processing_status": {
+      "name": "processing_status",
+      "schema": "public",
+      "values": [
+        "PENDING",
+        "PROCESSING",
+        "PROCESSED",
+        "ERROR"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

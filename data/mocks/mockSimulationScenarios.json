@@ -1,0 +1,22 @@
+[
+  {
+    "scenarioId": "mock-shipment-001",
+    "shipmentId": "SHP-12345",
+    "originCoordinates": [101.3860, 3.0021],
+    "destinationCoordinates": [103.7414, 1.4927],
+    "requestedDeliveryDate": "2024-08-15T17:00:00.000Z",
+    "customerPoNumber": "PO-ABC-987",
+    "customerShipmentNumber": "CSN-654321",
+    "primaryItemDescription": "Electronics Components",
+    "totalWeight": 500,
+    "remarks": "Handle with care. Fragile items.",
+    "driverName": "John Doe",
+    "driverPhone": "555-123-4567",
+    "driverIc": "S1234567A",
+    "truckId": "TRK-XYZ",
+    "originAddressString": "NIRO Warehouse, Shah Alam, Selangor",
+    "destinationAddressString": "123 Receiver St, Johor Bahru, Johor",
+    "recipientName": "Jane Smith",
+    "recipientPhone": "555-987-6543"
+  }
+] 

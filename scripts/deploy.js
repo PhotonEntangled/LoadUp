@@ -1,143 +1,113 @@
+#!/usr/bin/env node
+
 /**
- * deploy.js
+ * LoadUp Admin Dashboard Deployment Script
  * 
- * Deployment script for LoadUp application.
- * This script handles deploying the application to both staging and production environments.
- * 
- * Usage:
- *   node scripts/deploy.js [environment]
- * 
- * Where [environment] is either 'staging' or 'production'.
+ * This script automates the deployment process to Vercel
+ * It handles environment setup, build, and deployment
  */
 
-const fs = require('fs');
-const path = require('path');
 const { execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
-// Get the environment from command line arguments
-const environment = process.argv[2];
+// Configuration
+const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
+const VERCEL_ORG_ID = process.env.VERCEL_ORG_ID;
+const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
+const SENTRY_DSN = process.env.SENTRY_DSN;
+const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
+const SENTRY_ORG = process.env.SENTRY_ORG;
+const SENTRY_PROJECT = process.env.SENTRY_PROJECT;
 
-// Validate environment
-if (!environment || (environment !== 'staging' && environment !== 'production')) {
-  console.error('Please specify a valid environment: staging or production');
-  process.exit(1);
-}
+// Determine if this is a production deployment
+const args = process.argv.slice(2);
+const isProd = args.includes('--prod') || args.includes('-p');
+const environment = isProd ? 'production' : 'preview';
 
-// Configuration for different environments
-const config = {
-  staging: {
-    adminDashboardUrl: process.env.STAGING_ADMIN_URL || 'https://staging-admin.loadup.com',
-    driverAppUrl: process.env.STAGING_DRIVER_URL || 'https://staging-driver.loadup.com',
-    apiUrl: process.env.STAGING_API_URL || 'https://staging-api.loadup.com',
-  },
-  production: {
-    adminDashboardUrl: process.env.PRODUCTION_ADMIN_URL || 'https://admin.loadup.com',
-    driverAppUrl: process.env.PRODUCTION_DRIVER_URL || 'https://driver.loadup.com',
-    apiUrl: process.env.PRODUCTION_API_URL || 'https://api.loadup.com',
-  },
-};
-
-// Get the configuration for the current environment
-const currentConfig = config[environment];
-
-console.log(`Starting deployment to ${environment} environment...`);
-
-// Function to check if a directory exists
-function directoryExists(dirPath) {
+// Utility to run commands and log output
+function runCommand(command, options = {}) {
+  console.log(`\n> ${command}\n`);
   try {
-    return fs.statSync(dirPath).isDirectory();
-  } catch (err) {
-    return false;
-  }
-}
-
-// Verify build artifacts exist
-const adminBuildPath = path.resolve(__dirname, '../apps/admin-dashboard/.next');
-const driverBuildPath = path.resolve(__dirname, '../apps/driver-app/dist');
-const apiBuildPath = path.resolve(__dirname, '../packages/api/dist');
-
-if (!directoryExists(adminBuildPath)) {
-  console.error('Admin dashboard build artifacts not found. Make sure the build step completed successfully.');
-  process.exit(1);
-}
-
-if (!directoryExists(driverBuildPath)) {
-  console.error('Driver app build artifacts not found. Make sure the build step completed successfully.');
-  process.exit(1);
-}
-
-if (!directoryExists(apiBuildPath)) {
-  console.error('API build artifacts not found. Make sure the build step completed successfully.');
-  process.exit(1);
-}
-
-// Deploy admin dashboard
-console.log(`Deploying admin dashboard to ${currentConfig.adminDashboardUrl}...`);
-try {
-  // This is a placeholder for your actual deployment command
-  // Replace with your actual deployment logic (e.g., AWS S3, Vercel, Netlify, etc.)
-  console.log('Admin dashboard deployment command would run here');
-  // Example: execSync(`aws s3 sync ${adminBuildPath} s3://loadup-${environment}-admin --delete`);
-} catch (error) {
-  console.error('Failed to deploy admin dashboard:', error);
-  process.exit(1);
-}
-
-// Deploy driver app
-console.log(`Deploying driver app to ${currentConfig.driverAppUrl}...`);
-try {
-  // This is a placeholder for your actual deployment command
-  // Replace with your actual deployment logic
-  console.log('Driver app deployment command would run here');
-  // Example: execSync(`aws s3 sync ${driverBuildPath} s3://loadup-${environment}-driver --delete`);
-} catch (error) {
-  console.error('Failed to deploy driver app:', error);
-  process.exit(1);
-}
-
-// Deploy API
-console.log(`Deploying API to ${currentConfig.apiUrl}...`);
-try {
-  // This is a placeholder for your actual deployment command
-  // Replace with your actual deployment logic
-  console.log('API deployment command would run here');
-  // Example: execSync(`aws lambda update-function-code --function-name loadup-${environment}-api --zip-file fileb://${apiBuildPath}/api.zip`);
-} catch (error) {
-  console.error('Failed to deploy API:', error);
-  process.exit(1);
-}
-
-// Run database migrations if needed
-if (process.env.RUN_MIGRATIONS === 'true') {
-  console.log('Running database migrations...');
-  try {
-    execSync('npx drizzle-kit push:pg', {
-      env: {
-        ...process.env,
-        DATABASE_URL: process.env.DATABASE_URL,
-      },
+    return execSync(command, {
+      stdio: 'inherit',
+      ...options
     });
   } catch (error) {
-    console.error('Failed to run database migrations:', error);
+    console.error(`Error executing command: ${command}`);
+    console.error(error.message);
     process.exit(1);
   }
 }
 
-// Update Sentry release if Sentry is configured
-if (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT) {
-  console.log('Creating Sentry release...');
-  try {
-    const version = `loadup-${environment}-${new Date().toISOString().split('T')[0]}-${Math.floor(Math.random() * 1000)}`;
-    execSync(`npx @sentry/cli releases new ${version}`);
-    execSync(`npx @sentry/cli releases set-commits ${version} --auto`);
-    execSync(`npx @sentry/cli releases finalize ${version}`);
-  } catch (error) {
-    console.error('Failed to create Sentry release:', error);
-    // Don't exit on Sentry error, as it's not critical
+// Main deployment function
+async function deploy() {
+  console.log('\n🚀 Starting deployment process...\n');
+  
+  // Check for required environment variables
+  if (!VERCEL_TOKEN) {
+    console.error('Error: VERCEL_TOKEN environment variable is required');
+    process.exit(1);
   }
+  
+  // Ensure we're in the admin-dashboard directory
+  const packageJsonPath = path.join(process.cwd(), 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    console.error('Error: package.json not found. Make sure you run this script from the admin-dashboard directory');
+    process.exit(1);
+  }
+  
+  // Get package version for Sentry release
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const version = packageJson.version;
+  
+  console.log(`📦 Deploying version ${version} to ${environment} environment`);
+  
+  // Create Sentry release if configured
+  if (SENTRY_DSN && SENTRY_AUTH_TOKEN) {
+    console.log('\n🔍 Creating Sentry release...');
+    
+    // Install Sentry CLI if needed
+    try {
+      runCommand('npx sentry-cli --version', { stdio: 'ignore' });
+    } catch (error) {
+      console.log('Installing @sentry/cli...');
+      runCommand('npm install --no-save @sentry/cli');
+    }
+    
+    const releaseName = `loadup-admin-dashboard@${version}`;
+    
+    // Create and set up the release
+    runCommand(`npx sentry-cli releases new ${releaseName}`);
+    runCommand(`npx sentry-cli releases set-commits ${releaseName} --auto`);
+    
+    // Set environment variable for the build
+    process.env.SENTRY_RELEASE = releaseName;
+  }
+  
+  // Build the application
+  console.log('\n🔨 Building application...');
+  runCommand('npm run build');
+  
+  // Deploy to Vercel
+  console.log('\n🚢 Deploying to Vercel...');
+  const prodFlag = isProd ? '--prod' : '';
+  runCommand(`npx vercel deploy ${prodFlag} --token=${VERCEL_TOKEN}`);
+  
+  // Finalize Sentry release if configured
+  if (SENTRY_DSN && SENTRY_AUTH_TOKEN && process.env.SENTRY_RELEASE) {
+    console.log('\n✅ Finalizing Sentry release...');
+    runCommand(`npx sentry-cli releases finalize ${process.env.SENTRY_RELEASE}`);
+    
+    // Create deployment in Sentry
+    runCommand(`npx sentry-cli releases deploys ${process.env.SENTRY_RELEASE} new -e ${environment}`);
+  }
+  
+  console.log('\n✨ Deployment completed successfully!');
 }
 
-console.log(`Deployment to ${environment} completed successfully!`);
-console.log(`Admin Dashboard: ${currentConfig.adminDashboardUrl}`);
-console.log(`Driver App: ${currentConfig.driverAppUrl}`);
-console.log(`API: ${currentConfig.apiUrl}`); 
+// Run the deployment
+deploy().catch(error => {
+  console.error('Deployment failed:', error);
+  process.exit(1);
+}); 

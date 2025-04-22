@@ -1,7 +1,11 @@
-﻿{
+{
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -14,18 +18,55 @@
     "jsx": "preserve",
     "incremental": true,
     "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
     "plugins": [
       {
         "name": "next"
       }
     ],
-    "paths": {
-      "@loadup/*": ["packages/*/src"],
-      "@/*": ["src/*"]
-    },
-    "types": ["jest", "node"],
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "types": [
+      "jest",
+      "node"
+    ],
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
   },
-  "include": ["packages/**/*", "__tests__/**/*", "e2e/**/*", ".next/types/**/*.ts", "src/**/*"],
-  "exclude": ["node_modules", "dist", "**/dist/**"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "scripts/**/*.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "referencesOnly",
+    ".next",
+    "dist",
+    "dist-scripts",
+    "apps",
+    ".turbo",
+    "coverage",
+    "v0-imports",
+    "__tests__",
+    "browser-tools-mcp",
+    "packages",
+    "src/lib/shared",
+    "app/tracking/test-*",
+    "app/tracking/test-combined/page.tsx",
+    "app/tracking/test-new-map/page.tsx",
+    "app/tracking/test-vehicle-list/page.tsx",
+    "components/map",
+    "components/VehicleMarker.tsx",
+    "parserRefs",
+    "components/map/ShipmentSnapshotMapView.tsx",
+    "components/map/DriverInterface.tsx",
+    "components/map/FleetOverviewMap.tsx",
+    "components/map/FleetOverviewMapWrapper.tsx"
+  ]
 }

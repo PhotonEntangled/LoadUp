@@ -1,0 +1,24 @@
+[
+  {
+    "scenarioId": "at-destination-001",
+    "shipmentId": "SHP-ATDEST-TEST",
+    "originCoordinates": [101.3860, 3.0021],
+    "destinationCoordinates": [103.7414, 1.4927],
+    "requestedDeliveryDate": "2024-09-17T09:00:00.000Z",
+    "customerPoNumber": "PO-ATDEST-555",
+    "customerShipmentNumber": "CSN-ATDEST-666",
+    "primaryItemDescription": "Final Delivery Goods - At Destination Test",
+    "totalWeight": 400,
+    "remarks": "Test case: Simulation starts at destination, pending delivery confirmation.",
+    "driverName": "Eve Arrival",
+    "driverPhone": "555-444-5555",
+    "driverIc": "S5544332E",
+    "truckId": "TRK-ARRIVED",
+    "originAddressString": "AtDest Origin Point, Shah Alam, Selangor",
+    "destinationAddressString": "AtDest Destination Point, Johor Bahru, Johor",
+    "recipientName": "Frank Final",
+    "recipientPhone": "555-555-6666",
+    "routeGeometry": null,
+    "initialStatus": "Pending Delivery Confirmation"
+  }
+] 
