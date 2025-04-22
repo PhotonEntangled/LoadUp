@@ -120,7 +120,7 @@ This confirms the necessity of the creation steps outlined in the subsequent pha
     *   **Job Queue:** Vercel Queues
     *   **Cache:** Vercel KV (`@vercel/kv`)
     *   **Worker Logic:** Next.js API Route (triggered by Vercel Queues)
-    *   **Job Enqueuer:** Vercel Cron Jobs (to periodically add tick jobs)
+    *   **Job Enqueuer:** ~~Vercel Cron Jobs (to periodically add tick jobs)~~ **External Trigger** (e.g., GitHub Actions Schedule, third-party Cron service) due to Vercel Hobby plan limits.
     *   **DB Persistence:** `services/VehicleTrackingService.ts` (existing)
 
 ---
@@ -600,5 +600,5 @@ Task: Define Phase 3.1 Marker Styling & Popup Requirements for v0
 - [X] **NEW Task SH.2 (UI):** Update UI components (`ShipmentCard`, `ShipmentDetailView` status badges, status filters/displays) to present `AWAITING_STATUS` appropriately (e.g., display "Awaiting Status" text, use a neutral visual indicator). Hide 'View Tracking' button. **(✅ Verified)**
 - [X] **NEW Task SH.3 (DB Verify):** Confirmed `status` column uses `shipmentStatusEnum` which includes `AWAITING_STATUS`. Migration was successful. **(✅ Verified)**
 - [X] **NEW Task 5.7 (All-Status Mock) - COMPLETE:** Mock XLS created, parser adjusted, trigger added, verified end-to-end status handling.
-- [X] **NEW Phase 10 (Backend Simulation Arch) - COMPLETE:** KV Service, Tick Worker, Enqueuer API, Initiation Action, Vercel Config, and Frontend Trigger implemented and integrated.
+- [X] **NEW Phase 10 (Backend Simulation Arch) - Partially Completed / Pivoted:** KV Service, Tick Worker, Enqueuer API, Initiation Action, and Frontend Trigger implemented. Vercel Cron removed; **Requires external trigger setup.**
 - [ ] **Phase 6+ - Deferred:** Multi-vehicle, Live Data Integration, etc.

@@ -12,11 +12,5 @@
   ],
   "env": {
     "NEXT_PUBLIC_API_URL": "/api"
-  },
-  "crons": [
-    {
-      "path": "/api/simulation/enqueue-ticks",
-      "schedule": "*/1 * * * *"
-    }
-  ]
+  }
 }
