@@ -329,5 +329,5 @@ export const EnhancedFileUpload = forwardRef<FileUploadRef, FileUploadProps>(({
       )}
     </div>
   );
-});
+}); 
 EnhancedFileUpload.displayName = "EnhancedFileUpload"; 

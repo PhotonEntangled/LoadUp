@@ -4,7 +4,26 @@ import { logger } from '@/utils/logger'; // Assuming logger is accessible
 // Environment variable for the Mapbox Secret Token
 const MAPBOX_SECRET_TOKEN = process.env.MAPBOX_SECRET_TOKEN;
 
+// --- BEGIN ADDED LOGGING ---
+logger.debug(`[API /maps/directions] Initial MAPBOX_SECRET_TOKEN type: ${typeof MAPBOX_SECRET_TOKEN}`);
+if (typeof MAPBOX_SECRET_TOKEN === 'string' && MAPBOX_SECRET_TOKEN.length > 4) {
+  logger.debug(`[API /maps/directions] Initial MAPBOX_SECRET_TOKEN value (partial): ${MAPBOX_SECRET_TOKEN.substring(0, 2)}...${MAPBOX_SECRET_TOKEN.substring(MAPBOX_SECRET_TOKEN.length - 2)}`);
+} else {
+  logger.warn(`[API /maps/directions] Initial MAPBOX_SECRET_TOKEN is null, undefined, or too short.`);
+}
+// --- END ADDED LOGGING ---
+
 export async function GET(request: NextRequest) {
+  // --- BEGIN ADDED LOGGING ---
+  // Log again inside the function handler to ensure scope/access is correct
+  logger.debug(`[API /maps/directions Handler] MAPBOX_SECRET_TOKEN type: ${typeof MAPBOX_SECRET_TOKEN}`);
+  if (typeof MAPBOX_SECRET_TOKEN === 'string' && MAPBOX_SECRET_TOKEN.length > 4) {
+      logger.debug(`[API /maps/directions Handler] MAPBOX_SECRET_TOKEN value (partial): ${MAPBOX_SECRET_TOKEN.substring(0, 2)}...${MAPBOX_SECRET_TOKEN.substring(MAPBOX_SECRET_TOKEN.length - 2)}`);
+  } else {
+      logger.warn(`[API /maps/directions Handler] MAPBOX_SECRET_TOKEN is null, undefined, or too short.`);
+  }
+  // --- END ADDED LOGGING ---
+
   // Ensure the secret token is configured
   if (!MAPBOX_SECRET_TOKEN) {
     logger.error('[API /maps/directions] MAPBOX_SECRET_TOKEN is not configured.');
@@ -49,6 +68,9 @@ export async function GET(request: NextRequest) {
 
   logger.debug(`[API /maps/directions] Requesting route for: ${coordinates}`);
   // logger.debug(`[API /maps/directions] Mapbox URL: ${mapboxApiUrl}`); // Be careful logging URLs with tokens
+  // --- BEGIN ADDED LOGGING ---
+  logger.debug(`[API /maps/directions] Token used in URL (partial): ${MAPBOX_SECRET_TOKEN ? MAPBOX_SECRET_TOKEN.substring(0, 2) + '...' + MAPBOX_SECRET_TOKEN.substring(MAPBOX_SECRET_TOKEN.length - 2) : 'N/A'}`);
+  // --- END ADDED LOGGING ---
 
   try {
     const response = await fetch(mapboxApiUrl, {

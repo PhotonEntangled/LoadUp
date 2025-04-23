@@ -16,6 +16,7 @@ import { SimulationStoreContext } from '@/lib/context/SimulationStoreContext';
 import type { SimulationStoreApi } from '@/lib/store/useSimulationStore';
 import { toast } from "@/hooks/use-toast";
 import { Accordion } from "@/components/ui/accordion";
+import { getShipmentLastKnownLocation } from '@/lib/actions/shipmentActions';
 
 // Simple debounce hook
 function useDebounce(callback: (...args: any[]) => void, delay: number) {
@@ -47,6 +48,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
     const [error, setError] = useState<string | null>(null);
     const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
     const [isSimLoading, setIsSimLoading] = useState<boolean>(false); // Loading state for simulation prep
+    const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false); // State for refresh button
 
     // CORRECTED STORE ACCESS: Use direct context
     const storeApi = useContext(SimulationStoreContext);
@@ -64,6 +66,18 @@ export default function Page({ params }: { params: { documentid: string } }) {
         }
         return undefined;
     }, []); // Empty dependency array as it's a pure function of its args
+
+    // Helper to convert lat/lon/timestamp to GeoJSON Point Feature
+    const createPositionFeature = (lat: number | null, lon: number | null, timestamp: string | null): Feature<Point> | null => {
+        if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
+            return {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [lon, lat] },
+                properties: { timestamp: timestamp },
+            };
+        }
+        return null;
+    };
 
     // --- Function to Fetch Route Geometry ---
     const fetchRouteGeometry = useCallback(async (originCoords: [number, number], destCoords: [number, number]) => {
@@ -147,6 +161,20 @@ export default function Page({ params }: { params: { documentid: string } }) {
                          const initialSelected = data[0];
                          setSelectedShipment(initialSelected);
 
+                         // --- PROCESS INITIAL LAST KNOWN LOCATION ---
+                         const initialPosition = createPositionFeature(
+                             initialSelected.coreInfo.lastKnownLatitude,
+                             initialSelected.coreInfo.lastKnownLongitude,
+                             initialSelected.coreInfo.lastKnownTimestamp
+                         );
+                         setCurrentLastPosition(initialPosition);
+                         if (initialPosition) {
+                            logger.info("[ShipmentPage] Initial last known position set from fetch.", initialPosition);
+                         } else {
+                            logger.info("[ShipmentPage] No initial last known position found in fetched data.");
+                         }
+                         // --- END PROCESS INITIAL LAST KNOWN LOCATION ---
+
                          // Trigger initial map data fetch if coordinates are valid
                          const initialOriginCoords = getCoordinates(initialSelected.originAddress);
                          const initialDestCoords = getCoordinates(initialSelected.destinationAddress);
@@ -173,7 +201,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
         };
 
         fetchShipments();
-    }, [documentid, getCoordinates, fetchRouteGeometry]); // Added dependencies
+    }, [documentid, getCoordinates, fetchRouteGeometry, createPositionFeature]); // Dependencies
     
     // --- Fetch Map Data When Selected Shipment Changes ---
      useEffect(() => {
@@ -198,9 +226,25 @@ export default function Page({ params }: { params: { documentid: string } }) {
             setMapError("Missing coordinates for route."); // Set map-specific error
         }
 
-        setCurrentLastPosition(null); // Placeholder: clear last position on selection change
+        // --- PROCESS LAST KNOWN LOCATION ON SELECTION CHANGE ---
+        if (selectedShipment) {
+            const newPosition = createPositionFeature(
+                selectedShipment.coreInfo.lastKnownLatitude,
+                selectedShipment.coreInfo.lastKnownLongitude,
+                selectedShipment.coreInfo.lastKnownTimestamp
+            );
+            setCurrentLastPosition(newPosition);
+             if (newPosition) {
+                 logger.info("[ShipmentPage] Last known position updated on selection change.", newPosition);
+             } else {
+                 logger.info("[ShipmentPage] No last known position found for newly selected shipment.");
+             }
+        } else {
+             setCurrentLastPosition(null); // Clear if no shipment selected
+        }
+        // --- END PROCESS LAST KNOWN LOCATION ON SELECTION CHANGE ---
 
-    }, [selectedShipment, getCoordinates, fetchRouteGeometry]); // Dependencies
+    }, [selectedShipment, getCoordinates, fetchRouteGeometry, createPositionFeature]); // Dependencies
 
     // --- Search/Filtering (Keep as is) ---
     useEffect(() => {
@@ -246,12 +290,36 @@ export default function Page({ params }: { params: { documentid: string } }) {
         }));
     };
 
-    const handleRefreshLocation = () => {
-        logger.info('Refresh Location button clicked', { shipmentId: selectedShipment?.coreInfo.id });
-        if (selectedShipment) {
-            toast({ title: "Info", description: "Refresh Location - Needs Implementation", variant: "default" });
+    // --- RE-IMPLEMENTED REFRESH LOCATION HANDLER ---
+    const handleRefreshLocation = useCallback(async () => {
+        if (!selectedShipment) {
+            toast({ title: "Info", description: "No shipment selected to refresh.", variant: "default" });
+            return;
         }
-    };
+        logger.info(`[ShipmentPage] Refreshing location for shipment: ${selectedShipment.coreInfo.id}`);
+        setIsRefreshingLocation(true);
+        try {
+            const result = await getShipmentLastKnownLocation(selectedShipment.coreInfo.id);
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            setCurrentLastPosition(result.position);
+            if (result.position) {
+                 toast({ title: "Success", description: `Location updated to ${result.timestamp ? new Date(result.timestamp).toLocaleString() : 'latest'}.`, variant: "default" });
+                 logger.info(`[ShipmentPage] Location refreshed successfully. Position:`, result.position);
+            } else {
+                 toast({ title: "Info", description: "No updated location found for this shipment.", variant: "default" });
+                 logger.info(`[ShipmentPage] No location data returned after refresh.`);
+            }
+
+        } catch (err) {
+            logger.error("[ShipmentPage] Error refreshing location:", err);
+            toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to refresh location.", variant: "destructive" });
+        } finally {
+            setIsRefreshingLocation(false);
+        }
+    }, [selectedShipment]); // Dependency: selectedShipment
+    // --- END RE-IMPLEMENTED REFRESH LOCATION HANDLER ---
 
     const handleViewTracking = async (shipmentId: string, documentId: string) => {
         logger.info(`Shipment Page: View Tracking clicked for shipment ${shipmentId} in doc ${documentId}`);

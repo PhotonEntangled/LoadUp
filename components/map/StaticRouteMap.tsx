@@ -184,11 +184,11 @@ export const StaticRouteMap = React.memo(({
   }
   
   // Get token directly from environment variable
-  const mapboxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN; // Use the other public token variable
+  const mapboxAccessToken = mapboxToken;
   
   // Neurotic check: Ensure token is provided
   if (!mapboxAccessToken) {
-      logger.error('StaticRouteMap: NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN is not defined in environment variables!'); // Update error message
+      logger.error('StaticRouteMap: mapboxToken prop is missing or empty!'); // Update error message
       return (
         <div className={`flex items-center justify-center bg-destructive/10 text-destructive p-4 rounded-md ${className}`} style={{ height, width }}>
            Map cannot be displayed: Configuration error (Missing Token).
