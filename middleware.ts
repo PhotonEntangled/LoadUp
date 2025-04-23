@@ -26,35 +26,19 @@ async function hasAccess(req: NextRequest) {
 }
 
 export async function middleware(req: NextRequest) {
-  // --- Restore original logic --- 
-  const { nextUrl } = req;
-  
   // For development bypassing auth (controlled by env var)
   if (process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' && process.env.NODE_ENV === 'development') {
     console.log('Middleware: Bypassing auth check due to NEXT_PUBLIC_BYPASS_AUTH=true');
     return NextResponse.next();
   } else {
-    console.log('Middleware: Auth bypass not enabled.', {
-      bypassAuth: process.env.NEXT_PUBLIC_BYPASS_AUTH,
-      nodeEnv: process.env.NODE_ENV
-    });
+    // Auth checks would normally happen here, but user requested bypass for now.
+    console.log('Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.');
+    // console.log('Middleware: Auth bypass not enabled.', { // Original log for reference
+    //   bypassAuth: process.env.NEXT_PUBLIC_BYPASS_AUTH,
+    //   nodeEnv: process.env.NODE_ENV
+    // });
+    return NextResponse.next(); // Bypass auth regardless of env var as requested
   }
-  
-  try {
-    const hasAccessResult = await hasAccess(req);
-    
-    // Redirect to sign-in page if not authenticated
-    if (!hasAccessResult && (nextUrl.pathname.startsWith('/dashboard') || nextUrl.pathname === '/')) {
-      console.log('Middleware: Redirecting to sign-in page from', nextUrl.pathname);
-      return NextResponse.redirect(new URL('/sign-in', nextUrl.origin));
-    }
-    
-    return NextResponse.next();
-  } catch (error) {
-    console.error('Middleware error:', error);
-    return NextResponse.next();
-  }
-  // --- End of restored logic ---
 }
 
 // Keep matcher config
