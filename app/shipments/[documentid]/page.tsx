@@ -68,7 +68,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
     }, []); // Empty dependency array as it's a pure function of its args
 
     // Helper to convert lat/lon/timestamp to GeoJSON Point Feature
-    const createPositionFeature = (lat: number | null, lon: number | null, timestamp: string | null): Feature<Point> | null => {
+    const createPositionFeature = useCallback((lat: number | null, lon: number | null, timestamp: string | null): Feature<Point> | null => {
         if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
             return {
                 type: 'Feature',
@@ -77,7 +77,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             };
         }
         return null;
-    };
+    }, []); // Wrap in useCallback with empty dependency array
 
     // --- Function to Fetch Route Geometry ---
     const fetchRouteGeometry = useCallback(async (originCoords: [number, number], destCoords: [number, number]) => {
