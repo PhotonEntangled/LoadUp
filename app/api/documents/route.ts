@@ -461,7 +461,7 @@ export async function POST(request: NextRequest) {
       // 4. Process bundles sequentially (calling insertShipmentBundle for each)
       logger.info(`API: Processing ${parsedBundles.length} bundles for document ${docId}...`);
       let successfulInserts = 0;
-      let failedBundleIndices: number[] = [];
+      const failedBundleIndices: number[] = [];
 
       // <<<< RESTORE DB INSERTION LOOP >>>>
       // Loop through all parsed bundles

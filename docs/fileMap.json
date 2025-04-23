@@ -140,6 +140,36 @@
          "keyImports": ["react", "lucide-react", "@/components/ui/badge", "@/lib/database/schema", "@/lib/utils"],
          "relatedFiles": ["components/shipments/ShipmentCard.tsx"]
      },
+    "components/logistics/shipments/AIMappingLabel.tsx": {
+        "description": "Displays a label indicating an AI-mapped field with confidence level via tooltip.",
+        "keyImports": ["react", "@/components/ui/tooltip", "lucide-react", "@/types/shipment"],
+        "relatedFiles": ["components/logistics/shipments/ShipmentDetailsView.tsx"]
+    },
+    "components/ui/data-table.tsx": {
+        "description": "Generic data table component used for displaying tabular data. Relies on TanStack Table concepts but implemented directly.",
+        "keyImports": ["react", "@/lib/utils"],
+        "relatedFiles": ["components/users/UserManagement.tsx", "components/drivers/DriverManagement.tsx"]
+    },
+    "components/ui/label.tsx": {
+        "description": "UI component for form labels, wrapping Radix UI Label primitive.",
+        "keyImports": ["react", "@radix-ui/react-label", "class-variance-authority", "@/lib/utils"],
+        "relatedFiles": ["components/ui/input.tsx", "components/ui/select.tsx", "components/AuthForm.tsx"]
+    },
+    "components/ui/select.tsx": {
+        "description": "UI components for select dropdowns, wrapping Radix UI Select primitives (Root, Group, Value, Trigger, Content, Label, Item, Separator).",
+        "keyImports": ["react", "@radix-ui/react-select", "lucide-react", "@/lib/utils"],
+        "relatedFiles": ["components/ui/input.tsx", "components/ui/label.tsx", "components/AuthForm.tsx"]
+    },
+    "components/ui/enhanced-file-upload.tsx": {
+        "description": "Advanced file upload component supporting drag-and-drop, previews, progress simulation, and multiple file handling.",
+        "keyImports": ["react", "@/components/ui/input", "@/components/ui/button", "@/lib/utils", "lucide-react", "next/image"],
+        "relatedFiles": []
+    },
+    "components/ui/file-upload.tsx": {
+        "description": "Basic file upload component supporting drag-and-drop, file type/size limits, and progress simulation.",
+        "keyImports": ["react", "@/components/ui/input", "@/components/ui/progress", "lucide-react", "@/lib/utils"],
+        "relatedFiles": []
+    },
     "utils/simulation/simulationUtils.ts": {
       "description": "Utility functions supporting the simulation logic, specifically calculateNewPosition which uses Turf.js to determine a vehicle's next position and bearing along a route.",
       "keyImports": ["@/types/vehicles", "@turf/turf", "@/utils/logger"],
@@ -173,6 +203,16 @@
         "description": "Unit tests for simulationCacheService using Jest, mocking @vercel/kv.",
         "keyImports": ["jest", "@vercel/kv", "@/utils/logger", "./simulationCacheService", "@/types/vehicles"],
         "relatedFiles": ["services/kv/simulationCacheService.ts"]
+    },
+    "components/AuthForm.tsx": {
+        "description": "Generic authentication form component for sign-in, sign-up, and forgot password flows.",
+        "keyImports": ["react", "react-hook-form", "zod", "next/navigation", "@/lib/simple-auth", "@/components/ui/button", "@/components/ui/input", "@/components/ui/label"],
+        "relatedFiles": ["app/auth/sign-in/page.tsx", "app/auth/sign-up/page.tsx", "app/auth/forgot-password/page.tsx", "lib/simple-auth.ts"]
+    },
+    "hooks/use-debounce.ts": {
+        "description": "Custom React hook to debounce a value, updating only after a specified delay.",
+        "keyImports": ["react"],
+        "relatedFiles": []
     }
   }
 }

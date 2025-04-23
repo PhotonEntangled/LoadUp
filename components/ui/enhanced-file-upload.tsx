@@ -45,6 +45,33 @@ export const EnhancedFileUpload = forwardRef<FileUploadRef, FileUploadProps>(({
     }
   }));
 
+  // Define simulateUpload first as handleFileChange depends on it
+  const simulateUpload = useCallback((fileId: string) => {
+    setFiles((prev) =>
+      prev.map((f) => (f.id === fileId ? { ...f, uploading: true } : f))
+    );
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 10) + 5;
+
+      if (progress >= 100) {
+        clearInterval(interval);
+        progress = 100;
+
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileId ? { ...f, progress, uploading: false, uploaded: true } : f
+          )
+        );
+      } else {
+        setFiles((prev) =>
+          prev.map((f) => (f.id === fileId ? { ...f, progress } : f))
+        );
+      }
+    }, 300);
+  }, []);
+
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList } }) => {
       const selectedFiles = Array.from(event.target.files || []);
@@ -101,34 +128,8 @@ export const EnhancedFileUpload = forwardRef<FileUploadRef, FileUploadProps>(({
         fileInputRef.current.value = "";
       }
     },
-    [files.length, maxFiles, maxSize, onUpload]
+    [files.length, maxFiles, maxSize, onUpload, simulateUpload]
   );
-
-  const simulateUpload = useCallback((fileId: string) => {
-    setFiles((prev) =>
-      prev.map((f) => (f.id === fileId ? { ...f, uploading: true } : f))
-    );
-
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.floor(Math.random() * 10) + 5;
-      
-      if (progress >= 100) {
-        clearInterval(interval);
-        progress = 100;
-        
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileId ? { ...f, progress, uploading: false, uploaded: true } : f
-          )
-        );
-      } else {
-        setFiles((prev) =>
-          prev.map((f) => (f.id === fileId ? { ...f, progress } : f))
-        );
-      }
-    }, 300);
-  }, []);
 
   const handleRemoveFile = useCallback((fileId: string) => {
     setFiles((prev) => {
@@ -328,4 +329,5 @@ export const EnhancedFileUpload = forwardRef<FileUploadRef, FileUploadProps>(({
       )}
     </div>
   );
-}); 
+});
+EnhancedFileUpload.displayName = "EnhancedFileUpload"; 

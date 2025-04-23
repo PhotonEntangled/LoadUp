@@ -27,11 +27,18 @@ function bufferToArrayBuffer(buffer: ArrayBuffer): ArrayBuffer {
   return buffer;
 }
 
+// Define an interface for the options
+interface ProcessImageOptions {
+  useAIMapping?: boolean;
+  aiMappingConfidenceThreshold?: number;
+  documentType?: string; // Assuming documentType might also be passed
+}
+
 /**
  * Process OCR data through the same Excel parsing pipeline
  * using OpenAI's Vision API to extract text from images
  */
-async function processImageWithOCR(imageBuffer: ArrayBuffer, fileName: string, options: any = {}) {
+async function processImageWithOCR(imageBuffer: ArrayBuffer, fileName: string, options: ProcessImageOptions = {}) {
   console.log(`Processing image file for OCR: ${fileName}`);
   let extractedText = ''; // Store extracted text
   let ocrConfidence = 0;
@@ -76,20 +83,6 @@ async function processImageWithOCR(imageBuffer: ArrayBuffer, fileName: string, o
     }
 
     // Otherwise, process the extracted text through the Excel parser
-    const parseOptions = {
-      hasHeaderRow: true,
-      useAIMapping: options.useAIMapping ?? true,
-      aiMappingConfidenceThreshold: options.aiMappingConfidenceThreshold ?? 0.7,
-      // REMOVED: Usage of FIELD_MAPPINGS which is no longer exported/needed here
-      // fieldMapping: options.documentType === 'ETD_REPORT'
-      //   ? FIELD_MAPPINGS.ETD_REPORT 
-      //   : FIELD_MAPPINGS.OUTSTATION_RATES,
-      // Special processing flags for OCR data
-      isOcrData: true,
-      ocrSource: 'vision_api',
-      ocrConfidence: ocrConfidence
-    };
-
     // Process the extracted text through the Excel parser's text parsing function
     // --- START NEUROTIC FIX: Comment out broken/non-functional OCR text parsing path ---
     // TODO: [NEUROTIC] This section is commented out because `excelParserService.parseText` does not exist (see L92 TODO)
@@ -298,7 +291,7 @@ export async function POST(request: NextRequest) {
     try {
       // --- Start Processing Logic ---
       if (isImageFile) {
-        processedResults = await processImageWithOCR(buffer, file.name, { documentType, useAIMapping, aiMappingConfidenceThreshold, hasHeaderRow });
+        processedResults = await processImageWithOCR(buffer, file.name, { documentType, useAIMapping, aiMappingConfidenceThreshold });
       } else {
         // Process Excel/text file with the regular parser
         let sheetIndex: number | undefined = undefined;
@@ -369,7 +362,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
       logger.error('Unhandled endpoint error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       // Define payload specifically for the error update
@@ -415,7 +408,7 @@ export async function POST(request: NextRequest) {
           .set(finalUpdatePayload) 
           .where(eq(documents.id, documentId)); 
         logger.info(`Successfully performed final update for document ${documentId}`);
-      } catch (dbError: any) {
+      } catch (dbError: unknown) {
         logger.error(`Database error during final update for document ${documentId}:`, dbError);
       }
     }

@@ -129,7 +129,6 @@ export default function AuthForm({
 
   // Helper to get field properties - avoids repeated @ts-ignore
   const getFieldProps = (fieldName: string) => {
-    // @ts-ignore
     const fieldError = errors[fieldName]?.message as string | undefined;
     const fieldLabel = (fieldName.charAt(0).toUpperCase() + fieldName.slice(1)).replace(/([A-Z])/g, ' $1').trim(); // Simple label generation
     const fieldType = fieldName === 'email' ? 'email' : fieldName === 'password' ? 'password' : 'text';

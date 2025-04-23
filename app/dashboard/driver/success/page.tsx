@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getUser, signOut } from "@/lib/simple-auth";
 import Image from "next/image";
 import Link from "next/link";
+// Removed incorrect import: import { Loader2Icon } from "@tabler/icons-react";
 
 export default function DriverSuccessPage() {
   const [user, setUser] = useState<any>(null);
@@ -75,7 +76,7 @@ export default function DriverSuccessPage() {
             className="h-auto"
           />
         </div>
-        
+
         <div className="text-center">
           <div className="inline-flex items-center justify-center rounded-full bg-green-100 p-2 mb-4">
             <svg
@@ -93,15 +94,15 @@ export default function DriverSuccessPage() {
               ></path>
             </svg>
           </div>
-          
+
           <h1 className="mb-2 text-2xl font-bold text-gray-900">Welcome, Driver!</h1>
           <p className="mb-1 text-gray-600">
-            You've successfully signed in as <span className="font-semibold">{user.name}</span>
+            You&apos;ve successfully signed in as <span className="font-semibold">{user.name}</span>
           </p>
           <p className="mb-6 text-sm text-gray-500">
             Role: Driver
           </p>
-          
+
           <div className="space-y-4">
             <div className="rounded-md bg-blue-50 p-4 border border-blue-100">
               <div className="flex">
@@ -126,7 +127,7 @@ export default function DriverSuccessPage() {
                 </div>
               </div>
             </div>
-            
+
             <button
               onClick={handleSignOut}
               className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -138,4 +139,4 @@ export default function DriverSuccessPage() {
       </div>
     </div>
   );
-} 
+}

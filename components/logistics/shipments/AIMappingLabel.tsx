@@ -40,8 +40,8 @@ export const AIMappingLabel = ({ aiField }: AIMappingLabelProps) => {
         <TooltipContent>
           <div className="text-sm">
             <p className="font-semibold">AI-Mapped Field</p>
-            <p>Original: "{aiField.originalField}"</p>
-            <p>Mapped to: "{aiField.field}"</p>
+            <p>Original: &quot;{aiField.originalField}&quot;</p>
+            <p>Mapped to: &quot;{aiField.field}&quot;</p>
             <p>Confidence: {confidenceLabel} ({Math.round(aiField.confidence * 100)}%)</p>
           </div>
         </TooltipContent>

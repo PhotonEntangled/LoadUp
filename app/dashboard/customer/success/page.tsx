@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getUser, signOut } from "@/lib/simple-auth";
 import Image from "next/image";
 import Link from "next/link";
+import { CheckIcon, Loader2Icon } from "lucide-react";
 
 export default function CustomerSuccessPage() {
   const [user, setUser] = useState<any>(null);
@@ -77,30 +78,18 @@ export default function CustomerSuccessPage() {
         </div>
         
         <div className="text-center">
-          <div className="inline-flex items-center justify-center rounded-full bg-green-100 p-2 mb-4">
-            <svg
-              className="h-6 w-6 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              ></path>
-            </svg>
+          <div className="flex flex-col items-center space-y-4">
+            <div className="p-2 bg-green-100 rounded-full">
+              <CheckIcon className="h-8 w-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-semibold">Account Created Successfully!</h2>
+            <p className="text-center text-muted-foreground">
+              Welcome to LoadUp! Your customer account is ready. You&apos;ll be redirected shortly.
+            </p>
+            <div className="flex items-center justify-center space-x-2">
+              <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
           </div>
-          
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Welcome, Customer!</h1>
-          <p className="mb-1 text-gray-600">
-            You've successfully signed in as <span className="font-semibold">{user.name}</span>
-          </p>
-          <p className="mb-6 text-sm text-gray-500">
-            Role: Customer
-          </p>
           
           <div className="space-y-4">
             <div className="rounded-md bg-orange-50 p-4 border border-orange-100">
@@ -146,7 +135,7 @@ export default function CustomerSuccessPage() {
                 </div>
                 <div className="ml-3 flex-1">
                   <p className="text-sm text-blue-700">
-                    Soon you'll be able to track your shipments, manage your account, and more!
+                    Soon you&apos;ll be able to track your shipments, manage your account, and more!
                   </p>
                 </div>
               </div>

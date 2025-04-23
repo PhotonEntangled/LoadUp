@@ -67,7 +67,7 @@ export default function AuthForm<T extends z.ZodType>({
       if (formType === 'sign-in') {
         console.log('AuthForm: Attempting to sign in with:', { email: data.email });
         
-        // @ts-ignore - We know these fields exist on the sign-in form
+        // We know these fields exist on the sign-in form
         const result = await signIn({
           email: data.email,
           password: data.password,
@@ -131,7 +131,6 @@ export default function AuthForm<T extends z.ZodType>({
         // console.log('AuthForm: Sign-up successful:', signUpData);
         
         // Redirect to success page with user details
-        // @ts-ignore - We know these fields exist on the sign-up form
         // router.push(`/sign-up/success?email=${encodeURIComponent(data.email)}&role=${data.role || 'customer'}`);
       } else if (formType === 'forgot-password') {
         // Simulate sending a password reset email
@@ -155,7 +154,7 @@ export default function AuthForm<T extends z.ZodType>({
     type: string = 'text',
     required: boolean = true
   ) => {
-    // @ts-ignore - Dynamic field access
+    // Dynamic field access
     const fieldError = errors[fieldName]?.message as string | undefined;
     
     return (
@@ -170,7 +169,7 @@ export default function AuthForm<T extends z.ZodType>({
             fieldError ? 'border-red-500' : 'border-gray-300'
           }`}
           disabled={isLoading || emailSent}
-          // @ts-ignore - Dynamic field registration
+          // @ts-expect-error - Dynamic field registration
           {...register(fieldName)}
         />
         {fieldError && <p className="mt-1 text-sm text-red-500">{fieldError}</p>}
@@ -181,7 +180,6 @@ export default function AuthForm<T extends z.ZodType>({
   const renderRoleSelector = () => {
     if (!showRoleSelector) return null;
     
-    // @ts-ignore - Dynamic field access
     const fieldError = errors.role?.message as string | undefined;
     
     return (
@@ -195,7 +193,7 @@ export default function AuthForm<T extends z.ZodType>({
             fieldError ? 'border-red-500' : 'border-gray-300'
           }`}
           disabled={isLoading}
-          // @ts-ignore - Dynamic field registration
+          // @ts-expect-error - Dynamic field registration
           {...register('role')}
         >
           <option value="customer">Customer</option>

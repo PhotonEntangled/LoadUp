@@ -408,7 +408,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                             <Search className="h-8 w-8 text-muted-foreground mb-3" />
                             <h3 className="text-base font-medium mb-1">No shipments found</h3>
                             <p className="text-sm text-muted-foreground max-w-xs mb-3">
-                                No shipments match "{searchTerm}". Try adjusting your search.
+                                No shipments match &quot;{searchTerm}&quot;. Try adjusting your search.
                             </p>
                             <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
                                 Clear Search

@@ -261,7 +261,7 @@ export default function DocumentScanner({ onScanComplete, onClose }: DocumentSca
                 <h4 className="font-medium text-amber-700">Document Processed with Errors</h4>
               </div>
               <div className="text-sm text-amber-700">
-                <p>The document was processed but we couldn't extract all the necessary information.</p>
+                <p>The document was processed but we couldn&apos;t extract all the necessary information.</p>
                 <p className="mt-1">You may want to try with a clearer image or a different document format.</p>
               </div>
             </div>

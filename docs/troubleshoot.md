@@ -608,3 +608,68 @@ A frontend-driven approach (e.g., calling Server Actions on tick) is deemed too 
 - **Note:** The linter may persist in reporting a spurious overlap error on the simplified `disabled` prop (line 531) due to caching or deeper inference issues, but the code itself is now logically correct based on the type definitions and control flow.
 
 **(Next Step):** Re-run `npm run build` to confirm the final status. If it fails *only* on the spurious linter error for the disabled prop, consider ignoring it or adjusting ESLint config if necessary.
+
+## Issue: Vercel Build Failure Due to Multiple ESLint Errors (Commit 7a215a4) - Continued
+
+**Date:** 2024-07-28
+
+**Troubleshooting Steps (Continued):**
+
+8.  **Attempted Fix `react/no-unescaped-entities` in `app/dashboard/customer/success/page.tsx` (Lines 99, 149):**
+    - **Problem:** Automated edits failed.
+    - **Status:** Resolved via manual user intervention (2024-07-28).
+
+9.  **Re-ran Lint (2024-07-28):** Linter still reports multiple errors, including remaining `react/no-unescaped-entities`, `@typescript-eslint/ban-ts-comment`, `prefer-const`, `no-empty`, and a new `react/display-name`.
+
+10. **Issue: Fixes for `app/dashboard/driver/success/page.tsx` (Line 99: `'`, Line 7: bad import):**
+    - **Problem:** Automated edits failed repeatedly for this file type. Invalid import `Loader2Icon from "@tabler/icons-react"` was introduced on line 7 by a failed edit attempt.
+    - **Status:** Resolved (2024-07-28). User manually fixed the apostrophe on line 99 (`You&apos;ve`). User confirmed file updated to remove the incorrect import on line 7.
+
+11. **Re-ran Lint (2024-07-28):** Linter still reports multiple critical errors (unescaped entities, ts-comment, prefer-const, no-empty, display-name) and warnings. Build will likely fail.
+
+12. **Fixed `react/no-unescaped-entities` in `app/not-f
+ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
+
+13. **Fixed `react/no-unescaped-entities` in `app/shipments/[documentid]/page.tsx` (Line 411):** Replaced two `"` around `{searchTerm}` with `&quot;`.
+
+14. **Fixed `react/no-unescaped-entities` in `components/logistics/DocumentScanner.tsx` (Line 258):** Replaced `'` in `couldn't` with `&apos;`.
+
+15. **Skipped `prefer-const` in `components/layout/UserNav.tsx:33`:** File not found. ESLint report likely stale or refers to a moved/deleted file. `components/main-layout.tsx` (containing user dropdown) does not have this specific error pattern.
+
+16. **Fixed `react/display-name` in `components/shared/Card.tsx`:** Added `displayName` property to all exported functional components (`Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`).
+
+17. **Skipped `@typescript-eslint/ban-ts-comment` in `components/ui/data-table.tsx:80`:** File does not contain any `ts-comment` directives, and reported line number (80) exceeds file length (56). ESLint report is stale for this file.
+
+18. **Skipped `no-empty` in `components/ui/label.tsx:20`:** File does not contain any empty block statements. ESLint report is stale or incorrect for this file.
+
+19. **Skipped `no-empty` in `components/ui/select.tsx` (Lines 15, 21, 28):** File does not contain any empty block statements. ESLint report is stale or incorrect for this file.
+
+20. **Skipped `@typescript-eslint/ban-ts-comment` in `hooks/use-debounce.ts:8`:** File does not contain any `ts-comment` directives. ESLint report is stale or incorrect for this file.
+
+21. **Skipped `@typescript-eslint/no-explicit-any` in `lib/actions/aiActions.ts:17`:** File not found. ESLint report is stale or refers to a moved/deleted file.
+
+**(Next Step):** Proceed with next critical ESLint error (`react/no-unescaped-entities` in `components/ui/alert-dialog.tsx:19`).
+
+## Build Errors (from `npm run build` - 2024-07-29)
+
+**Context:** The previous ESLint report (`eslint-report.json` or equivalent) was found to be stale. Running `npm run build` revealed numerous actual errors and warnings. We will now address these systematically.
+
+1.  **Fixed `react/no-unescaped-entities` in `components/logistics/shipments/AIMappingLabel.tsx` (Lines 43, 44):** Replaced literal double quotes (`"`) with `&quot;`.
+
+2.  **Addressed `@typescript-eslint/ban-ts-comment` in `components/AuthForm.tsx:134`:** Changed `@ts-ignore` to `@ts-expect-error` within commented-out code block (tool failed to remove dead code). Note: This introduces a less severe `Unused '@ts-expect-error' directive` warning.
+
+3.  **Fixed `prefer-const` in `components/map/StaticRouteMap.tsx:92`:** Changed `let featuresToBound` to `const`.
+
+4.  **Fixed `no-empty` in `components/map/StaticRouteMap.tsx:140`:** Added `logger.warn` inside the empty `catch` block for the fallback `flyTo` call.
+
+5.  **Fixed `no-empty` in `lib/store/useSimulationStore.ts:200`:** Added comment `// Explicitly do nothing for vehicles awaiting status` to justify empty block.
+
+6.  **Fixed `Unused '@ts-expect-error' directive` in `components/AuthForm.tsx:134`:** Removed the directive from the commented-out code block.
+
+7.  **Fixed `react/display-name` in `components/ui/enhanced-file-upload.tsx:30`:** Added `displayName` property.
+
+8.  **Fixed `react-hooks/exhaustive-deps` in `components/ui/enhanced-file-upload.tsx:104`:** Reordered `simulateUpload` and `handleFileChange` definitions and added `simulateUpload` to the dependency array of `handleFileChange`.
+
+9.  **Fixed `react-hooks/exhaustive-deps` in `components/ui/file-upload.tsx:95`:** Reordered `simulateUpload` and `handleFileChange` definitions and added `simulateUpload` to the dependency array of `handleFileChange`.
+
+**(Next Step):** Proceed with next build error (`@typescript-eslint/no-explicit-any` in `app/api/ai/document-processing/route.ts:34`).

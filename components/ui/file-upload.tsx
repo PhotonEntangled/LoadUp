@@ -47,6 +47,37 @@ export function FileUpload({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Define simulateUpload first as handleFileChange depends on it
+  const simulateUpload = useCallback((filesToUpload: FileWithStatus[]) => {
+    filesToUpload.forEach((fileWithStatus) => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          progress = 100;
+          
+          setFiles((prevFiles) =>
+            prevFiles.map((f) =>
+              f.id === fileWithStatus.id
+                ? { ...f, progress: 100, status: "success" }
+                : f
+            )
+          );
+        } else {
+          setFiles((prevFiles) =>
+            prevFiles.map((f) =>
+              f.id === fileWithStatus.id
+                ? { ...f, progress, status: "uploading" }
+                : f
+            )
+          );
+        }
+      }, 300);
+    });
+  }, []);
+
   const handleFileChange = useCallback(
     (selectedFiles: File[]) => {
       const newFiles = selectedFiles
@@ -92,39 +123,8 @@ export function FileUpload({
         onUpload?.(newFiles.map((f) => f.file));
       }
     },
-    [files, maxFiles, maxSize, onUpload, supportedFileTypes]
+    [files, maxFiles, maxSize, onUpload, supportedFileTypes, simulateUpload]
   );
-
-  // Simulate file upload with progress
-  const simulateUpload = useCallback((filesToUpload: FileWithStatus[]) => {
-    filesToUpload.forEach((fileWithStatus) => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 10) + 5;
-        
-        if (progress >= 100) {
-          clearInterval(interval);
-          progress = 100;
-          
-          setFiles((prevFiles) =>
-            prevFiles.map((f) =>
-              f.id === fileWithStatus.id
-                ? { ...f, progress: 100, status: "success" }
-                : f
-            )
-          );
-        } else {
-          setFiles((prevFiles) =>
-            prevFiles.map((f) =>
-              f.id === fileWithStatus.id
-                ? { ...f, progress, status: "uploading" }
-                : f
-            )
-          );
-        }
-      }, 300);
-    });
-  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();

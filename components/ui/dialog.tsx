@@ -1,11 +1,11 @@
 "use client"
 
-// @ts-ignore - Fix monorepo path resolution issue
+// Fix monorepo path resolution issue
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-// @ts-ignore - Fix monorepo path resolution issue
+// Fix monorepo path resolution issue
 import { X } from "lucide-react"
-// @ts-ignore - Fix monorepo path resolution issue
+// Fix monorepo path resolution issue
 import { cn } from "@/lib/utils"
 
 // Define component types with displayName

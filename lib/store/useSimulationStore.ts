@@ -198,6 +198,7 @@ export const createSimulationStore = () => {
       Object.values(vehicles).forEach((vehicle) => {
         if (vehicle.status !== 'En Route') {
             if (vehicle.status === 'AWAITING_STATUS') {
+              // Explicitly do nothing for vehicles awaiting status
             } else if (vehicle.status !== 'Idle' && vehicle.status !== 'Pending Delivery Confirmation' && vehicle.status !== 'Completed' && vehicle.status !== 'Error') {
                 logger.debug(`[Tick] Skipping vehicle ${vehicle.id}, status is ${vehicle.status}`);
             }

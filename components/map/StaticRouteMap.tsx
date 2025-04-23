@@ -89,7 +89,7 @@ export const StaticRouteMap = React.memo(({
     const map = mapRef.current;
     if (map && isMapLoaded) {
       try {
-        let featuresToBound: (Feature | Point | [number, number])[] = [];
+        const featuresToBound: (Feature | Point | [number, number])[] = [];
         
         // Add coordinates if they exist
         if (originCoordinates) featuresToBound.push(originCoordinates);
@@ -137,7 +137,7 @@ export const StaticRouteMap = React.memo(({
         logger.error('StaticRouteMap: Error calculating or fitting bounds:', error);
         // Fallback: attempt fly to origin if bounds fail
         if (originCoordinates) {
-             try { map.flyTo({ center: originCoordinates, zoom: 13, duration: 500 }); } catch (e) {} 
+             try { map.flyTo({ center: originCoordinates, zoom: 13, duration: 500 }); } catch (e) { logger.warn('StaticRouteMap: Error during fallback flyTo:', e); } 
         }
       }
     }
