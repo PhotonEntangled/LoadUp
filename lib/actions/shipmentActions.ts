@@ -1,3 +1,7 @@
+"use server";
+
+import { logger } from '@/utils/logger';
+
 // Existing simulation actions...
 
 // --- NEW SERVER ACTION --- 
