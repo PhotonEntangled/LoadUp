@@ -1,0 +1,105 @@
+---
+description: Anything related to Neon Database at all
+globs: 
+alwaysApply: false
+---
+# Cursor Rule: Neon Database Interaction via MCP
+
+**Version:** 1.0.0
+**Description:** Standard Operating Procedures (SOP) and Best Practices for interacting with Neon databases using the official Neon MCP Server tools within the Cursor editor.
+
+**DATABASE NAME: neondb** **PROJECT ID: raspy-bonus-53028496**
+
+---
+
+## 🧠 Core Philosophy
+
+Leverage the Neon MCP server for safe, efficient, and context-aware database management directly within the development workflow. Prioritize Neon-specific tools (especially for migrations) over generic database commands when available. Maintain clear communication about actions taken via MCP tools.
+
+---
+
+## ✅ Prerequisites
+
+1.  **Neon MCP Server Added in Cursor:** Ensure the Neon MCP server is configured in Cursor Settings > Features > MCP Servers, using the command `npx -y @neondatabase/mcp-server-neon start <YOUR_NEON_API_KEY>`.
+2.  **Neon API Key:** The key used must have appropriate permissions for the desired actions on your Neon projects.
+3.  **Neon Project ID:** Have your Neon Project ID readily available, as many tools require it. (Find it in the Neon Console URL or project settings).
+4.  **Database Name:** Know the target database name within your Neon project (often `neondb` by default).
+
+---
+
+## 🔧 Core Neon MCP Tools (via Cursor Agent)
+
+*(Based on Neon documentation and inferred capabilities)*
+
+| Tool Name (Conceptual)        | Example Cursor Prompt                                    | Purpose & Use Case                                                                 | Neurotic Check Required? |
+| :---------------------------- | :------------------------------------------------------- | :--------------------------------------------------------------------------------- | :----------------------- |
+| `mcp_neon_list_projects`      | "List my Neon projects"                                  | Discover available Neon projects associated with the API key.                      | Low                      |
+| `mcp_neon_describe_project`   | "Tell me about my Neon project `<project_id>`"           | Get details about a specific project (ID, region, endpoints, branches).            | Low                      |
+| `mcp_neon_get_database_tables`| "List tables in the `neondb` database for project `<project_id>`" | See all tables within a specific database and project. Essential for schema checks. | Medium (Confirm Project/DB) |
+| `mcp_neon_describe_table_schema` | "Describe the schema for the `users` table in `neondb` database for project `<project_id>`" | Get column names, types, constraints for a specific table. Vital for query building. | Medium (Confirm Table) |
+| `mcp_neon_run_sql`            | "Run SQL in project `<project_id>` db `neondb`: `SELECT COUNT(*) FROM users;`" | Execute *single* SQL statements (SELECT, simple UPDATE/INSERT/DELETE). Good for quick checks or minor data manipulation. | **High (Verify Query!)** |
+| `mcp_neon_run_sql_transaction`| "Run SQL transaction in project `<project_id>` db `neondb`: [`BEGIN;`, `UPDATE...`, `INSERT...`, `COMMIT;`]" | Execute *multiple* SQL statements atomically within a transaction. Use for complex updates. | **High (Verify Logic!)** |
+| `mcp_neon_prepare_database_migration` | "Prepare migration for project `<project_id>` db `neondb`: Add an `email_verified boolean` column to the `users` table" | **[PREFERRED FOR SCHEMA CHANGES]** Safely prepares schema changes (DDL) in a temporary branch. Parses natural language. | **High (Verify Intent!)** |
+| `mcp_neon_complete_database_migration` | "Complete Neon migration `<migration_id>`"              | Applies the changes prepared by `prepare_database_migration` to the main branch after verification. | **High (Requires Verification!)** |
+| `mcp_neon_create_branch`      | "Create a new branch named `dev-feature-x` in Neon project `<project_id>`" | Manually create a new database branch (less common than migration tool branching). | Medium                   |
+| `mcp_neon_delete_branch`      | "Delete branch `<branch_id>` in Neon project `<project_id>`" | Remove a database branch (use with caution).                                   | High                     |
+| `mcp_neon_get_connection_string` | "Get the connection string for Neon project `<project_id>`" | Retrieve the database connection URI (useful for configuring applications).      | Low                      |
+| `mcp_neon_provision_neon_auth` | "Provision Neon Auth for project `<project_id>`"         | Sets up authentication infrastructure using Stack Auth (alternative to NextAuth). | Medium (Review Setup)  |
+
+*(**Note:** Exact tool names callable via the Cursor Agent might differ slightly, but functionality should align. Rely on the Agent's tool descriptions.)*
+
+---
+
+## 📋 Standard Operating Procedures (SOPs)
+
+### SOP-1: Checking Table Schema
+
+1.  **Goal:** Understand the structure of a specific table.
+2.  **Command:** Use `mcp_neon_describe_table_schema`.
+3.  **Prompt:** "Describe schema for table `[table_name]` in db `[db_name]` project `[project_id]`"
+4.  **Verification:** Review column names, data types, nullability, and keys provided in the response.
+
+### SOP-2: Querying Data (Simple Read)
+
+1.  **Goal:** Retrieve specific data from one or more tables.
+2.  **Command:** Use `mcp_neon_run_sql`.
+3.  **Prompt:** "Run SQL in project `[project_id]` db `[db_name]`: `SELECT [columns] FROM [table_name] WHERE [condition];`"
+4.  **Verification:** Confirm the query syntax is correct before submitting. Check the results match expectations. **Limit queries** (`LIMIT 10`) for safety during exploration.
+
+### SOP-3: Making Schema Changes (The Safe Way)
+
+1.  **Goal:** Add/modify/drop columns, tables, constraints, etc.
+2.  **Command Sequence:**
+    *   `mcp_neon_prepare_database_migration`
+    *   `mcp_neon_run_sql` (for verification on the temporary branch)
+    *   `mcp_neon_complete_database_migration`
+3.  **Workflow:**
+    *   **Step 1 (Prepare):** State the desired schema change in natural language.
+        *   **Prompt:** "Prepare migration for project `[project_id]` db `[db_name]`: `[Your natural language description, e.g., 'Add an active boolean column to the products table with a default of true']`"
+    *   **Step 2 (Verify):** The tool will create a temporary branch and apply the change. **Crucially, it will provide the temporary branch name/ID and a migration ID.** Use `mcp_neon_run_sql` to query the *temporary branch* to confirm the change was applied correctly (e.g., query `information_schema.columns` or select from the modified table).
+        *   **Prompt (Verification):** "Run SQL on **branch `[temp_branch_id]`** in project `[project_id]` db `[db_name]`: `[Your verification SQL, e.g., 'SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name = 'products' AND column_name = 'active';']`"
+    *   **Step 3 (Confirm & Complete):** *After successful verification*, confirm you want to apply the change to the main branch.
+        *   **Prompt (Completion):** "Complete Neon migration `[migration_id]`"
+4.  **Verification:** Double-check the natural language request accurately reflects the desired change *before* preparing. **Always verify** the change on the temporary branch *before* completing.
+
+### SOP-4: Running Transactions
+
+1.  **Goal:** Execute multiple dependent SQL statements atomically.
+2.  **Command:** Use `mcp_neon_run_sql_transaction`.
+3.  **Prompt:** "Run SQL transaction in project `[project_id]` db `[db_name]`: `[List of SQL strings, e.g., ["BEGIN;", "UPDATE table1 SET col='val' WHERE id=1;", "INSERT INTO table2 (...) VALUES (...);", "COMMIT;"]]`"
+4.  **Verification:** Ensure the sequence of SQL statements is logically correct and includes `BEGIN;` and `COMMIT;` (or `ROLLBACK;`). Be extremely careful with `UPDATE` and `DELETE` statements.
+
+---
+
+## ✨ Best Practices
+
+*   **Specify Project & DB:** Always include the Neon `project_id` and `database_name` in your prompts to avoid ambiguity.
+*   **Prefer `prepare_database_migration`:** For **any** schema change (DDL), use the safe migration tool flow (`prepare` -> verify -> `complete`). Avoid running raw `ALTER TABLE`, `CREATE TABLE`, `DROP TABLE` etc., with `run_sql` unless absolutely necessary and understood.
+*   **Verify Before Completing Migrations:** Never skip the verification step (`run_sql` on the temporary branch) before completing a migration.
+*   **Limit `run_sql` Queries:** When exploring data with `run_sql`, use `LIMIT` clauses to prevent accidentally fetching large amounts of data.
+*   **Use Transactions Appropriately:** Use `run_sql_transaction` for multi-statement operations that must succeed or fail together.
+*   **Natural Language Precision:** Be as clear and specific as possible when using natural language for migrations (e.g., specify data types, default values, nullability if important).
+*   **Check Tool Output:** Carefully read the output from the MCP tools, especially migration details (branch names, IDs) and SQL results.
+*   **Context is Key:** Remind the AI (Cursor) of the relevant project/database context if starting a new chat or if the context might be ambiguous.
+
+---

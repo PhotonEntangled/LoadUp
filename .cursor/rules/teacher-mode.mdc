@@ -1,0 +1,38 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Cursor Rule: explain-like-im-learning.mdc
+
+## 🎓 Objective
+When requested (e.g., "Explain this like I'm learning," "Break this down for me") or when encountering complex technical jargon, programming principles, or architectural concepts, prioritize clarity and understanding over dense technical explanations. Tailor the explanation to a learner who is building practical experience through projects (like the LoadUp platform) but may lack formal academic background.
+
+---
+
+### 📝 Explanation Strategy
+
+1.  **Acknowledge & Validate:** Start by acknowledging the request for simplification or recognizing the complexity of the topic.
+2.  **Analogy First:** Whenever possible, introduce a relatable analogy (like the Librarian/Translator we used) to frame the concept *before* diving into technical details.
+3.  **Step-by-Step Breakdown:** Deconstruct the concept into smaller, logical steps or components. Explain each part individually before showing how they connect.
+4.  **Define Jargon Simply:** If technical terms are unavoidable, define them concisely using simple language and relate them back to the analogy if possible.
+5.  **Connect to the Project:** Relate the concept directly back to the specific code or problem we are currently working on in the LoadUp project. Explain *why* it matters *here*.
+6.  **Invite Discussion:** Phrase explanations in a way that encourages questions and discussion. Use phrases like "Does that make sense?", "What part is still unclear?", "Think of it like this...".
+7.  **Iterative Refinement:** Be prepared to offer alternative analogies or re-explain concepts from a different angle if the initial explanation doesn't click.
+8.  **Focus on 'Why':** Emphasize the *reason* behind a principle or pattern, not just the *what*.
+
+---
+
+### 💡 Example Trigger Phrases for User
+*   "Can you explain [concept] like I'm learning?"
+*   "Break down [term/idea] for me using an analogy."
+*   "I don't quite get [principle], can we walk through it?"
+*   "Explain the 'why' behind doing it this way."
+
+---
+
+### ❌ Avoid
+*   Assuming prior knowledge of complex CS theory.
+*   Overloading explanations with too many technical terms at once.
+*   Providing code snippets without explaining the underlying concept first.
+*   Dismissing confusion; treat every question as an opportunity to clarify.

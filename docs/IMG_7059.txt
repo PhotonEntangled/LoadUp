@@ -1,0 +1,274 @@
+
+CustomBookingDetailsId:Id
+Bookingld:Id
+CustomShipmentDetailsId:Id
+CustomShipmentDetailld: Id
+CustomShipmentDetailld:Id
+Shipmentld: Id
+DocumentRequirementld: Id
+DocumentRequirements
+Trips
+Custom TripDetails
+uniqueidentifier uniqueidentifier
+DateCreated DateModified Description
+ld
+datetime2 datetime2 nvarchar(max) uniqueidentifier
+CreatedBy
+uniqueidentifier
+DateCreated
+Tenantld
+uniqueidentifier
+DateModified
+datetime2 datetime2
+ShipmentId DateCreated
+uniqueidentifier
+Tripld
+uniqueidentifier
+DateModified
+datetime2 datetime2
+TypeOfGoods nvarchar(max)
+TrackAndTraceUrl nvarchar(max)
+TripStatus
+int
+ShipperAdditionalRate
+float
+MasterTransporterld uniqueidentifier
+ShipperDropPointRate
+float
+Driverld Truckld
+uniqueidentifier
+ShipperManPowerRate
+float
+uniqueidentifier
+CustomTripDetailsld uniqueidentifier
+ShipperPhRate ShipperRate
+float
+float
+TripConfigld
+uniqueidentifier
+ShipperStagingRate
+float
+ModifiedBy
+uniqueidentifier
+Requested TruckSize uniqueidentifier Remarks nvarchar(max)
+IsDispatchedToDriver
+bit
+6_e Id
+uniqueidentifier
+ShipperWaitingRate TransporterAdditionalRate float TransporterDropPointRate float TransporterManPowerRate float TransporterPhRate TransporterRate TransporterStagingRate TransporterWaitingRate
+float
+float
+float
+float
+float
+Id
+uniqueidentifier
+Bookings
+CreatedBy
+Tenantld
+CustomBookingDetails
+Shipments
+CustomShipmentDetails
+CustomShipmentDetailDocumentRequirements
+DateCreated
+DateModified
+Shipperld
+Shipmentld
+uniqueidentifier
+uniqueidentifier
+DateCreated
+DateModified
+datetime2
+Bookingld
+datetime2
+uniqueidentifier
+old
+uniqueidentifier
+datetime2
+CreatedBy
+datetime2
+Tenantid
+uniqueidentifier uniqueidentifier
+Date Created
+DateModified
+datetime2 datetime2
+CustomShipmentDetailld DocumentRequirementld
+uniqueidentifier
+Bookingld
+uniqueidentifier
+ShipmentId
+uniqueidentifier
+CustomerDocumentNumber nvarchar(max)
+uniqueidentifier
+ShipmentDateCreated ShipmentDateModified ShipmentStatus
+datetime2
+CustomerShipmentNumber nvarchar(max)
+datetime2
+SovyJobNo
+nvarchar(max)
+int
+SovylnvoiceNumber
+nvarchar(max)
+CustomBookingDetailsld uniqueidentifier
+LoadUpJobNumber
+nvarchar(max)
+Planned PickupDate
+datetime2
+PlannedDeliveryDate
+datetime2
+ShipmentDescription
+nvarchar(max)
+SovylnvoiceDate
+datetime2
+EquipmentRequirements
+CustomShipmentDetailld uniqueidentifier
+CustomShipmentDetailsld uniqueidentifier
+LeaseOrNonLease
+ModifiedBy
+Id
+uniqueidentifier
+uniqueidentifier
+TotalTransporterRate
+bit float
+DateCreated
+datetime2
+TotalTransporterManPowerRate float
+DateModified Liftgate
+datetime2
+bit
+BookingDescription ModifiedBy
+nvarchar(max)
+TotalTransporterDropPointRate
+float
+LiftgateQuantity
+int
+ld
+uniqueidentifier
+uniqueidentifier
+TotalTransporterStagingRate
+float
+Pallet Jack
+bit
+TotalTransporterPhRate
+float
+Pallet JackQuantity
+int
+TotalTransporterWaitingRate
+float
+Id
+uniqueidentifier
+TotalShipperStagingRate
+float
+TotalShipperPhRate
+float
+TotalShipperManPowerRate
+float
+Hazardous
+TotalShipperWaitingRate
+float
+Description nvarchar(max)
+TotalShipperRate
+float
+Id
+uniqueidentifier
+TotalTransporterAdditional Rate
+float
+Stackable
+bit
+Hazardousld
+uniqueidentifier
+EquipmentRequirementld uniqueidentifier
+Cargo Values Description nvarchar(max)
+uniqueidentifier
+Manpower
+int
+ld
+Special Requirement
+nvarchar(max)
+CargoDescriptionld
+uniqueidentifier
+Trucks
+MasterTransporterld uniqueidentifier
+CargoValueld
+uniqueidentifier
+CargoDescriptions
+PodStatus
+datetime2
+Description nvarchar(max)
+Remarks
+nvarchar(max)
+ld
+uniqueidentifier
+TotalShipperAdditionalRate TotalShipperDropPointRate
+float
+float
+Id
+uniqueidentifier
+DateCreated DateModified TruckLengthld TruckSizeld TruckTypeld TruckBrandld TruckModelld
+datetime2
+TruckTypes
+TruckPayloads
+datetime2 uniqueidentifier
+Description nvarchar(max)
+Description nvarchar(max)
+Id
+uniqueidentifier
+Id
+uniqueidentifier
+uniqueidentifier uniqueidentifier
+TruckModels
+uniqueidentifier
+TruckLengths
+uniqueidentifier
+Description nvarchar(max)
+Description nvarchar(max)
+TruckPayloadId uniqueidentifier IsBonded
+Id
+uniqueidentifier
+Id
+uniqueidentifier
+bit
+RegistrationNumber nvarchar(max)
+Weight
+TruckBrands
+float
+TruckSizes
+Dimension
+nvarchar(max) RoadTaxExpiry Date datetime2 InspectionExpiry Date datetime2
+old
+Description nvarchar(max) uniqueidentifier
+Id
+Description nvarchar(max) uniqueidentifier
+0_e Id
+uniqueidentifier
+Trailers
+TrailerTypes
+Transporterld uniqueidentifier
+DateCreated
+DateModified
+TrailerSizeld TrailerTypeld Weight
+datetime2 datetime2 uniqueidentifier uniqueidentifier
+Id
+Description nvarchar(max)
+uniqueidentifier
+TrailerSizes
+Dimension
+float float
+Description nvarchar(max)
+ld
+uniqueidentifier
+Registration Number nvarchar(max)
+PermitNumber
+nvarchar(max)
+PermitExpiry Date
+datetime2
+InspectionExpiry Date
+datetime2
+Id
+uniqueidentifier
+TripConfigs
+DateCreated datetime2 DateModified datetime2
+Tripld
+Id
+uniqueidentifier
+uniqueidentifier

@@ -1,0 +1,497 @@
+[
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO SHAH ALAM",
+        "loadNumber": "MOCK_IDLE_001",
+        "promisedShipDate": "1/15/25",
+        "requestDate": "1/10/25",
+        "status": "PENDING_PICKUP",
+        "actualDeliveryDate": "",
+        "orderNumber": "MOCK_ORD_001",
+        "orderType": "SL",
+        "secondaryItemNumber": "ITEM_A",
+        "description": "Mock Item Idle",
+        "lotSerialNumber": "LOT_IDLE",
+        "quantity": "10",
+        "uom": "CT",
+        "bin": "A1",
+        "weight": "100",
+        "shipToCity": "PERAI",
+        "shipToAddress": "1 Mock Address, Prai Industrial Estate",
+        "shipToState": "PENANG",
+        "contactNumber": "Idle Contact 012-111222",
+        "poNumber": "MOCK_PO_001",
+        "remarks": "Test Idle Status",
+        "truckDetails": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "1 Mock Address, Prai Industrial Estate"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "MOCK_IDLE_001",
+      "customerDocumentNumber": "MOCK_ORD_001",
+      "remarks": "Test Idle Status",
+      "totalTransportWeight": 100
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "NIRO SHAH ALAM",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "1 Mock Address, Prai Industrial Estate",
+      "street2": null,
+      "city": "PERAI",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "1 Mock Address, Prai Industrial Estate, PERAI, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {},
+    "dropoffData": {
+      "customerPoNumbers": "MOCK_PO_001",
+      "recipientContactName": "Idle Contact 012-111222"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "ITEM_A",
+        "description": "Mock Item Idle",
+        "lotSerialNumber": "LOT_IDLE",
+        "quantity": 10,
+        "uom": "CT",
+        "weight": 100,
+        "bin": "A1"
+      }
+    ],
+    "parsedStatusString": "PENDING_PICKUP"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO SHAH ALAM",
+        "loadNumber": "MOCK_ENROUTE_002",
+        "promisedShipDate": "1/16/25",
+        "requestDate": "1/11/25",
+        "status": "EN_ROUTE",
+        "actualDeliveryDate": "",
+        "orderNumber": "MOCK_ORD_002",
+        "orderType": "SL",
+        "secondaryItemNumber": "ITEM_B",
+        "description": "Mock Item En Route",
+        "lotSerialNumber": "LOT_ENROUTE",
+        "quantity": "5",
+        "uom": "PLT",
+        "bin": "B2",
+        "weight": "500",
+        "shipToCity": "BUKIT MERTAJAM",
+        "shipToAddress": "2 Mock Avenue, Taman Mock",
+        "shipToState": "PENANG",
+        "contactNumber": "En Route Contact 012-333444",
+        "poNumber": "MOCK_PO_002",
+        "remarks": "Test En Route Status",
+        "truckDetails": "NAME: Driver EnRoute\\nIC: 888888015555\\nPHONE: 011-ENROUTE\\nTRUCK: MOCK 123"
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "2 Mock Avenue, Taman Mock"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "MOCK_ENROUTE_002",
+      "customerDocumentNumber": "MOCK_ORD_002",
+      "remarks": "Test En Route Status",
+      "totalTransportWeight": 500
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "NIRO SHAH ALAM",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "2 Mock Avenue, Taman Mock",
+      "street2": null,
+      "city": "BUKIT MERTAJAM",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "2 Mock Avenue, Taman Mock, BUKIT MERTAJAM, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {},
+    "dropoffData": {
+      "customerPoNumbers": "MOCK_PO_002",
+      "recipientContactName": "En Route Contact 012-333444"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "ITEM_B",
+        "description": "Mock Item En Route",
+        "lotSerialNumber": "LOT_ENROUTE",
+        "quantity": 5,
+        "uom": "PLT",
+        "weight": 500,
+        "bin": "B2"
+      }
+    ],
+    "parsedDriverName": "Driver EnRoute\\nIC: 888888015555\\nPHONE: 011-ENROUTE\\nTRUCK: MOCK 123",
+    "parsedStatusString": "EN_ROUTE"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO SHAH ALAM",
+        "loadNumber": "MOCK_PENDING_003",
+        "promisedShipDate": "1/17/25",
+        "requestDate": "1/12/25",
+        "status": "PENDING_DELIVERY",
+        "actualDeliveryDate": "",
+        "orderNumber": "MOCK_ORD_003",
+        "orderType": "SL",
+        "secondaryItemNumber": "ITEM_C",
+        "description": "Mock Item Pending",
+        "lotSerialNumber": "LOT_PENDING",
+        "quantity": "1",
+        "uom": "PCS",
+        "bin": "C3",
+        "weight": "50",
+        "shipToCity": "GEORGETOWN",
+        "shipToAddress": "3 Mock Street, Georgetown Central",
+        "shipToState": "PENANG",
+        "contactNumber": "Pending Contact 012-555666",
+        "poNumber": "MOCK_PO_003",
+        "remarks": "Test Pending Delivery Status",
+        "truckDetails": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "3 Mock Street, Georgetown Central"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "MOCK_PENDING_003",
+      "customerDocumentNumber": "MOCK_ORD_003",
+      "remarks": "Test Pending Delivery Status",
+      "totalTransportWeight": 50
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "NIRO SHAH ALAM",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "3 Mock Street, Georgetown Central",
+      "street2": null,
+      "city": "GEORGETOWN",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "3 Mock Street, Georgetown Central, GEORGETOWN, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {},
+    "dropoffData": {
+      "customerPoNumbers": "MOCK_PO_003",
+      "recipientContactName": "Pending Contact 012-555666"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "ITEM_C",
+        "description": "Mock Item Pending",
+        "lotSerialNumber": "LOT_PENDING",
+        "quantity": 1,
+        "uom": "PCS",
+        "weight": 50,
+        "bin": "C3"
+      }
+    ],
+    "parsedStatusString": "PENDING_DELIVERY"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO SHAH ALAM",
+        "loadNumber": "MOCK_COMPLETED_004",
+        "promisedShipDate": "1/18/25",
+        "requestDate": "1/13/25",
+        "status": "COMPLETED",
+        "actualDeliveryDate": "1/18/25",
+        "orderNumber": "MOCK_ORD_004",
+        "orderType": "SL",
+        "secondaryItemNumber": "ITEM_D",
+        "description": "Mock Item Completed",
+        "lotSerialNumber": "LOT_COMPLETE",
+        "quantity": "20",
+        "uom": "CT",
+        "bin": "D4",
+        "weight": "250",
+        "shipToCity": "BAYAN LEPAS",
+        "shipToAddress": "4 Mock Lane, Free Industrial Zone",
+        "shipToState": "PENANG",
+        "contactNumber": "Completed Contact 012-777888",
+        "poNumber": "MOCK_PO_004",
+        "remarks": "Test Completed Status",
+        "truckDetails": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "4 Mock Lane, Free Industrial Zone"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "MOCK_COMPLETED_004",
+      "customerDocumentNumber": "MOCK_ORD_004",
+      "remarks": "Test Completed Status",
+      "totalTransportWeight": 250
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "NIRO SHAH ALAM",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "4 Mock Lane, Free Industrial Zone",
+      "street2": null,
+      "city": "BAYAN LEPAS",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "4 Mock Lane, Free Industrial Zone, BAYAN LEPAS, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {},
+    "dropoffData": {
+      "customerPoNumbers": "MOCK_PO_004",
+      "recipientContactName": "Completed Contact 012-777888"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "ITEM_D",
+        "description": "Mock Item Completed",
+        "lotSerialNumber": "LOT_COMPLETE",
+        "quantity": 20,
+        "uom": "CT",
+        "weight": 250,
+        "bin": "D4"
+      }
+    ],
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO SHAH ALAM",
+        "loadNumber": "MOCK_ERROR_005",
+        "promisedShipDate": "1/19/25",
+        "requestDate": "1/14/25",
+        "status": "ERROR",
+        "actualDeliveryDate": "",
+        "orderNumber": "MOCK_ORD_005",
+        "orderType": "SL",
+        "secondaryItemNumber": "ITEM_E",
+        "description": "Mock Item Error",
+        "lotSerialNumber": "LOT_ERROR",
+        "quantity": "2",
+        "uom": "CT",
+        "bin": "E5",
+        "weight": "60",
+        "shipToCity": "SIMPANG AMPAT",
+        "shipToAddress": "5 Mock Close, Taman Error",
+        "shipToState": "PENANG",
+        "contactNumber": "Error Contact 012-999000",
+        "poNumber": "MOCK_PO_005",
+        "remarks": "Test Error Status",
+        "truckDetails": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "5 Mock Close, Taman Error"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "MOCK_ERROR_005",
+      "customerDocumentNumber": "MOCK_ORD_005",
+      "remarks": "Test Error Status",
+      "totalTransportWeight": 60
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "NIRO SHAH ALAM",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "5 Mock Close, Taman Error",
+      "street2": null,
+      "city": "SIMPANG AMPAT",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "5 Mock Close, Taman Error, SIMPANG AMPAT, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {},
+    "dropoffData": {
+      "customerPoNumbers": "MOCK_PO_005",
+      "recipientContactName": "Error Contact 012-999000"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "ITEM_E",
+        "description": "Mock Item Error",
+        "lotSerialNumber": "LOT_ERROR",
+        "quantity": 2,
+        "uom": "CT",
+        "weight": 60,
+        "bin": "E5"
+      }
+    ],
+    "parsedStatusString": "ERROR"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "UNKNOWN_WAREHOUSE",
+        "loadNumber": "MOCK_AWAITING_006",
+        "promisedShipDate": "1/20/25",
+        "requestDate": "1/15/25",
+        "status": "AWAITING_STATUS",
+        "actualDeliveryDate": "",
+        "orderNumber": "MOCK_ORD_006",
+        "orderType": "SL",
+        "secondaryItemNumber": "ITEM_F",
+        "description": "Mock Item Awaiting",
+        "lotSerialNumber": "LOT_AWAITING",
+        "quantity": "8",
+        "uom": "CT",
+        "bin": "F6",
+        "weight": "120",
+        "shipToCity": "UNKNOWN_CITY",
+        "shipToAddress": "Missing Address Info",
+        "shipToState": "UNKNOWN_STATE",
+        "contactNumber": "Awaiting Contact 010-123456",
+        "poNumber": "MOCK_PO_006",
+        "remarks": "Test Awaiting Status (Missing Coords)",
+        "truckDetails": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.45,
+      "processingErrors": [],
+      "needsReview": true,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "Missing Address Info"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "MOCK_AWAITING_006",
+      "customerDocumentNumber": "MOCK_ORD_006",
+      "remarks": "Test Awaiting Status (Missing Coords)",
+      "totalTransportWeight": 120
+    },
+    "originAddressData": {
+      "street2": null,
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "UNKNOWN_WAREHOUSE",
+      "resolutionMethod": "none",
+      "resolutionConfidence": "0.1"
+    },
+    "destinationAddressData": {
+      "street1": "Missing Address Info",
+      "street2": null,
+      "city": "UNKNOWN_CITY",
+      "state": "UNKNOWN_STATE",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "Missing Address Info, UNKNOWN_CITY, UNKNOWN_STATE, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {},
+    "dropoffData": {
+      "customerPoNumbers": "MOCK_PO_006",
+      "recipientContactName": "Awaiting Contact 010-123456"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "ITEM_F",
+        "description": "Mock Item Awaiting",
+        "lotSerialNumber": "LOT_AWAITING",
+        "quantity": 8,
+        "uom": "CT",
+        "weight": 120,
+        "bin": "F6"
+      }
+    ],
+    "parsedStatusString": "AWAITING_STATUS"
+  }
+]

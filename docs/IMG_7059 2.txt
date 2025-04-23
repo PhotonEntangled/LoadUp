@@ -1,0 +1,172 @@
+
+PickUpConfigGroups
+DateCreated
+datetime2
+DateModified datetime2
+TripConfigld uniqueidentifier
+Id
+uniqueidentifier
+PickUpConfigGroupId:Id
+DropOffConfigGroups
+TripConfigld uniqueidentifier
+DateCreated
+DateModified
+Id
+datetime2
+datetime2
+uniqueidentifier
+Drop OffConfigGroupId:Id
+— CargoStatuses
+DateCreated
+DateModified
+PickUpConfigs
+PickUpConfigGroupld uniqueidentifier
+datetime2
+datetime2
+DropOffConfigs
+DropOffConfigGroupld uniqueidentifier
+DateCreated
+datetime2
+DateModified
+datetime2
+PickUpDropOffld uniqueidentifier
+DateCreated
+datetime2
+QuantityOfDamagedItems int
+DateModified
+datetime2
+QuantityOfLostItems
+int
+PickUpConfigPosition
+int
+DropOffConfigPosition
+int
+Id
+uniqueidentifier
+CreatedBy
+uniqueidentifier
+CreatedBy
+uniqueidentifier
+ModifiedBy
+uniqueidentifier
+ModifiedBy
+uniqueidentifier
+old
+uniqueidentifier
+Id
+uniqueidentifier
+TripPods
+DropOffConfigld:Id
+DropOffld DateCreated
+uniqueidentifier
+datetime2
+PickUpConfigld:Id
+DateModified
+datetime2
+ResourceUrlString nvarchar(max)
+PodReturned
+bit
+PickUpConfigld
+PickUps
+ld
+uniqueidentifier
+DropOffs
+uniqueidentifier
+DropOffConfigld
+uniqueidentifier
+Date Created
+DateModified
+datetime2 datetime2
+DateCreated
+DateModified
+datetime2
+datetime2
+TripPodld: Id
+Addressld
+CargoStatusld
+uniqueidentifier uniqueidentifier
+Addressld
+uniqueidentifier
+CargoStatusld
+uniqueidentifier
+PickUpPosition
+int
+TripPodld
+uniqueidentifier
+PickUpDate
+datetime2
+DropOffPosition
+int
+ShipmentWeight
+float
+ShipmentWeight
+float
+ShipmentVolume
+float
+ShipmentVolume
+float
+EPods
+QuantityOfItems
+int
+QuantityOfItems
+int
+CreatedByld uniqueidentifier
+TotalPalettes
+int
+TotalPalettes
+int
+ActivityStatus
+int
+ActivityStatus
+int
+ModifiedByld uniqueidentifier DropOffld uniqueidentifier
+ItemUnit
+uniqueidentifier
+Customer Delivery Number nvarchar(max)
+DateCreated
+datetime2
+ActualDateTimeOfArrival
+datetime2
+ItemUnit
+uniqueidentifier
+DateModified
+datetime2
+ActualDateTimeOfDeparture
+datetime2
+MapToPickUpPosition
+int
+Description nvarchar(200)
+Estimated DateTimeOfArrival
+datetime2
+ActualDateTimeOfArrival
+datetime2
+EstimatedDateTimeOfDeparture datetime2
+ActualDateTimeOfDeparture
+datetime2
+CreatedBy
+uniqueidentifier
+DropOffDate
+datetime2
+BlobName nvarchar(500) ResourceType nvarchar(100) PodReturned
+bit
+ModifiedBy
+uniqueidentifier
+Estimated DateTimeOfArrival
+datetime2
+Id
+uniqueidentifier
+old
+uniqueidentifier
+EstimatedDateTimeOfDeparture datetime2
+CustomerPoNumbers
+CreatedBy
+ItemUnits
+ModifiedBy
+nvarchar(max)
+uniqueidentifier
+uniqueidentifier
+ld
+uniqueidentifier
+Description nvarchar(max)
+ld
+uniqueidentifier

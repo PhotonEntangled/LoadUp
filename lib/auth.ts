@@ -28,13 +28,13 @@ export function isAdmin(role: UserRole | string | undefined): boolean {
 
 // Add development bypass for easier testing
 const createBypassAuth = () => {
-  // Mock session for development
+  // Mock session for development using the newly created user ID
   const mockSession = {
     user: {
-      id: "dev-user-id",
-      name: "Development User",
-      email: "dev@example.com",
-      role: UserRole.ADMIN, // Use enum
+      id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", // <-- EDIT: Use the new user's UUID
+      name: "Dev Test User", // Using the name we inserted
+      email: "dev.test.user@example.com", // Using the email we inserted
+      role: UserRole.ADMIN, 
       image: null
     },
     expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()

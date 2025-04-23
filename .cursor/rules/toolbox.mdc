@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Cursor Rule: smithery-toolbox-mcp.mdc
+
+## 🧰 Objective
+Leverage the `@smithery/toolbox` MCP tool for advanced, potentially server-side MCP operations and workflow orchestration, enhancing autonomy and accessing a broader range of capabilities. *(Note: Based on inference, requires confirmation).*
+
+---
+
+### ❓ Inferred Purpose (Requires Verification)
+*   Acts as a meta-tool to call/manage other MCP tools available on the server.
+*   Simplifies complex, multi-step MCP workflows.
+*   Provides access to server-side diagnostics or less common MCP functionalities.
+*   Potentially manages MCP environment state or configurations.
+
+---
+
+### 🔧 Key Commands / Features (TBD)
+*   *(To be filled in once the tool's capabilities are known. Examples might include:)*
+*   `toolbox run-sequence --toolA='...' --toolB='...'`
+*   `toolbox get-server-diagnostics`
+*   `toolbox manage-context --context='...'`
+
+---
+
+### 🤔 When to Use (Hypothesized)
+*   When needing to execute a specific sequence of multiple MCP tool calls reliably.
+*   When standard tools seem insufficient and server-side interaction or diagnostics might be needed.
+*   When needing to manage potentially complex MCP state or configurations (if supported).
+*   When explicitly instructed by the user or documentation to use the Toolbox for a specific task.
+
+---
+
+### ✅ Best Practices / Usage Guidelines (Tentative)
+*   **Clarity:** Clearly state the goal and the specific sub-tools or actions intended when using the Toolbox.
+*   **Verification:** If orchestrating multiple tools, consider how to verify the success/output of intermediate steps.
+*   **Specificity:** Avoid overly broad commands; define the desired outcome precisely.
+*   **Documentation:** Refer to specific `@smithery/toolbox` documentation (once available) for command syntax and capabilities.
+
+---
+
+### ⚠️ Caution
+*   Use with care, as "autonomy and power" imply potential for unintended consequences if commands are not well-defined.
+*   Confirm capabilities before relying on inferred functionality.

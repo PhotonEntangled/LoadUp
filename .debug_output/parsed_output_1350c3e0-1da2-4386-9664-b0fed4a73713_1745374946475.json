@@ -1,0 +1,1110 @@
+[
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+        "loadNumber": "60187",
+        "promisedShipDate": "12/28/24",
+        "requestDate": "02/01/2025",
+        "misc_receiving_date": "12/31/24",
+        "misc_days_before_rdd": "2",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "02/01/2025",
+        "orderNumber": "24009624",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0000610",
+        "description": "NIRO GRANITE GGCA03 300x600 MP2(MP) 1ST",
+        "lotSerialNumber": "BBA.2328AXM2.098",
+        "quantity": "3",
+        "uom": "CT",
+        "bin": "3PL",
+        "weight": "93.6",
+        "shipToCity": "PERAI",
+        "shipToAddress": "2946 , LORONG PERUSAHAAN MAJU 6 , PRAI INDUSTRIAL ESTATE IV",
+        "shipToState": "PENANG",
+        "contactNumber": "TRACY\r\n016-445 9128",
+        "poNumber": "HWSH053166",
+        "remarks": "NEED UNLOADING SERVICE",
+        "tripRate": "190",
+        "dropCharge": "",
+        "manpowerCharge": "170",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "2946 , LORONG PERUSAHAAN MAJU 6 , PRAI INDUSTRIAL ESTATE IV"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60187",
+      "customerDocumentNumber": "24009624",
+      "remarks": "NEED UNLOADING SERVICE",
+      "totalTransportWeight": 93.6,
+      "rawTripRateInput": "190",
+      "rawManpowerChargeInput": "170",
+      "tripRate": 190,
+      "manpowerCharge": 170
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Perai",
+      "state": "Penang",
+      "postalCode": "13600",
+      "country": "Malaysia",
+      "latitude": "5.358",
+      "longitude": "100.41",
+      "rawInput": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "2946 , LORONG PERUSAHAAN MAJU 6 , PRAI INDUSTRIAL ESTATE IV",
+      "street2": null,
+      "city": "PERAI",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "2946 , LORONG PERUSAHAAN MAJU 6 , PRAI INDUSTRIAL ESTATE IV, PERAI, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-02-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-28T00:00:00.000Z",
+      "customerPoNumbers": "HWSH053166",
+      "recipientContactName": "TRACY",
+      "recipientContactPhone": "0164459128"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0000610",
+        "description": "NIRO GRANITE GGCA03 300x600 MP2(MP) 1ST",
+        "lotSerialNumber": "BBA.2328AXM2.098",
+        "quantity": 3,
+        "uom": "CT",
+        "weight": 93.6,
+        "bin": "3PL"
+      }
+    ],
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+        "loadNumber": "60189",
+        "promisedShipDate": "12/28/24",
+        "requestDate": "02/01/2025",
+        "misc_receiving_date": "12/31/24",
+        "misc_days_before_rdd": "2",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "02/01/2025",
+        "orderNumber": "24009641",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0004189",
+        "description": "NIRO GRANITE GGSA04 600x600 MP3(MP) 1ST",
+        "lotSerialNumber": "AAA.2422BXM2.098.E",
+        "quantity": "14",
+        "uom": "CT",
+        "bin": "3PL",
+        "weight": "448",
+        "shipToCity": "BUKIT MERTAJAM",
+        "shipToAddress": "12, LORONG VILA INDAH 2 , TAMAN VILA INDAH",
+        "shipToState": "PENANG",
+        "contactNumber": "LIM\r\n012-555 1918",
+        "poNumber": "HWSH053180",
+        "remarks": "MORNING TRIP BEFORE 12PM,NEED UNLOADING SERVICE",
+        "tripRate": "",
+        "dropCharge": "60",
+        "manpowerCharge": "",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "12, LORONG VILA INDAH 2 , TAMAN VILA INDAH"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60189",
+      "customerDocumentNumber": "24009641",
+      "remarks": "MORNING TRIP BEFORE 12PM,NEED UNLOADING SERVICE",
+      "totalTransportWeight": 448,
+      "rawDropChargeInput": "60",
+      "dropCharge": 60
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Perai",
+      "state": "Penang",
+      "postalCode": "13600",
+      "country": "Malaysia",
+      "latitude": "5.358",
+      "longitude": "100.41",
+      "rawInput": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "12, LORONG VILA INDAH 2 , TAMAN VILA INDAH",
+      "street2": null,
+      "city": "BUKIT MERTAJAM",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "12, LORONG VILA INDAH 2 , TAMAN VILA INDAH, BUKIT MERTAJAM, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-02-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-28T00:00:00.000Z",
+      "customerPoNumbers": "HWSH053180",
+      "recipientContactName": "LIM",
+      "recipientContactPhone": "0125551918"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0004189",
+        "description": "NIRO GRANITE GGSA04 600x600 MP3(MP) 1ST",
+        "lotSerialNumber": "AAA.2422BXM2.098.E",
+        "quantity": 14,
+        "uom": "CT",
+        "weight": 448,
+        "bin": "3PL"
+      },
+      {
+        "secondaryItemNumber": "11N0002798",
+        "description": "NIRO GRANITE GGML01 600x600 MP2(MP) 1ST",
+        "lotSerialNumber": "BBA.2418AXM2.098",
+        "quantity": 14,
+        "uom": "CT",
+        "weight": 437,
+        "bin": "3PL"
+      }
+    ],
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+        "loadNumber": "60188",
+        "promisedShipDate": "12/28/24",
+        "requestDate": "02/01/2025",
+        "misc_receiving_date": "12/31/24",
+        "misc_days_before_rdd": "2",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "02/01/2025",
+        "orderNumber": "24009635",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0000564",
+        "description": "NIRO GRANITE GGBZ02 600x1200 MN1(MN) 1ST V3",
+        "lotSerialNumber": "AAA.1952DXM2.115",
+        "quantity": "3",
+        "uom": "CT",
+        "bin": "3PL",
+        "weight": "126",
+        "shipToCity": "PULAU PINANG",
+        "shipToAddress": "6A-18-11 , I-SANTORINI Jalan Seri Tanjung Pinang 1",
+        "shipToState": "PENANG",
+        "contactNumber": "AH ANN UNCLE 016-4460615 / 012-6448713",
+        "poNumber": "HWSH053175",
+        "remarks": "DELIVER BETWEEN 1PM-4PM, NEED UNLOADING SERVICE",
+        "tripRate": "220",
+        "dropCharge": "",
+        "manpowerCharge": "170",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "6A-18-11 , I-SANTORINI Jalan Seri Tanjung Pinang 1"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60188",
+      "customerDocumentNumber": "24009635",
+      "remarks": "DELIVER BETWEEN 1PM-4PM, NEED UNLOADING SERVICE",
+      "totalTransportWeight": 126,
+      "rawTripRateInput": "220",
+      "rawManpowerChargeInput": "170",
+      "tripRate": 220,
+      "manpowerCharge": 170
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Perai",
+      "state": "Penang",
+      "postalCode": "13600",
+      "country": "Malaysia",
+      "latitude": "5.358",
+      "longitude": "100.41",
+      "rawInput": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "6A-18-11 , I-SANTORINI Jalan Seri Tanjung Pinang 1",
+      "street2": null,
+      "city": "PULAU PINANG",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "6A-18-11 , I-SANTORINI Jalan Seri Tanjung Pinang 1, PULAU PINANG, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-02-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-28T00:00:00.000Z",
+      "customerPoNumbers": "HWSH053175",
+      "recipientContactName": "AH ANN UNCLE",
+      "recipientContactPhone": "0164460615 | 0126448713"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0000564",
+        "description": "NIRO GRANITE GGBZ02 600x1200 MN1(MN) 1ST V3",
+        "lotSerialNumber": "AAA.1952DXM2.115",
+        "quantity": 3,
+        "uom": "CT",
+        "weight": 126,
+        "bin": "3PL"
+      }
+    ],
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP HUB PRAI",
+        "loadNumber": "707421",
+        "promisedShipDate": "12/28/24",
+        "requestDate": "02/01/2025",
+        "misc_receiving_date": "12/31/24",
+        "misc_days_before_rdd": "2",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "02/01/2025",
+        "orderNumber": "",
+        "orderType": "",
+        "secondaryItemNumber": "SAMPLE TILES",
+        "description": "",
+        "lotSerialNumber": "",
+        "quantity": "1",
+        "uom": "PLT",
+        "bin": "",
+        "weight": "200",
+        "shipToCity": "GEORGETOWN",
+        "shipToAddress": "NO. 15, JALAN PANGKOR 10250 GEORGETOWN, PENANG.",
+        "shipToState": "PENANG",
+        "contactNumber": "BANNIE\r\n04 2292335",
+        "poNumber": "",
+        "remarks": "NEED UNLOADING SERVICE",
+        "tripRate": "",
+        "dropCharge": "60",
+        "manpowerCharge": "",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.6,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "NO. 15, JALAN PANGKOR 10250 GEORGETOWN, PENANG."
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "707421",
+      "remarks": "NEED UNLOADING SERVICE",
+      "totalTransportWeight": 200,
+      "rawDropChargeInput": "60",
+      "dropCharge": 60
+    },
+    "originAddressData": {
+      "street2": null,
+      "latitude": "2.5",
+      "longitude": "101.5",
+      "rawInput": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP HUB PRAI",
+      "resolutionMethod": "estimated-pattern-context",
+      "resolutionConfidence": "0.4"
+    },
+    "destinationAddressData": {
+      "street1": "NO. 15, JALAN PANGKOR",
+      "street2": null,
+      "city": "GEORGETOWN",
+      "state": "PENANG",
+      "postalCode": "10250",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "NO. 15, JALAN PANGKOR, GEORGETOWN, PENANG, 10250, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-02-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-28T00:00:00.000Z",
+      "recipientContactName": "BANNIE",
+      "recipientContactPhone": "042292335"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "SAMPLE TILES",
+        "quantity": 1,
+        "uom": "PLT",
+        "weight": 200
+      }
+    ],
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+        "loadNumber": "60184",
+        "promisedShipDate": "12/30/24",
+        "requestDate": "03/01/2025",
+        "misc_receiving_date": "",
+        "misc_days_before_rdd": "",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "03/01/2025",
+        "orderNumber": "24009637",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0004124",
+        "description": "NIRO GRANITE GGSA01 300x600 MP3(MP) 1ST",
+        "lotSerialNumber": "AAA.2433BXM2.098.XW",
+        "quantity": "3",
+        "uom": "CT",
+        "bin": "3PL",
+        "weight": "96",
+        "shipToCity": "TANJONG BUNGAH",
+        "shipToAddress": "Surin Condominium A-6-3A Solok Tg Bungah",
+        "shipToState": "PENANG",
+        "contactNumber": "MR TAN \r\n012-498 3199 / 012-721 5229",
+        "poNumber": "HWSH053170",
+        "remarks": "NEED UNLOADING SERVICE",
+        "tripRate": "300",
+        "dropCharge": "",
+        "manpowerCharge": "170",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "Surin Condominium A-6-3A Solok Tg Bungah"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60184",
+      "customerDocumentNumber": "24009637",
+      "remarks": "NEED UNLOADING SERVICE",
+      "totalTransportWeight": 96,
+      "rawTripRateInput": "300",
+      "rawManpowerChargeInput": "170",
+      "tripRate": 300,
+      "manpowerCharge": 170
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Perai",
+      "state": "Penang",
+      "postalCode": "13600",
+      "country": "Malaysia",
+      "latitude": "5.358",
+      "longitude": "100.41",
+      "rawInput": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "Surin Condominium A-6-3A Solok Tg Bungah",
+      "street2": null,
+      "city": "TANJONG BUNGAH",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "Surin Condominium A-6-3A Solok Tg Bungah, TANJONG BUNGAH, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-03-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-30T00:00:00.000Z",
+      "customerPoNumbers": "HWSH053170",
+      "recipientContactName": "TAN",
+      "recipientContactPhone": "0124983199 | 0127215229"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0004124",
+        "description": "NIRO GRANITE GGSA01 300x600 MP3(MP) 1ST",
+        "lotSerialNumber": "AAA.2433BXM2.098.XW",
+        "quantity": 3,
+        "uom": "CT",
+        "weight": 96,
+        "bin": "3PL"
+      },
+      {
+        "secondaryItemNumber": "11N0004133",
+        "description": "NIRO GRANITE GGSA01 600x600 MP3(MP) 1ST",
+        "lotSerialNumber": "AAA.2433BXM2.098",
+        "quantity": 15,
+        "uom": "CT",
+        "weight": 480,
+        "bin": "3PL"
+      }
+    ],
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+        "loadNumber": "60036",
+        "promisedShipDate": "27/12/2024",
+        "requestDate": "02/01/2025",
+        "misc_receiving_date": "",
+        "misc_days_before_rdd": "",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "03/01/2025",
+        "orderNumber": "24009581",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0013667",
+        "description": "NIRO GRANITE GGGL02 600x600 SP4(RA) 1ST",
+        "lotSerialNumber": "AAA.2435DXM2.098",
+        "quantity": "25",
+        "uom": "CT",
+        "bin": "3PL",
+        "weight": "800",
+        "shipToCity": "GELUGOR",
+        "shipToAddress": "Vilaris Countyard Homes 46 , Lorong Batu Uban 1, The Century",
+        "shipToState": "PENANG",
+        "contactNumber": "JEN OR CAMY 012-444 8442 /016-421 1767",
+        "poNumber": "HWSH053123",
+        "remarks": "PLS ARRANGE MORNING SESSION BEFORE 12PM TO ARRIVE SITE. NEED UNLOADING SERVICE",
+        "tripRate": "",
+        "dropCharge": "60",
+        "manpowerCharge": "",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "Vilaris Countyard Homes 46 , Lorong Batu Uban 1, The Century"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60036",
+      "customerDocumentNumber": "24009581",
+      "remarks": "PLS ARRANGE MORNING SESSION BEFORE 12PM TO ARRIVE SITE. NEED UNLOADING SERVICE",
+      "totalTransportWeight": 800,
+      "rawDropChargeInput": "60",
+      "dropCharge": 60
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Perai",
+      "state": "Penang",
+      "postalCode": "13600",
+      "country": "Malaysia",
+      "latitude": "5.358",
+      "longitude": "100.41",
+      "rawInput": "NIRO TRANSPORTER WILL TRANSFER TO LOAD UP PRAI HUB",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "Vilaris Countyard Homes 46 , Lorong Batu Uban 1, The Century",
+      "street2": null,
+      "city": "GELUGOR",
+      "state": "PENANG",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "Vilaris Countyard Homes 46 , Lorong Batu Uban 1, The Century, GELUGOR, PENANG, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-02-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "customerPoNumbers": "HWSH053123",
+      "recipientContactName": "JEN OR CAMY",
+      "recipientContactPhone": "0124448442 | 0164211767"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0013667",
+        "description": "NIRO GRANITE GGGL02 600x600 SP4(RA) 1ST",
+        "lotSerialNumber": "AAA.2435DXM2.098",
+        "quantity": 25,
+        "uom": "CT",
+        "weight": 800,
+        "bin": "3PL"
+      },
+      {
+        "secondaryItemNumber": "11N0009526",
+        "description": "NIRO GRANITE GGHF01 600x600 MP2(MP) 1ST",
+        "lotSerialNumber": "AAD.2348A4M2.090",
+        "quantity": 44,
+        "uom": "CT",
+        "weight": 1276,
+        "bin": "3PL"
+      }
+    ],
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "NIRO TRANSPORTER WILL TRANSFER TO LOADUP HUB JB",
+        "loadNumber": "60186",
+        "promisedShipDate": "12/28/24",
+        "requestDate": "02/01/2025",
+        "misc_receiving_date": "12/31/24",
+        "misc_days_before_rdd": "2",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "02/01/2025",
+        "orderNumber": "24009603",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0001070",
+        "description": "NIRO GRANITE GGEB01 600x600 PN0(PN) 1ST",
+        "lotSerialNumber": "C33.2405F4YM3.090",
+        "quantity": "21",
+        "uom": "CT",
+        "bin": "3PL",
+        "weight": "620",
+        "shipToCity": "JOHOR BAHRU",
+        "shipToAddress": "NO 2, JALAN GLENMARIE 1/6 GLENMARIE JOHOR",
+        "shipToState": "JOHOR",
+        "contactNumber": "MR TAN \r\n60167008804 / MS LIM 0106663398 / SD FYRA 60136355720",
+        "poNumber": "HWSH053140",
+        "remarks": "CALL CUSTOMER 1 HOUR BEFORE DELIVERY, NEED UNLOADING SERVICE",
+        "tripRate": "200",
+        "dropCharge": "",
+        "manpowerCharge": "170",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.6,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "NO 2, JALAN GLENMARIE 1/6 GLENMARIE JOHOR"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60186",
+      "customerDocumentNumber": "24009603",
+      "remarks": "CALL CUSTOMER 1 HOUR BEFORE DELIVERY, NEED UNLOADING SERVICE",
+      "totalTransportWeight": 620,
+      "rawTripRateInput": "200",
+      "rawManpowerChargeInput": "170",
+      "tripRate": 200,
+      "manpowerCharge": 170
+    },
+    "originAddressData": {
+      "street2": null,
+      "latitude": "2.5",
+      "longitude": "101.5",
+      "rawInput": "NIRO TRANSPORTER WILL TRANSFER TO LOADUP HUB JB",
+      "resolutionMethod": "estimated-pattern-context",
+      "resolutionConfidence": "0.4"
+    },
+    "destinationAddressData": {
+      "street1": "NO 2, JALAN GLENMARIE 1/6 GLENMARIE",
+      "street2": null,
+      "city": "JOHOR BAHRU",
+      "state": "JOHOR",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "NO 2, JALAN GLENMARIE 1/6 GLENMARIE, JOHOR BAHRU, JOHOR, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-02-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-28T00:00:00.000Z",
+      "customerPoNumbers": "HWSH053140",
+      "recipientContactName": "TAN | LIM | FYRA",
+      "recipientContactPhone": "60167008804 | 0106663398 | 60136355720"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0001070",
+        "description": "NIRO GRANITE GGEB01 600x600 PN0(PN) 1ST",
+        "lotSerialNumber": "C33.2405F4YM3.090",
+        "quantity": 21,
+        "uom": "CT",
+        "weight": 620,
+        "bin": "3PL"
+      }
+    ],
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "LOADUP DIRECT DELIVERY , PICK UP AT NIRO SHAH ALAM",
+        "loadNumber": "60190",
+        "promisedShipDate": "12/28/24",
+        "requestDate": "02/01/2025",
+        "truckDetails": "NAME: KHAIRUL RIDZAL\r\nIC: 780723045115\r\nPHONE: 0104644407\r\nTRUCK: BJJ 1932",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "02/01/2025",
+        "orderNumber": "24005153",
+        "orderType": "S7",
+        "secondaryItemNumber": "11N0001072",
+        "description": "NIRO GRANITE GGEB01 800x800 PN0(PN) 1ST",
+        "lotSerialNumber": "C33.2410F6YM3.100",
+        "quantity": "1",
+        "uom": "CT",
+        "bin": "B15",
+        "weight": "45",
+        "shipToCity": "SEREMBAN",
+        "shipToAddress": "763 JLN HIJAYU 1/33 HIJAYU 1, BDR SRI SENDAYAN",
+        "shipToState": "NEGERI SEMBILAN",
+        "contactNumber": "VIJAYAN A/L KRISHNAN \r\n0193399300",
+        "poNumber": "483826",
+        "remarks": "NEED UNLOADING SERVICE",
+        "tripRate": "460",
+        "dropCharge": "",
+        "manpowerCharge": "200",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "763 JLN HIJAYU 1/33 HIJAYU 1, BDR SRI SENDAYAN"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60190",
+      "customerDocumentNumber": "24005153",
+      "remarks": "NEED UNLOADING SERVICE",
+      "totalTransportWeight": 45,
+      "rawTripRateInput": "460",
+      "rawManpowerChargeInput": "200",
+      "tripRate": 460,
+      "manpowerCharge": 200
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "LOADUP DIRECT DELIVERY , PICK UP AT NIRO SHAH ALAM",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "763 JLN HIJAYU 1/33 HIJAYU 1, BDR SRI SENDAYAN",
+      "street2": null,
+      "city": "SEREMBAN",
+      "state": "NEGERI SEMBILAN",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "763 JLN HIJAYU 1/33 HIJAYU 1, BDR SRI SENDAYAN, SEREMBAN, NEGERI SEMBILAN, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-02-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-28T00:00:00.000Z",
+      "customerPoNumbers": "483826",
+      "recipientContactName": "VIJAYAN A | L KRISHNAN",
+      "recipientContactPhone": "0193399300"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0001072",
+        "description": "NIRO GRANITE GGEB01 800x800 PN0(PN) 1ST",
+        "lotSerialNumber": "C33.2410F6YM3.100",
+        "quantity": 1,
+        "uom": "CT",
+        "weight": 45,
+        "bin": "B15"
+      }
+    ],
+    "parsedDriverName": "KHAIRUL RIDZAL",
+    "parsedDriverPhone": "0104644407",
+    "parsedTruckIdentifier": "BJJ 1932",
+    "parsedDriverIc": "780723045115",
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "LOADUP DIRECT DELIVERY , PICK UP AT XIN HWA",
+        "loadNumber": "60183",
+        "promisedShipDate": "12/30/24",
+        "requestDate": "03/01/2025",
+        "truckDetails": "NAME: KHAIRUL RIDZAL\r\nIC: 780723045115\r\nPHONE: 0104644407\r\nTRUCK: BJJ 1932",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "02/01/2025",
+        "orderNumber": "24009630",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0001072",
+        "description": "NIRO GRANITE GGEB01 800x800 PN0(PN) 1ST",
+        "lotSerialNumber": "C33.2418F5YM3.100",
+        "quantity": "8",
+        "uom": "CT",
+        "bin": "3PL",
+        "weight": "360",
+        "shipToCity": "SEREMBAN",
+        "shipToAddress": "NO 111, JLN SAUJANA DUTA 12, S2 HEIGHTS",
+        "shipToState": "NEGERI SEMBILAN",
+        "contactNumber": "MARK\r\n016-3322248",
+        "poNumber": "HWSH053169",
+        "remarks": "NEED UNLOADING SERVICE",
+        "tripRate": "",
+        "dropCharge": "70",
+        "manpowerCharge": "",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "NO 111, JLN SAUJANA DUTA 12, S2 HEIGHTS"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60183",
+      "customerDocumentNumber": "24009630",
+      "remarks": "NEED UNLOADING SERVICE",
+      "totalTransportWeight": 360,
+      "rawDropChargeInput": "70",
+      "dropCharge": 70
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "LOADUP DIRECT DELIVERY , PICK UP AT XIN HWA",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "NO 111, JLN SAUJANA DUTA 12, S2 HEIGHTS",
+      "street2": null,
+      "city": "SEREMBAN",
+      "state": "NEGERI SEMBILAN",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "NO 111, JLN SAUJANA DUTA 12, S2 HEIGHTS, SEREMBAN, NEGERI SEMBILAN, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-03-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-30T00:00:00.000Z",
+      "customerPoNumbers": "HWSH053169",
+      "recipientContactName": "MARK",
+      "recipientContactPhone": "0163322248"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0001072",
+        "description": "NIRO GRANITE GGEB01 800x800 PN0(PN) 1ST",
+        "lotSerialNumber": "C33.2418F5YM3.100",
+        "quantity": 8,
+        "uom": "CT",
+        "weight": 360,
+        "bin": "3PL"
+      },
+      {
+        "secondaryItemNumber": "11N0001072",
+        "description": "NIRO GRANITE GGEB01 800x800 PN0(PN) 1ST",
+        "lotSerialNumber": "C33.2346F5YM3.100",
+        "quantity": 20,
+        "uom": "CT",
+        "weight": 900,
+        "bin": "3PL"
+      },
+      {
+        "secondaryItemNumber": "11N0001072",
+        "description": "NIRO GRANITE GGEB01 800x800 PN0(PN) 1ST",
+        "lotSerialNumber": "C33.2346F5YM3.100",
+        "quantity": 14,
+        "uom": "CT",
+        "weight": 630,
+        "bin": "3PL"
+      }
+    ],
+    "parsedDriverName": "KHAIRUL RIDZAL",
+    "parsedDriverPhone": "0104644407",
+    "parsedTruckIdentifier": "BJJ 1932",
+    "parsedDriverIc": "780723045115",
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "LOADUP DIRECT DELIVERY , PICK UP AT NIRO SHAH ALAM",
+        "loadNumber": "60366",
+        "promisedShipDate": "12/31/24",
+        "requestDate": "04/01/2025",
+        "truckDetails": "NAME: KHAIRUL RIDZAL\r\nIC: 780723045115\r\nPHONE: 0104644407\r\nTRUCK: BJJ 1932",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "02/01/2025",
+        "orderNumber": "24009688",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0014183",
+        "description": "NIRO GRANITE GGNS01 600x1200 MP0(MP) 1ST",
+        "lotSerialNumber": "DDD.2348A2M3.062",
+        "quantity": "4",
+        "uom": "CT",
+        "bin": "B15",
+        "weight": "172",
+        "shipToCity": "SEREMBAN",
+        "shipToAddress": "81,Jalan Ainsdale 12/5, Bandar Ainsdale",
+        "shipToState": "NEGERI SEMBILAN",
+        "contactNumber": "CASSIE\r\n012-2440451",
+        "poNumber": "HWSH052840(R-485338)",
+        "remarks": "NEED UNLOADING SERVICE",
+        "tripRate": "",
+        "dropCharge": "70",
+        "manpowerCharge": "",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "81,Jalan Ainsdale 12/5, Bandar Ainsdale"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60366",
+      "customerDocumentNumber": "24009688",
+      "remarks": "NEED UNLOADING SERVICE",
+      "totalTransportWeight": 172,
+      "rawDropChargeInput": "70",
+      "dropCharge": 70
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "LOADUP DIRECT DELIVERY , PICK UP AT NIRO SHAH ALAM",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "81,Jalan Ainsdale 12/5, Bandar Ainsdale",
+      "street2": null,
+      "city": "SEREMBAN",
+      "state": "NEGERI SEMBILAN",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "81,Jalan Ainsdale 12/5, Bandar Ainsdale, SEREMBAN, NEGERI SEMBILAN, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-04-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-31T00:00:00.000Z",
+      "customerPoNumbers": "HWSH052840(R-485338)",
+      "recipientContactName": "CASSIE",
+      "recipientContactPhone": "0122440451"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0014183",
+        "description": "NIRO GRANITE GGNS01 600x1200 MP0(MP) 1ST",
+        "lotSerialNumber": "DDD.2348A2M3.062",
+        "quantity": 4,
+        "uom": "CT",
+        "weight": 172,
+        "bin": "B15"
+      }
+    ],
+    "parsedDriverName": "KHAIRUL RIDZAL",
+    "parsedDriverPhone": "0104644407",
+    "parsedTruckIdentifier": "BJJ 1932",
+    "parsedDriverIc": "780723045115",
+    "parsedStatusString": "COMPLETED"
+  },
+  {
+    "metadata": {
+      "originalRowData": {
+        "pickupWarehouseRaw": "LOADUP DIRECT DELIVERY , PICK UP AT XIN HWA",
+        "loadNumber": "60365",
+        "promisedShipDate": "12/31/24",
+        "requestDate": "04/01/2025",
+        "truckDetails": "NAME: MUHAMMAD AZIB\r\nIC: 941120-10-5811\r\nPHONE:  01135113136\r\nTRUCK: BQV 3326",
+        "status": "DELIVERED",
+        "actualDeliveryDate": "04/01/2025",
+        "orderNumber": "24009705",
+        "orderType": "SL",
+        "secondaryItemNumber": "11N0004715",
+        "description": "NIRO GRANITE GGTK04 300x600 MP3(MP) 1ST",
+        "lotSerialNumber": "AAA.2422DX04.085",
+        "quantity": "6",
+        "uom": "CT",
+        "bin": "3PL",
+        "weight": "187.2",
+        "shipToCity": "BUKIT PAYONG",
+        "shipToAddress": "Lot 1188, Jln Taman Koperasi, Padang Midin, Kuala T'ganu,",
+        "shipToState": "TERENGGANU",
+        "contactNumber": "JAILANI\r\n012-2737630\r\nJUNAIZEE\r\n010-7661544",
+        "poNumber": "HWSH053254",
+        "remarks": "MORNING TRIP, NEED UNLOADING SERVICE",
+        "tripRate": "1300",
+        "dropCharge": "",
+        "manpowerCharge": "200",
+        "totalCharge": ""
+      },
+      "originalRowIndex": -1,
+      "confidenceScore": 0.9,
+      "processingErrors": [],
+      "needsReview": false,
+      "sourceDocumentId": null,
+      "rawOriginInput": null,
+      "rawDestinationInput": "Lot 1188, Jln Taman Koperasi, Padang Midin, Kuala T'ganu,"
+    },
+    "shipmentBaseData": {},
+    "customDetailsData": {
+      "customerShipmentNumber": "60365",
+      "customerDocumentNumber": "24009705",
+      "remarks": "MORNING TRIP, NEED UNLOADING SERVICE",
+      "totalTransportWeight": 187.2,
+      "rawTripRateInput": "1300",
+      "rawManpowerChargeInput": "200",
+      "tripRate": 1300,
+      "manpowerCharge": 200
+    },
+    "originAddressData": {
+      "street2": null,
+      "city": "Shah Alam",
+      "state": "Selangor",
+      "postalCode": "40300",
+      "country": "Malaysia",
+      "latitude": "3.052",
+      "longitude": "101.527",
+      "rawInput": "LOADUP DIRECT DELIVERY , PICK UP AT XIN HWA",
+      "resolutionMethod": "mock-keyword",
+      "resolutionConfidence": "1"
+    },
+    "destinationAddressData": {
+      "street1": "Lot 1188, Jln Taman Koperasi, Padang Midin, Kuala T'ganu,",
+      "street2": null,
+      "city": "BUKIT PAYONG",
+      "state": "TERENGGANU",
+      "country": "Malaysia",
+      "latitude": null,
+      "longitude": null,
+      "rawInput": "Lot 1188, Jln Taman Koperasi, Padang Midin, Kuala T'ganu,, BUKIT PAYONG, TERENGGANU, Malaysia",
+      "resolutionMethod": "direct-fields",
+      "resolutionConfidence": "0.8"
+    },
+    "pickupData": {
+      "pickup_date": "2025-04-01T00:00:00.000Z"
+    },
+    "dropoffData": {
+      "dropoff_date": "2024-12-31T00:00:00.000Z",
+      "customerPoNumbers": "HWSH053254",
+      "recipientContactName": "JAILANI JUNAIZEE",
+      "recipientContactPhone": "0122737630 | 0107661544"
+    },
+    "itemsData": [
+      {
+        "secondaryItemNumber": "11N0004715",
+        "description": "NIRO GRANITE GGTK04 300x600 MP3(MP) 1ST",
+        "lotSerialNumber": "AAA.2422DX04.085",
+        "quantity": 6,
+        "uom": "CT",
+        "weight": 187.2,
+        "bin": "3PL"
+      },
+      {
+        "secondaryItemNumber": "11N0004709",
+        "description": "NIRO GRANITE GGTK03 300x600 MP3(MP) 1ST",
+        "lotSerialNumber": "AAA.2421DX05.085",
+        "quantity": 10,
+        "uom": "CT",
+        "weight": 312,
+        "bin": "3PL"
+      },
+      {
+        "secondaryItemNumber": "11N0009512",
+        "description": "NIRO GRANITE GGXP84 600x600 PN0(PN) 1ST",
+        "lotSerialNumber": "AAD.2438A7M2.090",
+        "quantity": 33,
+        "uom": "CT",
+        "weight": 957,
+        "bin": "3PL"
+      }
+    ],
+    "parsedDriverName": "MUHAMMAD AZIB",
+    "parsedDriverPhone": "01135113136",
+    "parsedTruckIdentifier": "BQV 3326",
+    "parsedDriverIc": "941120-10-5811",
+    "parsedStatusString": "COMPLETED"
+  }
+]

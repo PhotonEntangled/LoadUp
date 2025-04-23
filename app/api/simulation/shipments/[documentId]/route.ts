@@ -73,24 +73,28 @@ function mapShipmentDataToApi(
 
     const coreInfo: ApiShipmentCoreInfo = {
         id: dbShipment.id,
-        documentId: coreDocumentId ?? 'MISSING_DOC_ID', 
+        documentId: coreDocumentId ?? 'MISSING_DOC_ID',
         // --- CORRECTED Load Number Logic --- 
         // Prioritize from custom details, fallback to shipment record (like main API)
-        loadNumber: dbCustomDetails?.customerShipmentNumber || null, 
-        orderNumber: dbCustomDetails?.customerDocumentNumber || dbShipment.shipmentDocumentNumber || null, 
-        poNumber: dbDropoff?.customerPoNumbers ?? null, 
+        loadNumber: dbCustomDetails?.customerShipmentNumber || null,
+        orderNumber: dbCustomDetails?.customerDocumentNumber || dbShipment.shipmentDocumentNumber || null,
+        poNumber: dbDropoff?.customerPoNumbers ?? null,
         status: dbShipment.status ?? 'UNKNOWN',
-        totalWeight: null, 
-        totalWeightUnit: null, 
-        totalVolume: null, 
-        totalVolumeUnit: null, 
+        totalWeight: null,
+        totalWeightUnit: null,
+        totalVolume: null,
+        totalVolumeUnit: null,
         totalItems: dbItems.length,
-        promisedShipDate: null, 
-        plannedDeliveryDate: dbDropoff?.dropoff_date?.toISOString() ?? null, 
-        actualPickupArrival: dbPickup?.actualDateTimeOfArrival?.toISOString() ?? null, 
-        actualPickupDeparture: dbPickup?.actualDateTimeOfDeparture?.toISOString() ?? null, 
-        actualDeliveryArrival: dbDropoff?.actualDateTimeOfArrival?.toISOString() ?? null, 
-        actualDeliveryDeparture: dbDropoff?.actualDateTimeOfDeparture?.toISOString() ?? null, 
+        promisedShipDate: null,
+        plannedDeliveryDate: dbDropoff?.dropoff_date?.toISOString() ?? null,
+        actualPickupArrival: dbPickup?.actualDateTimeOfArrival?.toISOString() ?? null,
+        actualPickupDeparture: dbPickup?.actualDateTimeOfDeparture?.toISOString() ?? null,
+        actualDeliveryArrival: dbDropoff?.actualDateTimeOfArrival?.toISOString() ?? null,
+        actualDeliveryDeparture: dbDropoff?.actualDateTimeOfDeparture?.toISOString() ?? null,
+        // --- ADDED Missing Fields ---
+        lastKnownLatitude: dbShipment.lastKnownLatitude ? parseFloat(dbShipment.lastKnownLatitude) : null,
+        lastKnownLongitude: dbShipment.lastKnownLongitude ? parseFloat(dbShipment.lastKnownLongitude) : null,
+        lastKnownTimestamp: dbShipment.lastKnownTimestamp?.toISOString() ?? null,
     };
 
     const originAddress: ApiAddressDetail | null = mapAddress(dbPickup?.address ?? null);

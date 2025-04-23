@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Vercel CLI Usage Guide
+
+This rule outlines steps and considerations for using the Vercel CLI with the LoadUp project.
+
+## Installation
+
+The Vercel CLI should be installed globally:
+```bash
+npm i -g vercel
+```
+*Reference: [Vercel CLI Overview](mdc:https:/vercel.com/docs/cli)*
+
+**Issue:** The `vercel` command might not be recognized immediately in the integrated terminal if the global npm path isn't correctly configured in the system's environment variables. A terminal restart or manual PATH configuration might be needed.
+
+## Authentication
+
+Before using most commands, authenticate with your Vercel account:
+```bash
+vercel login
+```
+Alternatively, for CI/CD or non-interactive environments, use an [Access Token](mdc:https:/vercel.com/account/tokens) with the `--token` flag.
+
+## Environment Variables
+
+- **Pulling:** Download variables from Vercel (Development environment) to a local `.env` file:
+  ```bash
+  vercel env pull .env.development.local
+  ```
+  *Note: `vercel dev` also pulls these variables into memory automatically.*
+
+- **Adding:** Add or update variables in Vercel project settings:
+  ```bash
+  # Add variable 'MY_VAR' with 'value' to specified environments
+  vercel env add MY_VAR "value" production,preview,development
+
+  # Add a secret variable (use stdin for value)
+  vercel env add MY_SECRET production,preview,development --secret
+  ```
+  *Issue:* This command failed previously because the `vercel` command was not found in the PATH.
+
+- **Manual Management:** If CLI commands fail, variables must be managed manually via the Vercel Dashboard: **Project Settings -> Environment Variables**.
+
+- **KV & QStash:** Specific variables for Vercel KV (`KV_REST_API_URL`, `KV_REST_API_TOKEN`) and the linked QStash integration (`loadupstorage_QSTASH_...`) are obtained from the Vercel dashboard (Storage tab and associated resource pages/settings) and need to be present both locally (`.env.local`) and in the Vercel project settings.
+
+## Deployment
+
+- **Automatic:** Pushing to the configured Git branch (e.g., `main`) usually triggers automatic deployments on Vercel.
+- **Manual:** To manually trigger a production deployment:
+  ```bash
+  vercel deploy --prod
+  ```
+
+## Available Commands
+
+The following commands are available (refer to `vercel --help` or the [official docs](mdc:https:/vercel.com/docs/cli) for details on each):
+
+*   `alias`
+*   `bisect`
+*   `build`
+*   `certs`
+*   `deploy`
+*   `dev`
+*   `dns`
+*   `domains`
+*   `env`
+*   `git`
+*   `help`
+*   `init`
+*   `inspect`
+*   `link`
+*   `list`
+*   `login`
+*   `logout`
+*   `logs`
+*   `project`
+*   `promote`
+*   `pull`
+*   `redeploy`
+*   `remove`
+*   `rollback`
+*   `switch`
+*   `teams`
+*   `whoami`
+
+## Key Files
+
+- `.env.local`: Local environment variables (should include DB, KV, QStash keys).
+- `app/api/simulation/enqueue-ticks/route.ts`: Uses QStash SDK (`Client`) and Vercel KV (`@vercel/kv`). Requires `loadupstorage_QSTASH_URL`, `loadupstorage_QSTASH_TOKEN`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, and `VERCEL_URL`.
+- `app/api/simulation/tick/route.ts`: (Presumed) Will likely require QStash signing keys (`loadupstorage_QSTASH_CURRENT_SIGNING_KEY`, `loadupstorage_QSTASH_NEXT_SIGNING_KEY`) for webhook verification.
+
+
+

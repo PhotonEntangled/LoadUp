@@ -1,0 +1,49 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Rule Name: NextjsDebugWorkflow.mdc
+# Description: Workflow for debugging Next.js build failures and runtime errors.
+
+## Trigger
+When a user reports a failed `npm run dev` or runtime errors in the browser after code changes.
+
+## Steps
+
+1.  **Analyze Terminal Logs:**
+    *   Identify primary error messages (e.g., `TypeError`, `ReferenceError`, `ENOENT`, CSS/Tailwind errors).
+    *   Look for specific file paths mentioned in stack traces.
+    *   Prioritize errors preventing the build/server start over runtime warnings.
+
+2.  **Check Browser State (If Server Starts):**
+    *   **(If Tool Available):** Use browser tools to navigate to the application URL (usually `http://localhost:3000` or specified port).
+    *   **(Mandatory):** Use browser tools (`getConsoleLogs`, `getConsoleErrors`, `getNetworkErrors`, `takeScreenshot`) to capture the state of the running application, focusing on console errors and visual rendering issues. Relate these back to terminal errors.
+
+3.  **Initial Diagnosis & Fixes:**
+    *   **Build Errors (Babel, Webpack, etc.):**
+        *   Check for custom configs (`babel.config.js/.cjs`, `next.config.js/.cjs`) for related settings.
+        *   *If Babel error persists after removing custom config:* Propose deleting `.next` folder to clear cache.
+    *   **TypeScript Errors (TSxxxx):**
+        *   Follow standard TS error fixing procedures (imports, types, null checks) based on error messages and file context.
+    *   **CSS/Tailwind Errors (`Cannot apply unknown utility class`, etc.):**
+        *   Verify `tailwind.config.js` (content paths, theme extensions, plugins).
+        *   Verify CSS variables are defined in `globals.css` (or relevant CSS files).
+        *   Verify component class names match Tailwind configuration.
+    *   **Runtime Errors (In Browser Console):**
+        *   Relate console errors to specific components or functions using stack traces.
+        *   Check component props, state, and data fetching logic.
+
+4.  **If Initial Fixes Fail (Especially Build Errors):**
+    *   Propose deleting `node_modules` and `package-lock.json` (or `yarn.lock`), followed by `npm install` (or `yarn install`).
+    *   Re-check relevant configuration files (`tsconfig.json`, `next.config.js/.cjs`).
+
+5.  **Reporting:**
+    *   Summarize findings from terminal and browser logs.
+    *   Detail the specific changes made (file edits, deletions).
+    *   State the next expected step (e.g., user reruns `npm run dev`, AI checks browser again).
+
+## Tool Usage
+- Prioritize `read_file`, `file_search`, `edit_file`, `delete_file` for config/code issues.
+- Use `mcp_browsing_tool_getConsoleLogs`, `mcp_browsing_tool_getConsoleErrors`, `mcp_browsing_tool_takeScreenshot` after user confirms server is running.
+- Use `run_terminal_cmd` sparingly, primarily for `tsc --noEmit` checks, not for build/run commands unless specifically requested or as a last resort diagnostic.

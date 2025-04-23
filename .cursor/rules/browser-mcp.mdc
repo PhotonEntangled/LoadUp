@@ -1,0 +1,58 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 🌐 Browser MCP Tool Guide
+
+> You have access to a complete browser analysis toolset via the `@agentdeskai/browser-tools-mcp@1.2.0` package. Use this whenever rendering issues, layout bugs, or client-side errors are involved.
+
+---
+
+### 🔧 Core Commands Available
+
+| Command | Purpose |
+|--------|---------|
+| `getConsoleLogs` | Fetch all console logs from the browser |
+| `getConsoleErrors` | Fetch only console error logs |
+| `getNetworkErrors` | Inspect failed HTTP requests (e.g. 4xx, 5xx) |
+| `getNetworkLogs` | See all network requests (status, size, time, etc.) |
+| `takeScreenshot` | Capture the current state of the browser UI |
+| `getSelectedElement` | Get metadata for a specific selected DOM element |
+| `wipeLogs` | Clear all stored console/network logs |
+
+---
+
+### 🧪 Auditing Tools
+
+| Command | Audit Type |
+|---------|------------|
+| `runSEOAudit` | Checks meta tags, semantic structure, link health |
+| `runAccessibilityAudit` | Ensures ARIA usage, contrast, focus states, etc. |
+| `runPerformanceAudit` | Measures TTI, CLS, FCP, and asset sizes |
+| `runBestPracticesAudit` | Warns about unsafe anchors, JS practices, etc. |
+| `runNextJSAudit` | Checks Next.js-specific setup and pitfalls |
+| `runAuditMode` | Full audit (combines performance, a11y, SEO, etc.) |
+| `runDebuggerMode` | Simulates DevTools Debugging (experimental) |
+
+---
+
+### 🧠 When to Use
+
+Use **browser MCP tools** when:
+- ❌ You see a layout bug or element not rendering properly.
+- ❌ Components flash, disappear, or misalign unexpectedly.
+- ❌ Something works in dev but fails in production.
+- ❌ There are console or network errors.
+- ❌ You need to diagnose API calls, CORS issues, or hydration mismatches.
+- ❌ You are uncertain if CSS is applying correctly.
+
+---
+
+### ✅ Best Practice
+
+Whenever browser rendering is involved:
+- 📸 `takeScreenshot` — include visual evidence.
+- 🛑 `getConsoleErrors` — look for JS or hydration issues.
+- 🌐 `getNetworkLogs` — confirm requests were sent & received correctly.
+

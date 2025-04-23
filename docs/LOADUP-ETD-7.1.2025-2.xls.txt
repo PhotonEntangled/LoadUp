@@ -1,0 +1,121 @@
+OUTSTATION ORDERS - ETD 7.1.2024
+           LOAD Promised         Request   SDB - Final ShipOrder   OrderShipmentLine  2nd Item   Description                    Quantity       Weight                                      Address Line 1 and State/     Custom
+TRANSPORTERNO Ship Date          Date      WarehouseVia Number     Type Plan ID NumberNumber     1          Lot Serial Number   Ordered UOMBin (KG) Ship To Area   Ship To Customer Name   2                  Province   Numbe
+
+                                                                                               NIRO
+      NIRO
+                                                                                               GRANITE
+  TRANSPORTER                                                                                  GGMA25                                                                             8, JALAN AUSTIN
+WILL TRANSFER TO                                                                               600x600                                                                            HEIGHT 5/15
+   LOADUP JB
+                                                                                               PN0(PN)                                                          HOME CREATIVE LAB TAMAN MOUNT
+                   6106807/01/202510/01/2025SAV1    LF 25000088SL        250234 1.00111N00025721ST     CCR.2431F2M3.090               1CT 3PL     29JOHOR BAHRU SDN. BHD.         AUSTIN          JOHOR                  HWSH
+                                                                                                                                                  29
+
+                                                                                                                                                                                     LOT R06&07,
+                                                                                               NIRO                                                                                  ANJUNG
+      NIRO
+                                                                                               GRANITE                                                                               NEIGHBOURHOD
+  TRANSPORTER                                                                                  GGTE06                                                                                CENTRE
+WILL TRANSFER TO                                                                               600x600                                                                               PERSIARAN
+   LOADUP JB
+                                                                                               MP2(MP)                                                             HOME CREATIVE LAB LEDANG
+                   6106907/01/202510/01/2025SAV1    LF 25000097SL        250466 1.00111N00046631ST     AAA.2439AXM2.098               3CT 3PL     87NUSAJAYA       SDN. BHD.         HEIGHTS,    JOHOR                   HWSH
+                                                                                                                                                  87
+
+
+
+
+                                                                                               NIRO
+      NIRO                                                                                     GRANITE
+  TRANSPORTER
+WILL TRANSFER TO
+                                                                                               GGBZ01
+   LOADUP JB                                                                                   600x1200                                                                              NO 7 & 9, JALAN
+                                                                                               MP2(MP)                                                             HOME CREATIVE LAB FAJAR SUNRISE
+                   6107007/01/202513/01/2025SAV1    LF 25000109SL        250591 1.00111N00005571ST V3 AAA.2441BXM3.113              82CT 3PL     3444KLUANG        SDN. BHD.         PARK            JOHOR               HWSH
+                                                                                                                                                 3444
+
+
+
+
+                                                                                               NIRO
+                                                                                               GRANITE
+                                                                                               GGBZ01
+      NIRO
+                                                                                               600x1200                                                                              NO 7 & 9, JALAN
+  TRANSPORTER                                                                                  MP2(MP)                                                             HOME CREATIVE LAB FAJAR SUNRISE
+WILL TRANSFER TO 6107107/01/202513/01/2025SAV1      LF 25000109SL        250591 1.00111N00005571ST V3 AAA.2441BXM3.113              24CT 3PL     1008KLUANG        SDN. BHD.         PARK            JOHOR               HWSH
+   LOADUP JB
+                                                                                               NIRO
+                                                                                               GRANITE
+                                                                                               GGSA01
+                                                                                               600x1200                                                                              NO 7 & 9, JALAN
+                                                                                               SP4(RB)                                                             HOME CREATIVE LAB FAJAR SUNRISE
+                   6107107/01/202513/01/2025SAV1    LF 25000116SL        250598 1.00111N00041311ST      AAA.2422DXM2.113              2CT 3PL      84KLUANG        SDN. BHD.         PARK            JOHOR               HWSH
+                                                                                                                                                 1092
+
+                                                                                               NIRO
+                                                                                               GRANITE
+                                                                                               GGGN02                                                                             22 , LENGKOK
+                                                                                               600x600                                                                            KENARI 4 ,
+      NIRO
+                                                                                               SP3(RS)                                                          HOME CREATIVE LAB CYPRESS VILLA
+  TRANSPORTER 6107207/01/202510/01/2025SAV1         LF 25000143SL        250625 1.00111N00016251ST     AAA.2420DXM2.098               5CT 3PL    145BAYAN LEPAS SDN. BHD.         , SG ARA      PENANG HWSH
+WILL TRANSFER TO                                                                               NIRO
+   LOADUP PN
+                                                                                               GRANITE
+                                                                                               GGGN02                                                                             22 , LENGKOK
+                                                                                               600x600                                                                            KENARI 4 ,
+                                                                                               SP3(RS)                                                          HOME CREATIVE LAB CYPRESS VILLA
+                   6107207/01/202510/01/2025SAV1    LF 25000143SL        250625 2.00111N00016251ST     AAA.2442DXM2.098               4CT 3PL    116BAYAN LEPAS SDN. BHD.         , SG ARA      PENANG HWSH
+                                                                                               NIRO
+                                                                                               GRANITE
+                                                                                               GGGN02                                                                             22 , LENGKOK
+                                                                                               600x600                                                                            KENARI 4 ,
+                                                                                               SP3(RS)                                                          HOME CREATIVE LAB CYPRESS VILLA
+                   6107207/01/202510/01/2025SAV1    LF 25000143SL        250625 3.00111N00016251ST     AAA.2221DXM2.098               1CT 3PL     29BAYAN LEPAS SDN. BHD.         , SG ARA      PENANG HWSH
+                                                                                                                                                 290
+
+
+                                                                                               NIRO
+                                                                                               GRANITE
+      NIRO
+  TRANSPORTER                                                                                  GGBZ02                                                                             48 JALAN JAYA
+WILL TRANSFER TO                                                                               300x600                                                                            PUTRA 5/87,
+   LOADUP JB
+                                                                                               MP2(MP)                                                          HOME CREATIVE LAB BANDAR JAYA
+                   6107307/01/202510/01/2025SAV1    LF 25000145SL        250640 1.00111N00005621ST V2 AAA.2344BXM2.098                1CT 3PL     29JOHOR BAHRU SDN. BHD.         PUTRA         JOHOR                    HWSH
+                                                                                                                                                  29
+
+                                                                                                PORTINO
+      NIRO
+                                                                                                PLB00A                                                                           NO. 15, JALAN
+  TRANSPORTER                                                                                   600x600                                                                          PANGKOR 10250
+WILL TRANSFER TO                                                                                PN0(PN)                                                        SAMPLE-DOMESTIC   GEORGETOWN,
+   LOADUP PN
+                   6107404/01/202510/01/2025SAM1    LF 25000009SM        249697 1.00111P0001071 1ST     C33.2308F4JM3.080             1CT LBIN    28GEORGETOWN CUSTOMER(INTERNAL)PENANG.       PENANG 48602
+                                                                                                                                                  28
+
+                                                                                               NIRO
+                                                                                               GRANITE
+                                                                                               GGTB01
+                                                                                               300x600                                                                               No 30, Jalan GM
+ LOAD UP DIRECT
+                                                                                               ST4(ST)                                                             HOME CREATIVE LAB 1, Kampung Pulau
+   DELIVERY ,     6107507/01/202510/01/2025SAV1     LF 25000158SL        250730 1.00111N00521881ST     AAA.2436DXM2.090             28CT 3PL     784MELAKA         SDN. BHD.         Gedong,          MALACCAHWSH
+COLLECTION AT XIN                                                                              NIRO
+      HWA
+                                                                                               GRANITE
+                                                                                               GGCA01
+                                                                                               600x600                                                                               No 30, Jalan GM
+                                                                                               MP2(MP)                                                             HOME CREATIVE LAB 1, Kampung Pulau
+                   6107507/01/202510/01/2025SAV1    LF 25000158SL        250730 2.00111N00005971ST     BBA.2403DXM2.098             15CT 3PL     468MELAKA         SDN. BHD.         Gedong,          MALACCAHWSH
+                                                                                               NIRO
+                                                                                               GRANITE
+                                                                                               GGXP83
+                                                                                               600x600                                                                               No 30, Jalan GM
+                                                                                               PN0(PN)                                                             HOME CREATIVE LAB 1, Kampung Pulau
+                   6107507/01/202510/01/2025SAV1    LF 25000158SL        250730 3.00111N00095101ST     AAD.2416A4M2.090             15CT 3PL      435MELAKA        SDN. BHD.         Gedong,          MALACCAHWSH
+                                                                                                                                                 1687
+

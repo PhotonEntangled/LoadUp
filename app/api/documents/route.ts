@@ -6,6 +6,7 @@ import {
     documentStatusEnum,
     addresses, // Added import
     shipmentsErd, // Corrected import name
+    users, // ADDED: Import users table schema
     // Import other tables used in TODOs if/when implemented
     // customShipmentDetails,
     // pickUps,
@@ -35,6 +36,17 @@ interface DocumentMetadata {
   shipments: number | null; // Allow null if shipmentCount is null
   shipmentSummaryStatus: "Needs Review" | "Delayed" | "In Transit" | "Completed" | "Mixed" | "Uploaded" | "Pickup Scheduled" | "Error"; // Expanded statuses
 }
+
+// --- ADDED: Explicit type for selected document fields ---
+type SelectedDocument = {
+  id: string;
+  filename: string | null; // Allow null based on schema/usage
+  parsedDate: Date | null;
+  shipmentCount: number | null;
+  status: typeof documentStatusEnum.enumValues[number] | null;
+  createdAt: Date | null;
+};
+// --- END ADDED TYPE ---
 
 // Helper to format date to YYYY-MM-DD string, handling null
 function formatDate(date: Date | null): string | null {
@@ -168,17 +180,33 @@ export async function GET(request: NextRequest) {
   logger.info("API: GET /api/documents called");
 
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    // Fetch user from the database to ensure they exist (Optional, but good practice)
+    // Corrected: Use imported 'users' table
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+    // Add check if user actually exists if needed
+    // if (!user) { ... handle user not found ... }
+
   const { searchParams } = new URL(request.url);
     const searchQuery = searchParams.get('search')?.trim();
     const statusFilter = searchParams.get('status')?.trim(); // Frontend status filter
 
     logger.info(`API: Filtering with search: '${searchQuery || 'N/A'}', status: '${statusFilter || 'N/A'}`);
 
-    // --- Construct Drizzle Query Conditions for documents ---
-    const docConditions: SQL[] = [];
+    // --- Construct Drizzle Query Conditions ---
+    // Corrected: Use the actual foreign key column name
+    const baseCondition = eq(documents.uploadedById, userId);
+    const conditions: SQL[] = [baseCondition];
   if (searchQuery) {
-      // Assuming search applies to filename
-      docConditions.push(like(documents.filename, `%${searchQuery}%`));
+      conditions.push(like(documents.filename, `%${searchQuery}%`));
     }
 
     // Note: Status filtering might need adjustment.
@@ -195,23 +223,26 @@ export async function GET(request: NextRequest) {
         id: documents.id,
         filename: documents.filename,
         parsedDate: documents.parsedDate,
-        shipmentCount: documents.shipmentCount, // Keep this for display?
-        status: documents.status, // Keep original DB status for fallback logic
+        shipmentCount: documents.shipmentCount,
+        status: documents.status,
         createdAt: documents.createdAt
       })
       .from(documents)
-      .where(docConditions.length > 0 ? and(...docConditions) : undefined)
+      // Corrected: Use and() helper correctly within where()
+      .where(and(...conditions))
       .orderBy(desc(documents.createdAt)); // Sort by creation date
 
     logger.debug("Executing Drizzle document query:", documentQuery.toSQL());
-    const dbDocuments = await documentQuery;
+    // Apply explicit type
+    const dbDocuments: SelectedDocument[] = await documentQuery;
     logger.info(`API: Found ${dbDocuments.length} documents matching basic criteria.`);
 
     if (dbDocuments.length === 0) {
       return NextResponse.json([]); // No documents found, return early
     }
 
-    const documentIds = dbDocuments.map(doc => doc.id);
+    // Add explicit type for 'doc' parameter
+    const documentIds = dbDocuments.map((doc: SelectedDocument) => doc.id);
 
     // --- Execute Query to get Shipment Statuses for these Documents ---
     // Fetch shipment statuses linked to the retrieved documents
@@ -240,19 +271,18 @@ export async function GET(request: NextRequest) {
     }
 
     // --- Map results to DocumentMetadata including Aggregate Status ---
-    let mappedResults: DocumentMetadata[] = dbDocuments.map(doc => {
+    // Add explicit type for 'doc' parameter
+    let mappedResults: DocumentMetadata[] = dbDocuments.map((doc: SelectedDocument) => {
         const shipmentStatuses = statusesByDocumentId[doc.id] || [];
         const aggregateStatus = calculateAggregateStatus(shipmentStatuses, doc.status);
 
         return {
             id: doc.id,
-            filename: doc.filename,
+            // Handle potential null filename safely
+            filename: doc.filename || 'Unknown Filename',
             dateParsed: formatDate(doc.parsedDate),
-            // We could potentially use shipmentStatuses.length here, but doc.shipmentCount
-            // might be more accurate if it's reliably updated during processing.
-            // Let's stick with doc.shipmentCount for now.
             shipments: doc.shipmentCount ?? 0,
-            shipmentSummaryStatus: aggregateStatus, // Use the calculated aggregate status
+            shipmentSummaryStatus: aggregateStatus,
         };
     });
 
@@ -264,7 +294,6 @@ export async function GET(request: NextRequest) {
        );
        logger.info(`API: ${mappedResults.length} documents after applying status filter.`);
     }
-
 
     logger.info(`API: Returning ${mappedResults.length} mapped and filtered documents.`);
     return NextResponse.json(mappedResults);
@@ -305,14 +334,12 @@ function determineDocumentType(filename: string | undefined): DocumentType {
 export async function POST(request: NextRequest) {
   logger.info("API: POST /api/documents called");
 
-  // TODO: Add authentication check - get userId
-  // const session = await auth();
-  // if (!session?.user?.id) {
-  //   logger.warn('API: Unauthorized upload attempt.');
-  //   return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  // }
-  // const userId = session.user.id;
-  const userId = null; // Placeholder userId
+  const session = await auth();
+  if (!session?.user?.id) {
+    logger.warn('API: Unauthorized upload attempt.');
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+  const userId = session.user.id;
 
   let docId: string | undefined;
   let filename: string | undefined;
@@ -350,7 +377,7 @@ export async function POST(request: NextRequest) {
       fileType: fileType,
       fileSize: fileSize,
       status: 'PROCESSING', // Start with processing status
-      uploadedById: userId, // Link to uploading user if available
+      uploadedById: userId, // CORRECT: This will now use the userId from the session
       // batchId: null, // Assign later if part of a batch upload
     }).returning({ insertedId: documents.id });
 

@@ -1,4 +1,3 @@
-// @ts-ignore - Fix monorepo path resolution issue
 import { type NextRequest, NextResponse } from 'next/server';
 // Set drizzle path back to /lib/
 import { db } from '@/lib/database/drizzle';
@@ -92,7 +91,12 @@ async function processImageWithOCR(imageBuffer: ArrayBuffer, fileName: string, o
     };
 
     // Process the extracted text through the Excel parser's text parsing function
-    let parsedShipments: ParsedShipmentBundle[] = []; // Initialize with explicit type and empty array
+    // --- START NEUROTIC FIX: Comment out broken/non-functional OCR text parsing path ---
+    // TODO: [NEUROTIC] This section is commented out because `excelParserService.parseText` does not exist (see L92 TODO)
+    // and the subsequent mapping attempts to treat `ShipmentData[]` as `ParsedShipmentBundle[]`, causing type errors (L139).
+    // This entire path needs functional review and implementation before re-enabling.
+    /*
+    const parsedShipments: ShipmentData[] = []; // Initialize with explicit type and empty array
     try {
       // Use the instantiated service
       // TODO: Revisit OCR text parsing strategy. parseText does not exist on ExcelParserService.
@@ -136,7 +140,7 @@ async function processImageWithOCR(imageBuffer: ArrayBuffer, fileName: string, o
 
     // Store the original OCR text in the miscellaneousFields for reference
     // MODIFIED: Merge OCR fields into metadata, not non-existent miscellaneousFields
-    const finalShipments: ParsedShipmentBundle[] = parsedShipments.map((shipment: ParsedShipmentBundle) => ({
+    const finalShipments: ParsedShipmentBundle[] = parsedShipments.map((shipment: ParsedShipmentBundle) => ({ // <<< Linter Error Here (L139)
       ...shipment,
       // Merge into existing metadata
       metadata: {
@@ -152,6 +156,40 @@ async function processImageWithOCR(imageBuffer: ArrayBuffer, fileName: string, o
       rawData: extractedText,
       confidence: ocrConfidence
     };
+    */
+    // --- END NEUROTIC FIX ---
+    // Since the above is commented out, we need a return value here if the pre-extracted data wasn't found.
+    // Return a minimal error structure indicating the text parsing path is disabled.
+    logger.warn('[processImageWithOCR] Text parsing from OCR is currently disabled due to non-existent parser method. Returning error structure.');
+    return {
+        // Corrected: Create a minimal valid ParsedShipmentBundle for the error case
+        shipments: [{
+            // Required fields:
+            shipmentBaseData: {}, // Empty object satisfies base type, inserter handles defaults/FKs
+            customDetailsData: null,
+            originAddressData: null,
+            destinationAddressData: null,
+            pickupData: null,
+            dropoffData: null,
+            itemsData: [],
+            parsedStatusString: 'OCR_TEXT_PARSING_DISABLED', // Indicate specific error state
+            metadata: { // Required metadata object
+                originalRowData: { error: 'OCR Text Parsing Disabled' },
+                originalRowIndex: -1, // Indicate no specific row
+                processingErrors: ['OCR text extraction succeeded, but subsequent text parsing is disabled.'],
+                needsReview: true, // Flag for review
+                sourceDocumentId: null, // Not available in this path yet
+                originalFileName: fileName, // Keep filename
+                ocrConfidence: ocrConfidence // Keep confidence
+                // Optional fields omitted: confidenceScore, rawOriginInput, rawDestinationInput, processingNotes
+            },
+            // Optional fields omitted: parsedDriverName, parsedDriverPhone, parsedTruckIdentifier, parsedDriverIc
+        } as ParsedShipmentBundle], // Cast remains necessary due to partial nature
+        rawData: extractedText,
+        confidence: ocrConfidence,
+        error: 'OCR Text Parsing is currently disabled.'
+    };
+
 
   } catch (error) {
     console.error('Error processing OCR data:', error);
@@ -159,26 +197,29 @@ async function processImageWithOCR(imageBuffer: ArrayBuffer, fileName: string, o
     // Return a basic error structure
     // MODIFIED: Use metadata for error details
     return {
+      // Corrected: Create a minimal valid ParsedShipmentBundle for the catch block
       shipments: [{
-        // Provide minimal valid ParsedShipmentBundle structure on error
-        shipmentBaseData: { status: 'ERROR' }, // Example minimal base data
+            // Required fields:
+            shipmentBaseData: {}, // Empty object satisfies base type, inserter handles defaults/FKs
         customDetailsData: null,
         originAddressData: null,
         destinationAddressData: null,
         pickupData: null,
         dropoffData: null,
         itemsData: [],
-        metadata: {
+            parsedStatusString: 'OCR_PROCESSING_ERROR', // Indicate general processing error
+            metadata: { // Required metadata object
           originalRowData: { error: 'OCR Processing Failed' },
-          originalRowIndex: -1,
+                originalRowIndex: -1, // Indicate no specific row
           processingErrors: [error instanceof Error ? error.message : String(error)],
-          needsReview: true,
-          originalFileName: fileName,
-          ocrConfidence: ocrConfidence,
-          scanStatus: 'failed' // Custom field within metadata?
-        }
-        // Omit parsedDriver fields on error
-      } as ParsedShipmentBundle], // Cast to satisfy type
+                needsReview: true, // Flag for review
+                sourceDocumentId: null, // Not available here
+                originalFileName: fileName, // Keep filename
+                ocrConfidence: ocrConfidence // Keep confidence if available
+                // Optional fields omitted
+            },
+            // Optional fields omitted
+      } as ParsedShipmentBundle], // Cast remains necessary
       rawData: extractedText, // Include raw text even on error if available
       confidence: ocrConfidence,
       error: error instanceof Error ? error.message : String(error)

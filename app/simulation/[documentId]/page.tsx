@@ -23,6 +23,8 @@ import { SimulationControls } from '@/components/simulation/SimulationControls';
 import { useSimulationStoreContext } from '@/lib/store/useSimulationStoreContext'; 
 import { SimulationStoreApi } from '@/lib/store/useSimulationStore'; 
 import { getSimulationInputForShipment, startSimulation } from '@/lib/actions/simulationActions';
+// ADDED AGAIN: Import the missing type
+import type { SimulatedVehicle } from '@/types/vehicles';
 
 // Import cn utility
 import { cn } from "@/lib/utils";
@@ -75,7 +77,8 @@ export default function SimulationDocumentPage() {
   // ADDED: Access the necessary store state for the start button logic
   const selectedVehicleId = useSimulationStoreContext((state: SimulationStoreApi) => state.selectedVehicleId); // Re-use selectedShipmentId for this? No, need vehicle state.
   const vehicles = useSimulationStoreContext((state: SimulationStoreApi) => state.vehicles);
-  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId); // Use store's selectedVehicleId
+  // Corrected: Access vehicle from Record using ID, not find()
+  const selectedVehicle: SimulatedVehicle | undefined = selectedVehicleId ? vehicles[selectedVehicleId] : undefined;
 
   // Effect for fetching the initial shipment list AND SETTING INITIAL SELECTION
   useEffect(() => {
@@ -214,7 +217,9 @@ export default function SimulationDocumentPage() {
       
       // --- Focus map after loading --- 
       // logger.debug("[SimulationDocumentPage] Attempting to focus map on loaded vehicle:", simulationInput.shipmentId); // Removed debug log
-      mapRef.current?.flyToVehicle(simulationInput.shipmentId);
+      // Corrected: flyToVehicle does not exist on mapRef. Map focuses via useEffect based on selectedVehicleId.
+      // TODO: Implement explicit map centering/focus via ref if needed by adding a method to SimulationMapRef.
+      // mapRef.current?.flyToVehicle(simulationInput.shipmentId);
 
     } catch (err: any) {
       logger.error(`[SimulationDocumentPage] Error handling shipment selection or loading:`, err);
@@ -241,26 +246,32 @@ export default function SimulationDocumentPage() {
     }
 
     // Get the vehicle state directly from the store to check status
-    const vehicleToStart = vehicles.find(v => v.id === currentSelectedVehicleId);
+    // Corrected: Access vehicle from Record using ID, not find()
+    const vehicleToStart: SimulatedVehicle | undefined = currentSelectedVehicleId ? vehicles[currentSelectedVehicleId] : undefined;
 
-    // Prevent starting if already running or has invalid status from frontend perspective
-     if (isSimulationRunning || !vehicleToStart || (vehicleToStart.status !== 'Idle' && vehicleToStart.status !== 'Pending Pickup')) { 
+    // Refactored: Check for invalid states first to avoid type narrowing issues
+    if (!vehicleToStart) {
+      toast({ title: "Error", description: "No vehicle selected.", variant: "destructive" });
+      return;
+    }
+    if (isSimulationRunning) {
+      toast({ title: "Info", description: "Simulation is already running." });
+      return;
+    }
+    // Explicitly check for states that prevent starting
+    if (vehicleToStart.status === 'AWAITING_STATUS') {
+         toast({ title: "Info", description: "Cannot start simulation for shipments awaiting status." });
+         return;
+    }
+    if (vehicleToStart.status !== 'Idle') { // Check if not in the required starting state
          toast({
             title: "Info",
-            description: `Simulation cannot be started from current state (${vehicleToStart?.status ?? 'Unknown'}). Already running or not in a startable state.`, 
+            description: `Simulation cannot be started from current state (${vehicleToStart.status}). Must be Idle.`,
          });
          return;
-     }
-     // ADDED: Explicit check for AWAITING_STATUS
-     if (vehicleToStart.status === 'AWAITING_STATUS') {
-         toast({
-            title: "Info",
-            description: "Cannot start simulation for shipments awaiting status.",
-         });
-         return;
-     }
+    }
 
-
+    // If all checks pass, status MUST be 'Idle', proceed to start
     setIsStartingBackendSim(true);
     setSimError(null); // Clear previous errors
 
@@ -350,7 +361,7 @@ export default function SimulationDocumentPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-grow grid lg:grid-cols-[minmax(380px,_1fr)_3fr] gap-4 p-4">
+      <div className="flex-grow grid lg:grid-cols-[minmax(380px,_1fr)_3fr] gap-4 p-4 overflow-hidden">
         
         {/* Left Column: Shipment List - RESTRUCTURED ACCORDION USAGE */} 
         <div className="flex flex-col gap-0 overflow-y-auto pr-2"> {/* Reduced gap */} 
@@ -499,31 +510,17 @@ export default function SimulationDocumentPage() {
           )}
         </div>
 
-        {/* Right Column: Map and Controls */}
-        <div className="flex flex-col gap-4 overflow-hidden">
-            {/* <<< ADDED: Simulation Error Display >>> */}
-            {simError && (
-                <div className="flex-none p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm">
-                    <p><span className="font-semibold">Simulation Error:</span> {simError}</p>
-                </div>
-            )}
-            <div className="flex-grow relative rounded-md overflow-hidden border">
-                <SimulationMap ref={mapRef} />
-                 {/* Loading overlay for Simulation */}
-                 {isSimLoading && (
-                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
-                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                )}
-            </div>
-            <div className="flex-none">
-                <SimulationControls />
-            </div>
-            <div className="flex-none">
+        {/* Right Column: Map & Controls */}
+        <div className="flex flex-col gap-4 overflow-y-auto">
+           <SimulationMap ref={mapRef} className="flex-grow h-full w-full" /> 
+           <SimulationControls />
+           <div className="flex-none">
                 <div className="flex justify-end items-center gap-1 border-t pt-2">
                     <Button
                         onClick={handleStartBackendSimulation}
-                        disabled={isStartingBackendSim || isSimulationRunning || !selectedVehicleId || !selectedVehicle || (selectedVehicle.status !== 'Idle' && selectedVehicle.status !== 'Pending Pickup') || selectedVehicle?.status === 'AWAITING_STATUS'}
+                        // Simplified: Disabled if loading/running OR no vehicle OR vehicle is NOT Idle.
+                        // The check for !== 'Idle' implicitly covers 'AWAITING_STATUS' and all other non-startable states.
+                        disabled={isStartingBackendSim || isSimulationRunning || !selectedVehicleId || !selectedVehicle || selectedVehicle.status !== 'Idle'}
                         size="sm"
                         variant="outline"
                     >
@@ -535,7 +532,7 @@ export default function SimulationDocumentPage() {
                         Start Backend Sim
                     </Button>
                 </div>
-                {simError && <p className="text-destructive text-sm mt-2">Error: {simError}</p>} // Added Error prefix
+                {simError && <p className="text-destructive text-sm mt-2">Error: {simError}</p>} 
             </div>
         </div>
       </div>
