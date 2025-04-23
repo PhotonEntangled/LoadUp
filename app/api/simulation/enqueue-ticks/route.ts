@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Client } from '@upstash/qstash'; // Corrected Import: Use Client
 import { logger } from '@/utils/logger';
 import { getActiveSimulations, getSimulationState, removeActiveSimulation } from '@/services/kv/simulationCacheService';
 import { VehicleStatus } from '@/types/vehicles'; // Import VehicleStatus type
 
-// TODO: Get actual Queue HTTP Endpoint URL from Vercel deployment/env vars
-const QUEUE_ENDPOINT_URL = process.env.SIMULATION_TICK_QUEUE_URL;
-// TODO: Get actual Queue secret token from Vercel deployment/env vars
-const QUEUE_AUTH_TOKEN = process.env.VERCEL_QUEUE_SECRET;
+// Use the standard QStash variables provided by the Vercel integration
+const QSTASH_URL = process.env.loadupstorage_QSTASH_URL; 
+const QSTASH_TOKEN = process.env.loadupstorage_QSTASH_TOKEN;
+
+// Initialize the QStash client
+let qstashClient: Client | null = null; // Changed variable name
+if (QSTASH_URL && QSTASH_TOKEN) {
+  qstashClient = new Client({
+    baseUrl: QSTASH_URL, // Use the base URL
+    token: QSTASH_TOKEN,   // Use the token
+  });
+} else {
+  logger.error('API: Missing required QStash environment variables (loadupstorage_QSTASH_URL or loadupstorage_QSTASH_TOKEN) for Queue client initialization.');
+}
 
 // Helper type for the outcome of processing each ID
 type ProcessingOutcome = 
@@ -19,13 +30,9 @@ export async function GET(request: NextRequest) {
     logger.info('API: Enqueue ticks endpoint called (likely by Cron).');
 
     // Pre-flight checks for essential config
-    if (!QUEUE_ENDPOINT_URL) {
-        logger.error('API: Missing SIMULATION_TICK_QUEUE_URL environment variable.');
-        return NextResponse.json({ message: 'Server configuration error: Queue URL missing.' }, { status: 500 });
-    }
-    if (!QUEUE_AUTH_TOKEN) {
-        logger.error('API: Missing VERCEL_QUEUE_SECRET environment variable.');
-        return NextResponse.json({ message: 'Server configuration error: Queue Secret missing.' }, { status: 500 });
+    if (!qstashClient) { // Check if client initialized
+        logger.error('API: QStash Client not initialized due to missing environment variables.'); // Changed variable name in log
+        return NextResponse.json({ message: 'Server configuration error: QStash client failed to initialize.' }, { status: 500 });
     }
 
     let enqueuedCount = 0;
@@ -54,23 +61,24 @@ export async function GET(request: NextRequest) {
 
                     // Check if simulation should be ticked
                     if (state.status === 'En Route') {
-                        // Enqueue job using fetch
-                        logger.debug(`API: Enqueueing tick job for ${shipmentId}`);
-                        const response = await fetch(QUEUE_ENDPOINT_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${QUEUE_AUTH_TOKEN}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ shipmentId: shipmentId })
+                        logger.debug(`API: Enqueueing tick job for ${shipmentId} via QStash SDK`);
+                        
+                        // Construct the absolute target URL using Vercel System Environment Variable
+                        if (!process.env.VERCEL_URL) {
+                            logger.error('API: VERCEL_URL system environment variable is not defined. Cannot construct target URL for QStash.');
+                            // Decide how to handle this - skip, error out, use a fallback? Erroring out seems safest.
+                             return { status: 'error', shipmentId, error: 'Server configuration error: VERCEL_URL not set.' };
+                        }
+                        const targetUrl = `https://${process.env.VERCEL_URL}/api/simulation/tick`; 
+                        
+                        logger.debug(`API: Target URL for QStash: ${targetUrl}`);
+
+                        const messageResult = await qstashClient!.publishJSON({
+                          url: targetUrl, // Use the constructed absolute URL
+                          body: { shipmentId: shipmentId }, 
                         });
 
-                        if (!response.ok) {
-                            const errorText = await response.text();
-                            logger.error(`API: Failed to enqueue job for ${shipmentId}. Status: ${response.status}`, { errorText });
-                            return { status: 'error', shipmentId, error: `Enqueue failed with status ${response.status}` };
-                        }
-                         logger.debug(`API: Successfully enqueued tick job for ${shipmentId}`);
+                        logger.debug(`API: Successfully enqueued tick job for ${shipmentId} with message ID: ${messageResult.messageId}`);
                         return { status: 'enqueued', shipmentId };
 
                     } else if (state.status === 'Completed' || state.status === 'Error' || state.status === 'AWAITING_STATUS') {
@@ -85,6 +93,10 @@ export async function GET(request: NextRequest) {
                     }
                 } catch (err: any) {
                     logger.error(`API: Error processing shipmentId ${shipmentId} during enqueue loop`, { error: err });
+                    // If the error is from the SDK enqueue itself
+                    if (err.message?.includes('QStash')) { 
+                       return { status: 'error', shipmentId, error: `QStash SDK error: ${err.message}` };
+                    }
                     return { status: 'error', shipmentId, error: err.message || 'Unknown processing error' };
                 }
             })
