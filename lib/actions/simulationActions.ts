@@ -18,7 +18,8 @@ import type { LineString } from 'geojson';
 import { getSimulationFromShipmentServiceInstance } from '@/services/shipment/SimulationFromShipmentService';
 import { 
     setSimulationState, 
-    addActiveSimulation 
+    addActiveSimulation, 
+    getSimulationState
 } from '@/services/kv/simulationCacheService';
 import type { SimulatedVehicle } from '@/types/vehicles';
 
@@ -267,7 +268,7 @@ export async function getSimulationInputForShipment(
 // --- NEW SERVER ACTION: startSimulation ---
 /**
  * Creates the initial simulation state, saves it to KV cache keyed by shipmentId,
- * and registers the simulation as active.
+ * and registers the simulation as active, *unless* an active simulation already exists.
  *
  * @param simulationInput The prepared input data for the simulation.
  * @returns Promise indicating success or failure.
@@ -284,6 +285,16 @@ export async function startSimulation(
     }
 
     try {
+        // --- CHECK IF ALREADY ACTIVE using getSimulationState ---
+        const existingState = await getSimulationState(shipmentId);
+        if (existingState) { // If state exists, it's active
+            logger.warn(`[Server Action startSimulation] SKIPPED: Simulation state for shipment ${shipmentId} already exists in KV.`);
+            // Return success, but indicate it was skipped because it's running
+            return { success: true, message: `Simulation for ${shipmentId} is already running.` };
+        }
+        logger.debug(`[Server Action startSimulation] No existing simulation state found for ${shipmentId}. Proceeding to create.`);
+        // --- END CHECK ---
+
         // 1. Create the initial SimulatedVehicle state
         const simService = getSimulationFromShipmentServiceInstance();
         const initialVehicleState = await simService.createVehicleFromShipment(simulationInput);

@@ -10,7 +10,12 @@ export const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: "📊" },
   { name: "Vehicle Tracking", href: "/tracking-stabilized", icon: "🗺️" },
   { name: "Shipments", href: "/dashboard/shipments", icon: "📦" },
-  { name: "DEV Simulation", href: "/simulation", icon: "🧪" },
+  {
+    name: "DEV Simulation",
+    href: "/simulation",
+    icon: "🧪",
+    disabled: true
+  },
   { name: "Documents", href: "/documents", icon: "📄" },
   { name: "Customers", href: "/dashboard/customers", icon: "👥" },
   { name: "Drivers", href: "/dashboard/drivers", icon: "🚚" },

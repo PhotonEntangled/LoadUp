@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation'; // Use hook for client components
+import { useParams, useSearchParams, useRouter } from 'next/navigation'; // Use hook for client components
 import { logger } from '@/utils/logger';
 // Correct type import based on ShipmentCard.tsx
 import type { ApiShipmentDetail } from '@/types/api'; 
@@ -34,7 +34,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, TestTube, MapPin, Calendar, Download, Edit } from "lucide-react"; // Added icons needed for content
+import { Loader2, TestTube, MapPin, Calendar, Download, Edit, FileText } from "lucide-react"; // Added icons needed for content
 import Link from 'next/link'; // Import Link
 import { formatDate } from "@/lib/formatters"; // Import formatter
 import {
@@ -55,6 +55,7 @@ export default function SimulationDocumentPage() {
   const searchParams = useSearchParams(); // <-- GET searchParams
   const documentId = params.documentId as string;
   const mapRef = useRef<SimulationMapRef>(null); 
+  const router = useRouter(); // Get router instance
 
   // State for fetching shipment list
   const [shipments, setShipments] = useState<ApiShipmentDetail[]>([]); 
@@ -338,12 +339,27 @@ export default function SimulationDocumentPage() {
               {shipments.length} shipment(s) found. Select one to simulate.
             </p>
         </div>
-        {/* Link to Old Test Scenario Page */} 
-        <Link href="/simulation" passHref legacyBehavior>
-            <Button variant="outline" size="icon" asChild title="Go to Old Test Scenario Loader">
-                <a><TestTube className="h-4 w-4" /></a>
-            </Button>
-        </Link>
+        {/* --- ADDED BUTTON --- */}
+        <div className="flex items-center gap-2"> 
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => router.push(`/shipments/${documentId}`)}
+            title="View Shipment Details Page"
+            disabled={!documentId} // Disable if documentId is missing
+          >
+             <FileText className="mr-2 h-4 w-4" /> 
+             View Details
+          </Button>
+          {/* --- END ADDED BUTTON --- */}
+        
+          {/* Link to Old Test Scenario Page - Keep for now if needed */}
+          <Link href="/simulation" passHref legacyBehavior>
+              <Button variant="outline" size="icon" asChild title="Go to Old Test Scenario Loader">
+                  <a><TestTube className="h-4 w-4" /></a>
+              </Button>
+          </Link>
+        </div> 
       </div>
 
       {/* Main Content Area */}
