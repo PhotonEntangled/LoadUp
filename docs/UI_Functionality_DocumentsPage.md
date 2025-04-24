@@ -47,9 +47,11 @@ Displays uploaded documents, allowing filtering (search by filename, filter by s
     *   Date Parsed (`<span>`)
     *   Shipment Count (`<span>`)
     *   "View Shipments" Button (`<Button asChild> <Link>...`) - Navigates to `/shipments/[doc.id]`.
-*   **Functionality:** Provides a document summary and navigation link. Triggers deletion confirmation dialog.
+    *   "Simulate" Button (`<Button>`) - Navigates directly to `/simulation/[doc.id]`.
+*   **Functionality:** Provides a document summary and navigation links. Triggers deletion confirmation dialog.
 *   **Interaction:** 
     *   "View Shipments" button links to the detail page.
+    *   "Simulate" button links directly to the simulation page for the document.
     *   Delete button triggers `AlertDialog`.
     *   `AlertDialogAction` calls `handleDeleteDocument(doc.id)`.
 *   **Backend Need (per document - `DocumentMetadata`):**
