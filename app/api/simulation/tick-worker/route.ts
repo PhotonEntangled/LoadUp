@@ -74,21 +74,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
              await simulationCacheService.setActiveSimulation(shipmentId, false); // Deactivate
              return NextResponse.json({ message: `Error calculating next position: ${calcError instanceof Error ? calcError.message : 'Unknown calculation error'}` }, { status: 500 });
         }
-        
+
         if (!nextStepData) {
             logger.warn(`${LOG_PREFIX}(${shortId}) Calculation resulted in null/no change. Skipping further updates for this tick.`);
             // Still return success, as no error occurred, just no movement
              return NextResponse.json({ message: "Tick processed, no position change.", status: currentState.status });
         }
-        
+
         // Determine new status based on calculated distance
         let newStatus: VehicleStatus = 'En Route';
         if (nextStepData.traveledDistance >= currentState.routeDistance) {
-            newStatus = 'Pending Delivery Confirmation';
+             newStatus = 'Pending Delivery Confirmation';
             logger.info(`${LOG_PREFIX}(${shortId}) Vehicle reached destination, status changing to Pending Delivery Confirmation.`);
             nextStepData.traveledDistance = currentState.routeDistance; // Cap distance
         }
-        
+
         const nextState: SimulatedVehicle = {
             ...currentState,
             ...nextStepData,
@@ -104,30 +104,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         logger.debug(`${LOG_PREFIX}(${shortId}) KV state update successful.`);
 
         // 5. Persist last known location to primary database (shipments_erd)
-        const trackingService = new VehicleTrackingService(); 
-        logger.debug(`${LOG_PREFIX}(${shortId}) Attempting to update shipments_erd in DB...`);
-        try {
-            // Access coordinates correctly from GeoJSON structure
-            const longitude = nextState.currentPosition.geometry.coordinates[0];
-            const latitude = nextState.currentPosition.geometry.coordinates[1];
-            
-            if (latitude == null || longitude == null) {
-                throw new Error("Calculated position coordinates are null or undefined.");
-            }
+        const trackingService = new VehicleTrackingService();
+        const latitude = nextState.currentPosition.geometry.coordinates[1];
+        const longitude = nextState.currentPosition.geometry.coordinates[0];
 
-            const dbUpdateSuccess = await trackingService.updateShipmentLastKnownLocation({
-                shipmentId: shipmentId, 
-                latitude: latitude, // Use extracted latitude
-                longitude: longitude, // Use extracted longitude
-                timestamp: new Date(nextState.lastUpdateTime) 
+        logger.debug(`[API /tick-worker] Attempting DB update for ${shipmentId}`, { latitude, longitude });
+
+        try {
+            await trackingService.updateShipmentLastKnownLocation({
+                shipmentId: shipmentId,
+                latitude: latitude,
+                longitude: longitude,
+                timestamp: new Date(nextState.lastUpdateTime)
             });
-            if (dbUpdateSuccess) {
-                logger.info(`${LOG_PREFIX}(${shortId}) Successfully updated shipments_erd.`);
-            } else {
-                logger.warn(`${LOG_PREFIX}(${shortId}) DB update function returned false.`);
-            }
+            logger.info(`[API /tick-worker] Successfully updated DB for ${shipmentId}`);
         } catch (dbError) {
-            logger.error(`${LOG_PREFIX}(${shortId}) Error during DB update:`, dbError);
+            logger.error(`[API /tick-worker] Database update failed for ${shipmentId}`, { error: dbError });
+            // Decide if we should return an error or just log
         }
 
         // 6. If the simulation just reached a terminal state, remove from active set

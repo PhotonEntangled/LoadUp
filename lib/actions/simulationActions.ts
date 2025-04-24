@@ -309,7 +309,7 @@ export async function startSimulation(
         
         logger.info(`[${actionId}] KV cleanup attempt completed.`);
         // --- END: KV CLEANUP ---
-        
+
         // 1. Create the initial SimulatedVehicle state
         const simService = getSimulationFromShipmentServiceInstance();
         const initialVehicleState = await simService.createVehicleFromShipment(simulationInput);
@@ -382,7 +382,7 @@ export async function stopSimulation(
         logger.debug(`[${actionId}] Attempting to remove simulation from active list.`);
         await simulationCacheService.setActiveSimulation(shipmentId, false);
         logger.info(`[${actionId}] Successfully removed/ensured removal from active list.`);
-        
+
         // 2. Fetch the current state using object method
         logger.debug(`[${actionId}] Attempting to fetch current state from KV to update status.`);
         const currentState = await simulationCacheService.getSimulationState(shipmentId);
@@ -405,13 +405,13 @@ export async function stopSimulation(
             }
         } else {
             logger.warn(`[${actionId}] No KV state found for simulation ${shipmentId}. Cannot update status, but removal from active list may have succeeded.`);
-             finalStateForReturn = null; // No state to return
+            finalStateForReturn = null; // No state to return
         }
 
         // Stop action is considered successful if removal from active list worked.
         // State update failure is logged but doesn't fail the stop operation itself.
-        return { 
-            success: true, 
+             return { 
+                 success: true, 
             message: `Simulation stop processed for ${shipmentId}.`,
             updatedState: { status: 'Idle' } // <<< ADDED: Return Idle status
         };

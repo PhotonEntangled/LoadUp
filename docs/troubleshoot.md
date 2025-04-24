@@ -934,3 +934,41 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 **Hypothesis:** Fixing the method calls, instantiation, and coordinate access will resolve the linter errors and allow the tick worker to execute its intended (though architecturally imperfect) logic.
 
 **(Next Step):** Commit and push fixes. Redeploy and re-test the full simulation flow, focusing on Vercel logs for `startSimulation` and `tick-worker` execution, including the DB update logs within the worker.
+
+## Issue: Incorrect Payload Sent from Frontend Store to `/api/simulation/tick-worker`
+
+**Date:** 2024-07-30 (Identified during re-investigation of marker issue)
+
+**Symptoms:**
+- Frontend (`useSimulationStore.ts`) was observed making POST requests to `/api/simulation/tick-worker`.
+- Server logs (`log.md`) persistently showed `[ERROR] [API /simulation/tick-worker POST] Invalid request body parameters.` with `timeDelta: undefined, speedMultiplier: undefined`.
+- Corresponding 400 errors were seen in browser logs.
+- This prevented backend simulation state updates and persistence of `last_known_location` to `shipments_erd`.
+
+**Investigation:**
+- Code review of `lib/store/useSimulationStore.ts` (around line 252 in commit `119dfad...`) revealed the `fetch` call to `/api/simulation/tick-worker` was **incorrectly** sending a `dbUpdatePayload` object (`{ shipmentId, latitude, longitude, timestamp }`) instead of the required `tickWorkerPayload` (`{ shipmentId, timeDelta, speedMultiplier }`).
+- The `dbUpdatePayload` was seemingly intended for a direct DB update call, not the tick worker API.
+- The required `timeDelta` and `speedMultiplier` values were completely missing from the sent payload.
+
+**Root Cause Identified:** A fundamental error in the frontend store's `tickSimulation` logic where the wrong data object was being constructed and sent to the backend tick worker API endpoint. This explains why the backend rejected the requests and simulation state was not persisting despite frontend activity.
+
+**Action Taken (2024-07-30):**
+- Refactored the `fetch` call within `tickSimulation` in `lib/store/useSimulationStore.ts` to construct and send the correct `tickWorkerPayload`, including `shipmentId`, `timeDeltaSeconds`, and `simulationSpeedMultiplier`. (Commit `423357e`).
+
+**Connection to Previous Issues:** This finding directly explains the persistent failure of the "Last Known Location Marker" feature, as the backend mechanism responsible for updating the database (`tick-worker`) was never receiving valid instructions from the frontend simulation loop.
+
+**(Next Step):** Verify assumptions made during the fix (specifically `vehicle.shipmentId` field usage and `timeDeltaSeconds` availability).
+
+## Issue: Stop Button Loop, Missing DB Logs, and Static Marker Discrepancy
+
+**Date:** 2024-07-30
+
+**Symptoms:**
+- **Stop Loop:** Despite fixes to the `stopSimulation` server action to return `{ updatedState: { status: 'Idle' } }`, browser logs (`browserLogs.md`) still show a rapid stop/start loop (`stopGlobalSimulation` followed immediately by `startGlobalSimulation`). This suggests the frontend store might not be correctly processing the returned state, or the backend change wasn't deployed/effective.
+- **Missing DB Logs:** Server logs (`log.md`) confirm the tick worker (`/api/simulation/tick-worker`) is running (DEBUG level logs appear), but the specific logs added *around the database update call* (`Attempting to update shipments_erd...`) are consistently missing. This indicates the DB update logic within the tick worker is likely not being reached or is failing silently before logging.
+- **Static Marker Behavior:** The marker for `lastKnownPosition` on the static map (`/shipments/[documentid]`) remains absent on initial load (expected, as DB is likely NULL). Clicking the refresh button *does* fetch data successfully (confirmed by server logs for `getShipmentLastKnownLocation` and browser logs showing a Feature object being set in state), but the marker *still* doesn't appear visually. This points towards a potential issue in the `StaticRouteMap` component's rendering logic for the `lastKnownPosition` prop.
+
+**Investigation Plan:**
+1.  **Re-investigate Stop Button Loop:** Prioritize fixing this state synchronization issue. Verify deployment of backend changes. Add detailed logging to the frontend store's `stopGlobalSimulation` action to inspect the exact response received from the server action.
+2.  **Re-investigate Tick Worker DB Update:** Add verbose logging immediately around the `db.update` call in the tick worker to confirm execution and capture potential errors.
+3.  **Inspect `StaticRouteMap`:** If DB updates are confirmed and refresh fetches valid data, debug the `StaticRouteMap` component's handling and rendering of the `lastKnownPosition` prop.

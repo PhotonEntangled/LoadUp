@@ -363,6 +363,10 @@ export const createSimulationStore = () => {
            logger.info(`[Store] Triggering backend stopSimulation Server Action for shipment ID: ${vehicleIdToStop}`);
            stopSimulationServerAction(vehicleIdToStop)
              .then(result => {
+                 // <<< ADDED: Log the entire result from server action >>>
+                 logger.debug(`[Store] Received result from stopSimulationServerAction for ${vehicleIdToStop}:`, result);
+                 // <<< END ADDED >>>
+
                  if (result.success) {
                      logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}. Message: ${result.message}`);
                      // --- ADDED: Update local store state based on backend result --- 
