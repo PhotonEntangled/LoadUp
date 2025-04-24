@@ -512,14 +512,36 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                             return <div className="aspect-video bg-muted/50 flex items-center justify-center rounded animate-pulse">Loading Map...</div>;
                                         } else if (originCoords && destCoords) { 
                                             return (
-                                                <StaticRouteMap
-                                                    mapboxToken={mapboxAccessToken}
-                                                    originCoordinates={originCoords}
-                                                    destinationCoordinates={destCoords}
-                                                    routeGeometry={currentRouteGeometry}
-                                                    lastKnownPosition={currentLastPosition}
-                                                    className="w-full aspect-video rounded"
-                                                />
+                                                <div className="relative">
+                                                    <StaticRouteMap
+                                                        mapboxToken={mapboxAccessToken}
+                                                        originCoordinates={originCoords}
+                                                        destinationCoordinates={destCoords}
+                                                        routeGeometry={currentRouteGeometry}
+                                                        lastKnownPosition={currentLastPosition}
+                                                        className="w-full aspect-video rounded"
+                                                    />
+                                                    {/* --- ADDED: Map Overlay Buttons Container --- */} 
+                                                    <div className="absolute top-2 right-2 flex flex-col space-y-1 z-10"> 
+                                                        {/* Refresh Button */}
+                                                         <Button 
+                                                             variant="outline" 
+                                                             size="icon" 
+                                                             onClick={handleRefreshLocation} 
+                                                             disabled={!selectedShipment || isRefreshingLocation}
+                                                             title="Refresh Last Known Location"
+                                                             className="bg-card hover:bg-muted"
+                                                         >
+                                                            {isRefreshingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                                         </Button>
+                                                         {/* View Tracking/Simulation Button (conditionally rendered by parent) */}
+                                                         {/* The parent logic already handles showing this button */}
+                                                         {/* We might need to adjust positioning if both are visible */}
+                                                         {/* This button is handled outside the map component itself */} 
+                                                         {/* If showTrackingButton is true, the button below renders */} 
+                                                    </div> 
+                                                    {/* --- END ADDED: Map Overlay Buttons Container --- */}
+                                                </div>
                                             );
                                         } else { 
                                             return (
@@ -534,35 +556,35 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                 </div>
                         </div>
 
-                            {/* Prominent View Tracking Button -- RE-CHECKED JSX */}
-                        {showTrackingButton && (
-                            <div className="mt-4 flex justify-center"> 
-                                <Button 
-                                        // Restore original onClick:
-                                        onClick={() => {
-                                            // Keep previous logging here for now:
-                                            logger.info('[ShipmentPage Button onClick] Triggered!'); 
-                                            console.log('[ShipmentPage Button onClick] Triggered!');
-                                            if (selectedShipment?.coreInfo?.id) {
-                                                logger.info(`[ShipmentPage Button onClick] Calling handleViewTracking for: ${selectedShipment.coreInfo.id}`);
-                                                handleViewTracking(selectedShipment.coreInfo.id, documentid);
-                                            } else {
-                                                logger.warn('[ShipmentPage Button onClick] Cannot call handleViewTracking: selectedShipment or ID missing.');
-                                            }
-                                        }} 
-                                    variant="secondary"
-                                    size="sm"
-                                    disabled={isSimLoading}
-                                >
-                                    {isSimLoading ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                    <ExternalLink className="mr-2 h-4 w-4" />
-                                    )}
-                                    {isSimLoading ? "Loading Simulation..." : "View Live Tracking / Simulation"}
-                                </Button>
-                            </div>
-                        )}
+                            {/* Prominent View Tracking Button -- Positioned below map */}
+                            {showTrackingButton && (
+                                <div className="mt-4 flex justify-center"> 
+                                    <Button 
+                                            // Restore original onClick:
+                                            onClick={() => {
+                                                // Keep previous logging here for now:
+                                                logger.info('[ShipmentPage Button onClick] Triggered!'); 
+                                                console.log('[ShipmentPage Button onClick] Triggered!');
+                                                if (selectedShipment?.coreInfo?.id) {
+                                                    logger.info(`[ShipmentPage Button onClick] Calling handleViewTracking for: ${selectedShipment.coreInfo.id}`);
+                                                    handleViewTracking(selectedShipment.coreInfo.id, documentid);
+                                                } else {
+                                                    logger.warn('[ShipmentPage Button onClick] Cannot call handleViewTracking: selectedShipment or ID missing.');
+                                                }
+                                            }} 
+                                        variant="secondary"
+                                        size="sm"
+                                        disabled={isSimLoading}
+                                    >
+                                        {isSimLoading ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                        <ExternalLink className="mr-2 h-4 w-4" />
+                                        )}
+                                        {isSimLoading ? "Loading Simulation..." : "View Live Tracking / Simulation"}
+                                    </Button>
+                                </div>
+                            )}
 
                         {/* Shipment Details View */}
                             <ShipmentDetailView shipment={selectedShipment} />
