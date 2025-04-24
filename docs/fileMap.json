@@ -92,9 +92,9 @@
         "relatedFiles": ["lib/actions/simulationActions.ts", "app/api/maps/directions/route.ts"]
     },
     "services/VehicleTrackingService.ts": { 
-      "description": "Service responsible for persisting vehicle tracking state (e.g., last known location) to the database. Intended to be called by backend simulation loops or real-time updates.",
+      "description": "Service responsible for persisting vehicle tracking state (e.g., last known location) to the database via the updateShipmentLastKnownLocation method. Intended to be called by backend simulation loops or real-time updates.",
       "keyImports": ["@/lib/database/drizzle", "drizzle-orm", "@/lib/database/schema", "@/utils/logger"],
-      "relatedFiles": ["lib/database/schema.ts", "lib/database/drizzle.ts"] 
+      "relatedFiles": ["lib/database/schema.ts", "lib/database/drizzle.ts", "app/api/simulation/tick/route.ts"] 
     },
     "lib/store/useSimulationStore.ts": {
       "description": "Zustand store managing the state for vehicle simulations. Includes vehicle data, simulation status (running, speed), selected vehicle, UI flags (isFollowing), error/loading states, and actions to control the simulation loop and state (start, stop, tick, confirm pickup/delivery, loadSimulationFromInput).",

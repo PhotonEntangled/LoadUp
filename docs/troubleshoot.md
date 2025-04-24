@@ -739,3 +739,76 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 3.  **Analyze FRESH Logs:** If the problem persists *after* confirming the correct deployment, provide **new** browser and server logs. Focus on:
     - Browser: Absence of the `[WARN] [loadSimulationFromInput] Stopping...` log.
     - Server: Presence of `[API /simulation/tick POST] Attempting to update shipments_erd...` and subsequent success/failure logs.
+
+## Issue: POST `/api/simulation/tick` Returns 404 Not Found
+
+**Date:** 2024-07-29
+
+**Symptoms:**
+- After confirming the correct frontend code (commit `119dfad`) is deployed (`load-78nufeqj9...`), the simulation starts correctly on the frontend.
+- The frontend `tickSimulation` logs `[INFO] [Tick] Throttled DB update triggered... Calling backend API.`
+- However, the browser console immediately shows a **404 Not Found** error for the POST request to `/api/simulation/tick`.
+- Browser logs `[ERROR] [Tick] Backend API call failed for ... {status: 404, statusText: ''}`.
+- Server logs (`docs/log.md`) show some `POST 404` entries for `/api/simulation/tick` but also include warnings about missing KV state (`No active simulation found...`), indicating the handler *might* have run at some point, but crucially **lack the specific DB update logs** (`Attempting to update...`, `Successfully updated...`) added in the latest code.
+
+**Investigation & Root Cause Analysis:**
+- **Deployment Verified:** Confirmed latest frontend code (`119dfad`) is running based on absence of old `loadSimulationFromInput` warnings.
+- **Conflicting 404s:** The browser receives a direct 404, suggesting the route doesn't exist. Server logs show the route *sometimes* logging internal activity before returning 404 (due to missing KV state in potentially older executions/deployments). This conflict points towards an issue with how the route is registered or built in the *current* deployment.
+- **Primary Hypothesis: Build/Routing Failure:** The most likely cause is that the API route file (`app/api/simulation/tick/route.ts`), despite existing in the source code, was **not correctly built or registered by Next.js/Vercel** during the deployment process for `load-78nufeqj9...`. The server genuinely doesn't have an active handler at that specific path.
+- **Secondary Hypothesis: Stale Server Logs:** The server logs showing the handler running might be from a previous deployment, obscuring the current state where the route is actually missing.
+
+**Conclusion:** The frontend is now correctly attempting to call the backend, but the backend endpoint `/api/simulation/tick` appears to be unavailable in the current deployment due to a build or routing issue.
+
+**(Next Step):**
+1.  **Inspect Vercel Build Logs:** Carefully review the build logs for the specific deployment (`load-78nufeqj9...` / commit `119dfad`) on Vercel. Look for *any* errors or warnings related to `app/api/simulation/tick/route.ts`.
+2.  **Verify File Path:** Confirm the file path is exactly `app/api/simulation/tick/route.ts`.
+3.  **Trigger Redeploy:** Manually trigger a new deployment of commit `119dfad` on Vercel.
+4.  **Retest (POST-REDEPLOY):** After the new deployment is live, repeat the test flow and check browser network tab for the `/api/simulation/tick` POST call status, and check live Vercel runtime logs for the expected DB update messages.
+
+## Issue: POST `/api/simulation/tick` Still Returns 404 After Redeploy
+
+**Date:** 2024-07-29 (Continued)
+
+**Symptoms:**
+- After confirming latest frontend code (`119dfad`) and backend code (including DB logging in tick handler) were pushed and redeployed.
+- Frontend correctly calls `fetch` for `/api/simulation/tick`.
+- Browser Network tab shows **404 Not Found** for `/api/simulation/tick` POST requests.
+
+**Investigation:**
+- **Server Log Analysis (`docs/log.md` - Post Redeploy):**
+    - Searched logs extensively for patterns related to the tick handler: `[API /simulation/tick POST] Received request.`, `Attempting to update shipments_erd`, `Successfully updated shipments_erd`, `Database update failed`.
+    - **CRITICAL FINDING:** None of these specific log messages were found.
+- **Conclusion:** The `/api/simulation/tick` POST handler is **not being executed** in the latest deployment. The 404 error received by the browser is accurate; the endpoint is not accessible.
+
+**Root Cause Analysis:**
+- **Build/Routing Failure:** The Vercel deployment process is failing to correctly build and register the API route defined in `app/api/simulation/tick/route.ts`. Potential causes include:
+    - Subtle syntax error preventing route registration.
+    - Incorrect file/folder naming convention.
+    - Vercel build configuration issue.
+    - Transient Vercel build error.
+
+**(Next Step - Debugging the Deployment):**
+1.  **RE-EXAMINE VERCEL BUILD LOGS:** Go back to the Vercel dashboard for the *absolute latest* deployment corresponding to commit `119dfad`. Scrutinize the build output for any errors, warnings, or specific mentions (or lack thereof) of `app/api/simulation/tick/route.ts`.
+2.  **VERIFY FILE PATH/NAME:** Confirm `app/api/simulation/tick/route.ts` (case-sensitive).
+3.  **TEST RENAMING (Diagnostic):** Consider temporarily renaming the route (e.g., to `app/api/ticktest/route.ts`), updating the frontend fetch call, deploying, and testing if the renamed route works. This helps isolate path-specific issues.
+4.  **Review Vercel Project Settings:** Check if any project settings might interfere with API route discovery.
+
+## Reconciling Mocked Sub-Routes with Observed Persistence
+
+**Date:** 2024-07-30
+
+**Symptoms:**
+- User observed that document uploads persist in the UI and database, and shipment/simulation pages display this data, contradicting previous analysis suggesting API routes under `/api/shipments/[id]/...` were entirely mocked.
+
+**Investigation & Findings:**
+- **`POST /api/documents/upload`:** Reviewed route. **Confirmed NOT Mocked.** Orchestrates file reception, inserts initial `documents` DB record, calls `ExcelParserService` for parsing, and uses `insertShipmentBundle` service to save parsed shipment data (`shipments_erd`, related tables) to the database. Responsible for initial data persistence.
+- **`GET /api/documents`:** Reviewed route. **Confirmed NOT Mocked.** Fetches `documents` records from DB for the current user. Dynamically calculates aggregate `shipmentSummaryStatus` for each document by querying related `shipments_erd` statuses. Provides data for the `/documents` page UI.
+- **`GET /api/shipments?documentId=...`:** Reviewed route. **Confirmed NOT Mocked.** Fetches detailed shipment data for a specific `documentId` by querying `shipments_erd` and joining/fetching related data from `customShipmentDetails`, `pickups`, `dropoffs`, `addresses`, `items`, `bookings`, `trips`, etc. Uses `mapDbShipmentToApi` helper to transform DB data into the `ApiShipmentDetail` structure required by the `/shipments/[documentid]` page UI.
+- **`GET/POST /api/shipments/[id]/documents`, `/history`, `/status`:** Previous analysis confirmed these specific sub-routes **ARE Mocked**. They represent placeholder functionality for post-upload detail fetching or updates, not the core data flow.
+
+**Conclusion:**
+- The core data flow for uploading documents, parsing them, storing the results in the database, and displaying lists on the `/documents` and `/shipments/[documentid]` pages is functional and relies on database interaction.
+- The previously identified mocked routes are separate, likely incomplete features for more granular operations on individual shipments *after* they have been processed and stored.
+- This resolves the apparent contradiction between observed persistence and the mocked status of specific sub-routes.
+
+**(Next Step):** Investigation complete regarding this specific discrepancy.

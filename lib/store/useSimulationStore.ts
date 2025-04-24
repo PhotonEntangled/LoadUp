@@ -242,50 +242,33 @@ export const createSimulationStore = () => {
               };
 
               // <<< ADDED: DB Update Logic (Throttled) >>>
-              const DB_UPDATE_INTERVAL_MS = 10000; // Update DB every 10 seconds
-              const lastUpdate = lastDbUpdateTime[vehicle.id] || 0;
-              const shouldUpdateDb = (timeNow - lastUpdate > DB_UPDATE_INTERVAL_MS) && 
-                                     newPositionData?.currentPosition?.geometry?.coordinates?.length === 2;
+              const dbUpdatePayload = {
+                shipmentId: vehicle.id,
+                latitude: newPositionData.currentPosition.geometry.coordinates[1],
+                longitude: newPositionData.currentPosition.geometry.coordinates[0],
+                timestamp: new Date(timeNow)
+              };
+              logger.info(`[Tick] Throttled DB update triggered for ${vehicle.id}. Calling backend API.`);
+              fetch('/api/simulation/tick-worker', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dbUpdatePayload),
+              })
+              .then(response => {
+                if (!response.ok) {
+                  // Log an error but don't crash the frontend simulation
+                  logger.error(`[Tick] Backend API call failed for ${vehicle.id}`, { status: response.status, statusText: response.statusText });
+                }
+              })
+              .catch(error => {
+                logger.error(`[Tick] Network error during backend API call for ${vehicle.id}`, { error });
+              });
 
-              if (shouldUpdateDb && newPositionData?.currentPosition?.geometry?.coordinates) {
-                  logger.info(`[Tick] Throttled DB update triggered for ${vehicle.id}. Calling backend API.`);
-                  
-                  // Update the lastDbUpdateTime *before* the async call to prevent rapid retries
-                  set((state) => ({ lastDbUpdateTime: { ...state.lastDbUpdateTime, [vehicle.id]: timeNow } }));
-
-                  // --- ADDED: Call backend tick handler --- 
-                  // Use IIFE for async operation within sync loop
-                  (async () => {
-                      try {
-                          const response = await fetch('/api/simulation/tick', {
-                              method: 'POST',
-                              headers: {
-                                  'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({ shipmentId: vehicle.shipmentId }), // Use the correct shipmentId
-                          });
-
-                          if (!response.ok) {
-                              // Log error but don't necessarily stop frontend simulation
-                              logger.error(`[Tick] Backend API call failed for ${vehicle.shipmentId}`, { 
-                                  status: response.status,
-                                  statusText: response.statusText 
-                              });
-                              // Optionally set an error state in the store here?
-                              // get().setError(`Backend tick failed: ${response.statusText}`);
-                          } else {
-                               logger.debug(`[Tick] Backend API call successful for ${vehicle.shipmentId}.`);
-                          }
-                      } catch (error) {
-                          logger.error(`[Tick] Network error calling backend API for ${vehicle.shipmentId}:`, error);
-                          // Optionally set an error state in the store here?
-                          // get().setError(`Backend tick network error: ${error.message}`);
-                      }
-                  })();
-                  // --- END: Call backend tick handler ---
-              }
-              // <<< END DB Update Logic >>>
-        } else if (!vehiclesToUpdate[vehicle.id]) { // Only warn if not already marked for Error status update
+              // Update the last DB update time locally
+              set(state => ({
+                lastDbUpdateTime: { ...state.lastDbUpdateTime, [vehicle.id]: timeNow }
+              }));
+            } else if (!vehiclesToUpdate[vehicle.id]) { // Only warn if not already marked for Error status update
                 logger.warn(`[Tick] calculateNewPosition returned null for ${vehicle.id}`);
         }
       });
@@ -308,7 +291,18 @@ export const createSimulationStore = () => {
       }
       
       if (criticalErrorOccurred) {
-          setError('A critical error occurred during simulation tick.');
+          logger.error('Stopping simulation due to critical error during tick calculation.');
+          get().stopGlobalSimulation();
+          setError('Simulation stopped due to a critical error during position calculation.');
+      }
+
+      // Check if all active vehicles have completed or errored
+      if (isSimulationRunning && vehiclesProcessed > 0) {
+        const remainingActive = Object.values(get().vehicles).some(v => v.status === 'En Route');
+        if (!remainingActive) {
+           logger.info('[Tick] No more vehicles \'En Route\'. Stopping global simulation.');
+           get().stopGlobalSimulation();
+        }
       }
       logger.debug('[Tick] ------ END tickSimulation ------'); // <<< ADDED: Exit Log
     },
