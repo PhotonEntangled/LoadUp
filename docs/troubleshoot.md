@@ -843,3 +843,32 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
     - Vercel logs confirm the backend stop action completes successfully (removes from active list, updates KV status to 'Idle').
     - The simulation stays stopped.
     - Refreshing the page (or navigating away and back while the shipment *should* be 'Idle' according to KV) should *not* auto-start the simulation, because the initial state loaded via `loadSimulationFromInput` should now reflect the 'Idle' status from KV.
+
+## Issue: Simulation Start Failure Due to Stale KV State & Stop Button Loop
+
+**Date:** 2024-07-30
+
+**Symptoms:**
+- Clicking "Simulate" on `/shipments/[id]` triggers navigation to `/simulation/[id]`, but the backend simulation fails to run correctly.
+- Server logs (`log.md`) show `[WARN] [startSim-...] SKIPPED: Simulation state already exists in KV.` indicating the `startSimulation` server action exited prematurely.
+- Server logs also show `[WARN] [API /simulation/tick-worker POST] No active simulation found in KV...` because the skipped `startSimulation` didn't add the ID to the active set.
+- Browser logs show a stop/restart loop when the "Stop Simulation" button is clicked, along with `[ERROR] [Store] Backend stopSimulation failed... Failed to remove simulation ... from active list.` because the backend action cannot find the ID to remove it.
+
+**Investigation:**
+- Analysis of server logs confirmed the `startSimulation` action detected pre-existing state in Vercel KV for the target `shipmentId`.
+- The action's logic was designed to skip execution if state already existed, preventing overwriting.
+- This skip prevented the crucial steps of saving the *new* initial state and adding the `shipmentId` to the active simulation set (`ACTIVE_SIM_LIST_KEY`).
+- Consequentially, the `tick-worker` couldn't find the active state, and the `stopSimulation` action failed, leading to the frontend restart loop due to the failed backend call not updating the local store state correctly.
+
+**Root Cause Identified:** Stale state remaining in Vercel KV from previous simulation runs or failed attempts prevented new simulations from initializing correctly.
+
+**Action Taken (2024-07-30):**
+- Modified the `startSimulation` server action in `lib/actions/simulationActions.ts`.
+- Added cleanup logic at the beginning of the `try` block to explicitly call:
+    1. `removeActiveSimulation(shipmentId)`: To remove the ID from the active set (ignoring errors if not found).
+    2. `deleteSimulationState(shipmentId)`: To delete the individual simulation state key (ignoring errors if not found).
+- Removed the previous check that skipped execution if state existed.
+
+**Hypothesis:** This cleanup ensures a clean slate in KV before attempting to create and register a new simulation, resolving the premature exit and subsequent failures in the tick worker and stop action.
+
+**(Next Step):** Push changes, trigger redeploy, and re-test the simulation flow. Verify server logs show successful KV `set` and `sadd` operations during `startSimulation` and that the `tick-worker` logs show it's processing the state. Then, verify the stop button works and database persistence (Step 3 of verification plan).

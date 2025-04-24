@@ -20,7 +20,8 @@ import {
     setSimulationState, 
     addActiveSimulation, 
     getSimulationState,
-    removeActiveSimulation
+    removeActiveSimulation,
+    deleteSimulationState
 } from '@/services/kv/simulationCacheService';
 import type { SimulatedVehicle, VehicleStatus } from '@/types/vehicles';
 import { revalidatePath } from "next/cache";
@@ -288,15 +289,21 @@ export async function startSimulation(
     }
 
     try {
-        // --- CHECK IF ALREADY ACTIVE using getSimulationState ---
-        logger.debug(`[${actionId}] Checking for existing KV state for key: simulation:${shipmentId}`);
-        const existingState = await getSimulationState(shipmentId); // Call KV service
-        if (existingState) { 
-            logger.warn(`[${actionId}] SKIPPED: Simulation state already exists in KV.`);
-            return { success: true, message: `Simulation for ${shipmentId} is already running.` };
-        }
-        logger.debug(`[${actionId}] No existing state found. Proceeding to create.`);
-        // --- END CHECK ---
+        // --- START: ADDED KV CLEANUP ---
+        logger.info(`[${actionId}] Attempting KV cleanup before starting...`);
+
+        // 1. Remove from active list (ignore failure if not found)
+        logger.debug(`[${actionId}] Cleaning up active simulation list...`);
+        const removedActive = await removeActiveSimulation(shipmentId);
+        logger.info(`[${actionId}] Result of cleanup removeActiveSimulation: ${removedActive} (Indicates if found and removed)`);
+
+        // 2. Delete existing state key (ignore failure if not found)
+        logger.debug(`[${actionId}] Cleaning up existing state key...`);
+        const deletedState = await deleteSimulationState(shipmentId);
+        logger.info(`[${actionId}] Result of cleanup deleteSimulationState: ${deletedState} (Indicates success/key not found)`);
+        
+        logger.info(`[${actionId}] KV cleanup attempt completed.`);
+        // --- END: ADDED KV CLEANUP ---
 
         // 1. Create the initial SimulatedVehicle state
         const simService = getSimulationFromShipmentServiceInstance();
@@ -309,7 +316,7 @@ export async function startSimulation(
         logger.debug(`[${actionId}] Initial vehicle state created. Vehicle ID: ${initialVehicleState.id}`);
         
         // 2. Save the initial state to KV cache using shipmentId as the key
-        logger.debug(`[${actionId}] Attempting to save initial state to KV. Key: simulation:${shipmentId}`, { state: initialVehicleState });
+        logger.debug(`[${actionId}] Attempting to save initial state to KV. Key: simulation:state:${shipmentId}`, { state: initialVehicleState });
         const setStateSuccess = await setSimulationState(shipmentId, initialVehicleState); // Call KV service
 
         if (!setStateSuccess) {
@@ -323,8 +330,11 @@ export async function startSimulation(
         const addActiveSuccess = await addActiveSimulation(shipmentId); // Call KV service
 
         if (!addActiveSuccess) {
-            logger.warn(`[${actionId}] WARNING: addActiveSimulation returned false. Activation registration failed.`);
-            return { success: true, message: `Simulation for ${shipmentId} started, but activation registration failed. Tracking might be delayed.` };
+             // Attempt to clean up the state we just set if adding to active set failed
+             logger.warn(`[${actionId}] Failed to add simulation to active list. Attempting state cleanup...`);
+             await deleteSimulationState(shipmentId);
+             logger.warn(`[${actionId}] Cleaned up KV state after failing to add to active set.`);
+             return { success: false, error: "Failed to add simulation to active list in KV cache." };
         }
         logger.info(`[${actionId}] Successfully registered simulation as active.`);
 
