@@ -23,6 +23,7 @@ import {
     removeActiveSimulation
 } from '@/services/kv/simulationCacheService';
 import type { SimulatedVehicle, VehicleStatus } from '@/types/vehicles';
+import { revalidatePath } from "next/cache";
 
 // Helper to safely parse decimal string to float, returning undefined on error
 // Essential for coordinate and potentially other numeric fields from DB

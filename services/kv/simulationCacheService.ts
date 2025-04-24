@@ -151,4 +151,118 @@ export async function deleteSimulationState(shipmentId: string): Promise<boolean
         logger.error(`${funcId}(${shortId}) - Error deleting simulation state for key ${key}:`, error);
         return false;
     }
-} 
+}
+
+export const simulationCacheService = {
+    async getSimulationState(
+        shipmentId: string
+    ): Promise<SimulatedVehicle | null> {
+        const stateKey = `simulation:${shipmentId}`;
+        logger.debug(`[KV Service getSimulationState] Attempting kv.get for key: ${stateKey}`);
+        try {
+            const state = await kv.get<SimulatedVehicle>(stateKey);
+            logger.debug(`[KV Service getSimulationState] Result for key ${stateKey}: ${state ? 'Found' : 'Not Found'}`);
+            return state;
+        } catch (error) {
+            logger.error(`[KV Service getSimulationState] Error getting state for ${shipmentId} from KV:`, error);
+            throw error; // Re-throw to allow caller handling
+        }
+    },
+
+    async setSimulationState(
+        shipmentId: string,
+        state: SimulatedVehicle
+    ): Promise<boolean> {
+        const stateKey = `simulation:${shipmentId}`;
+        logger.debug(`[KV Service setSimulationState] Attempting kv.set for key: ${stateKey}`, { state }); // Log the state being set
+        try {
+            // Consider adding TTL if needed: await kv.set(stateKey, state, { ex: 3600 }); // Example: 1 hour TTL
+            const result = await kv.set(stateKey, JSON.stringify(state));
+            logger.info(`[KV Service setSimulationState] Result of kv.set for ${stateKey}: ${result}`);
+            return result === "OK"; // kv.set returns "OK" on success
+        } catch (error) {
+            logger.error(`[KV Service setSimulationState] Error setting state for ${shipmentId} in KV:`, error);
+            return false; // Indicate failure
+        }
+    },
+
+    async updateSimulationState(
+        shipmentId: string,
+        updates: Partial<SimulatedVehicle>
+    ): Promise<boolean> {
+        const stateKey = `simulation:${shipmentId}`;
+        logger.debug(`[KV Service updateSimulationState] Attempting fetch and update for key: ${stateKey}`, { updates });
+        try {
+            // Fetch existing state
+            const existingState = await kv.get<SimulatedVehicle>(stateKey);
+            if (!existingState) {
+                logger.warn(`[KV Service updateSimulationState] No existing state found for key ${stateKey}. Cannot update.`);
+                return false; // Or handle as appropriate, maybe set new state?
+            }
+
+            // Merge updates
+            const newState = { ...existingState, ...updates, lastUpdateTime: new Date().toISOString() }; // Ensure lastUpdateTime is always fresh
+            logger.debug(`[KV Service updateSimulationState] Merged state for key: ${stateKey}`, { newState });
+
+            // Set the updated state
+            const result = await kv.set(stateKey, newState);
+            logger.info(`[KV Service updateSimulationState] Result of kv.set for ${stateKey}: ${result}`);
+            return result === "OK";
+        } catch (error) {
+            logger.error(`[KV Service updateSimulationState] Error updating state for ${shipmentId} in KV:`, error);
+            return false;
+        }
+    },
+
+    async deleteSimulationState(shipmentId: string): Promise<boolean> {
+        const stateKey = `simulation:${shipmentId}`;
+        logger.debug(`[KV Service deleteSimulationState] Attempting kv.del for key: ${stateKey}`);
+        try {
+            const result = await kv.del(stateKey);
+            logger.info(`[KV Service deleteSimulationState] Result of kv.del for ${stateKey}: ${result}`);
+            // kv.del returns the number of keys deleted (0 or 1)
+            return result >= 0; // Consider 0 deleted as success (key didn't exist)
+        } catch (error) {
+            logger.error(`[KV Service deleteSimulationState] Error deleting state for ${shipmentId} from KV:`, error);
+            return false;
+        }
+    },
+
+    async getActiveSimulations(): Promise<string[]> {
+        logger.debug(`[KV Service getActiveSimulations] Attempting kv.smembers for key: ${ACTIVE_SIMULATIONS_KEY}`);
+        try {
+            // Ensure the key exists before trying to get members, or handle empty set gracefully
+            const members = await kv.smembers(ACTIVE_SIMULATIONS_KEY);
+            logger.debug(`[KV Service getActiveSimulations] Result for key ${ACTIVE_SIMULATIONS_KEY}:`, members);
+            return members ?? []; // Return empty array if null/undefined
+        } catch (error) {
+            logger.error("[KV Service getActiveSimulations] Error getting active simulations from KV:", error);
+            throw error;
+        }
+    },
+
+    async setActiveSimulation(
+        shipmentId: string,
+        isActive: boolean
+    ): Promise<boolean> {
+        logger.debug(`[KV Service setActiveSimulation] Called with shipmentId: ${shipmentId}, isActive: ${isActive}`);
+        try {
+            if (isActive) {
+                logger.debug(`[KV Service setActiveSimulation] Attempting kv.sadd for key: ${ACTIVE_SIMULATIONS_KEY}, member: ${shipmentId}`);
+                const result = await kv.sadd(ACTIVE_SIMULATIONS_KEY, shipmentId);
+                logger.info(`[KV Service setActiveSimulation] Result of kv.sadd for ${shipmentId}: ${result}`);
+                // sadd returns number of elements added (0 if already present, 1 if new)
+                return result >= 0; // Treat 0 or 1 as success
+            } else {
+                logger.debug(`[KV Service setActiveSimulation] Attempting kv.srem for key: ${ACTIVE_SIMULATIONS_KEY}, member: ${shipmentId}`);
+                const result = await kv.srem(ACTIVE_SIMULATIONS_KEY, shipmentId);
+                logger.info(`[KV Service setActiveSimulation] Result of kv.srem for ${shipmentId}: ${result}`);
+                // srem returns number of elements removed (0 if not present, 1 if removed)
+                return result >= 0; // Treat 0 or 1 as success
+            }
+        } catch (error) {
+            logger.error(`[KV Service setActiveSimulation] Error updating active set for ${shipmentId} (isActive=${isActive}) in KV:`, error);
+            return false; // Indicate failure
+        }
+    },
+}; 
