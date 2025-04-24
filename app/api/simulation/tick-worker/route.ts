@@ -136,7 +136,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             await simulationCacheService.setActiveSimulation(shipmentId, false);
         }
 
-        logger.info(`${LOG_PREFIX}(${shortId}) Tick processed successfully.`);
+        logger.debug(`${LOG_PREFIX}(${shortId}) Tick processed successfully.`);
         return NextResponse.json({ message: "Tick processed successfully", status: nextState.status });
     } catch (error) {
         logger.error(`${LOG_PREFIX}(${shortId}) CRITICAL Error processing simulation tick:`, error);

@@ -413,7 +413,7 @@ export async function stopSimulation(
         return { 
             success: true, 
             message: `Simulation stop processed for ${shipmentId}.`,
-            updatedState: finalStateForReturn 
+            updatedState: { status: 'Idle' } // <<< ADDED: Return Idle status
         };
 
     } catch (error) {
