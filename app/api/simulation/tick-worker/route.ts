@@ -39,7 +39,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             logger.warn(`${LOG_PREFIX} No active simulation found in KV for shipment: ${shipmentId}. Stopping.`);
             // Consider removing the key or setting an 'ended' flag if appropriate
             // await kv.del(`simulation:${shipmentId}`); 
-            return NextResponse.json({ message: 'Simulation not found or already ended.' }, { status: 404 });
+            return NextResponse.json({ message: 'Simulation not found or already ended.' }, { status: 200 });
         }
 
         const currentState = JSON.parse(currentStateJson) as SimulatedVehicle;
