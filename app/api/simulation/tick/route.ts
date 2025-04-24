@@ -129,9 +129,12 @@ export async function POST(request: NextRequest) {
         }
 
         // 5. Persist Location to DB using Drizzle directly
+        logger.info(`API: [Tick DB Update START] Attempting to update DB for shipmentId: ${shipmentId}`);
         try {
             const [newLon, newLat] = newState.currentPosition.geometry.coordinates;
             const updateTimestamp = new Date(newState.lastUpdateTime);
+
+            logger.debug(`API: [Tick DB Update DATA] Data to update: Lat=${newLat}, Lon=${newLon}, Timestamp=${updateTimestamp.toISOString()}`);
 
             const result = await db.update(shipmentsErd)
                 .set({
@@ -144,13 +147,13 @@ export async function POST(request: NextRequest) {
                 .returning({ updatedId: shipmentsErd.id }); // Optional: return ID to confirm update
 
             if (result && result.length > 0) {
-                 logger.info(`API: Successfully persisted location for ${shipmentId} to DB.`);
+                 logger.info(`API: [Tick DB Update SUCCESS] Successfully persisted location for ${shipmentId} to DB. Result:`, { result });
             } else {
-                 logger.warn(`API: Failed to persist location to DB for ${shipmentId} (update returned no rows).`);
+                 logger.warn(`API: [Tick DB Update FAILED/NO ROWS] Failed to persist location to DB for ${shipmentId} (update returned no rows or unexpected result). Result:`, { result });
                  // Continue even if DB write fails for now, as cache was updated.
             }
         } catch (dbError) {
-            logger.error(`API: Error updating shipment location in DB for ${shipmentId}`, { 
+            logger.error(`API: [Tick DB Update ERROR] Error updating shipment location in DB for ${shipmentId}`, { 
                 message: dbError instanceof Error ? dbError.message : String(dbError),
                 stack: dbError instanceof Error ? dbError.stack : undefined,
              });
