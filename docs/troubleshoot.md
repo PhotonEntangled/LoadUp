@@ -812,3 +812,34 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 - This resolves the apparent contradiction between observed persistence and the mocked status of specific sub-routes.
 
 **(Next Step):** Investigation complete regarding this specific discrepancy.
+
+## Issue: Rapid Start/Stop Loop in Browser Console After Clicking Stop - REVISED
+
+**Date:** 2024-07-30
+
+**Symptoms:**
+- After clicking the "Stop Simulation" button on the `/simulation/[documentId]` page, the browser console logs showed a rapid sequence of `[Store] stopGlobalSimulation action called` followed immediately by `[Store] ###### START startGlobalSimulation ######`.
+- This indicated the simulation was being automatically restarted almost instantly after being stopped manually.
+
+**Investigation (Revised):**
+- **Initial Action (Incorrect):** Removed the auto-start `useEffect` hook from `app/simulation/[documentId]/page.tsx`, assuming it was the sole cause.
+- **Re-evaluation:** Realized the goal *is* to auto-start the *frontend* animation for 'En Route' shipments to mimic live tracking. The previous removal prevented this desired behavior.
+- **Root Cause Analysis (Refined):** The loop occurred because:
+    1. User clicks Stop -> `stopGlobalSimulation` (Store Action) called.
+    2. Store Action clears local interval, sets local `isSimulationRunning = false`, calls `stopSimulation` (Server Action).
+    3. Server Action removes ID from KV active list, fetches KV state, updates KV status to 'Idle', returns success.
+    4. **Crucially:** The *frontend store's* local `selectedVehicle.status` was not immediately updated to 'Idle' after the server action succeeded.
+    5. The auto-start `useEffect` in `app/simulation/[documentId]/page.tsx` re-ran due to `isSimulationRunning` changing.
+    6. The effect's condition (`selectedVehicle.status === 'En Route' && !isSimulationRunning`) evaluated to `true` (using the *stale* local status) and incorrectly called the *local* `startGlobalSimulation` again.
+
+**Action Taken (Corrected Approach - 2024-07-30):**
+1.  **Restored Auto-Start `useEffect`:** Re-added the `useEffect` hook to `app/simulation/[documentId]/page.tsx` to automatically start the local animation loop (`startGlobalSimulation`) when an 'En Route' vehicle is loaded and the local loop isn't running.
+2.  **Modified `stopSimulation` Server Action:** Updated `lib/actions/simulationActions.ts` for the `stopSimulation` function to return the updated state (specifically `{ status: 'Idle', lastUpdateTime: ... }`) upon successful KV update.
+3.  **Modified `stopGlobalSimulation` Store Action:** Updated `lib/store/useSimulationStore.ts` for the `stopGlobalSimulation` action. Added logic within the `.then()` block (after the server action successfully returns) to call the local `updateVehicleState` action, explicitly setting the `selectedVehicle`'s status to 'Idle' (based on the data returned from the server action). This ensures the local state reflects the backend change *before* the auto-start `useEffect` re-evaluates.
+
+**(Next Step):** Deploy the revised code. Retest the stop functionality. Verify:
+    - Clicking "Stop Simulation" stops the local loop and triggers backend cleanup.
+    - The browser console **does not** show an immediate restart loop.
+    - Vercel logs confirm the backend stop action completes successfully (removes from active list, updates KV status to 'Idle').
+    - The simulation stays stopped.
+    - Refreshing the page (or navigating away and back while the shipment *should* be 'Idle' according to KV) should *not* auto-start the simulation, because the initial state loaded via `loadSimulationFromInput` should now reflect the 'Idle' status from KV.

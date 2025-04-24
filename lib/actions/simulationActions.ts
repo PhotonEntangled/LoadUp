@@ -19,9 +19,11 @@ import { getSimulationFromShipmentServiceInstance } from '@/services/shipment/Si
 import { 
     setSimulationState, 
     addActiveSimulation, 
-    getSimulationState
+    getSimulationState,
+    removeActiveSimulation,
+    deleteSimulationState
 } from '@/services/kv/simulationCacheService';
-import type { SimulatedVehicle } from '@/types/vehicles';
+import type { SimulatedVehicle, VehicleStatus } from '@/types/vehicles';
 
 // Helper to safely parse decimal string to float, returning undefined on error
 // Essential for coordinate and potentially other numeric fields from DB
@@ -277,22 +279,23 @@ export async function startSimulation(
     simulationInput: SimulationInput
 ): Promise<{ success: boolean; message?: string; error?: string }> {
     const { shipmentId } = simulationInput;
-    logger.info(`[Server Action startSimulation] INVOKED for shipment: ${shipmentId}`);
+    const actionId = `startSim-${shipmentId.substring(0, 4)}`; // Short ID for logs
+    logger.info(`[${actionId}] INVOKED`);
 
     if (!shipmentId) {
-        logger.error("[Server Action startSimulation] Failed: simulationInput is missing shipmentId.");
+        logger.error(`[${actionId}] Failed: simulationInput is missing shipmentId.`);
         return { success: false, error: "Invalid input: Missing Shipment ID." };
     }
 
     try {
         // --- CHECK IF ALREADY ACTIVE using getSimulationState ---
-        const existingState = await getSimulationState(shipmentId);
-        if (existingState) { // If state exists, it's active
-            logger.warn(`[Server Action startSimulation] SKIPPED: Simulation state for shipment ${shipmentId} already exists in KV.`);
-            // Return success, but indicate it was skipped because it's running
+        logger.debug(`[${actionId}] Checking for existing KV state for key: simulation:${shipmentId}`);
+        const existingState = await getSimulationState(shipmentId); // Call KV service
+        if (existingState) { 
+            logger.warn(`[${actionId}] SKIPPED: Simulation state already exists in KV.`);
             return { success: true, message: `Simulation for ${shipmentId} is already running.` };
         }
-        logger.debug(`[Server Action startSimulation] No existing simulation state found for ${shipmentId}. Proceeding to create.`);
+        logger.debug(`[${actionId}] No existing state found. Proceeding to create.`);
         // --- END CHECK ---
 
         // 1. Create the initial SimulatedVehicle state
@@ -300,40 +303,133 @@ export async function startSimulation(
         const initialVehicleState = await simService.createVehicleFromShipment(simulationInput);
         
         if (!initialVehicleState) {
-            logger.error(`[Server Action startSimulation] Failed: SimulationFromShipmentService returned null for shipment ${shipmentId}.`);
+            logger.error(`[${actionId}] Failed: SimulationFromShipmentService returned null.`);
             return { success: false, error: "Failed to create initial vehicle state." };
         }
-        logger.debug(`[Server Action startSimulation] Initial vehicle state created for ${shipmentId}. Vehicle ID: ${initialVehicleState.id}`);
+        logger.debug(`[${actionId}] Initial vehicle state created. Vehicle ID: ${initialVehicleState.id}`);
         
         // 2. Save the initial state to KV cache using shipmentId as the key
-        logger.debug(`[Server Action startSimulation] Attempting to save initial state to KV for key (shipmentId): ${shipmentId}`);
-        const setStateSuccess = await setSimulationState(shipmentId, initialVehicleState);
+        logger.debug(`[${actionId}] Attempting to save initial state to KV. Key: simulation:${shipmentId}`, { state: initialVehicleState });
+        const setStateSuccess = await setSimulationState(shipmentId, initialVehicleState); // Call KV service
 
         if (!setStateSuccess) {
-            logger.error(`[Server Action startSimulation] Failed: Could not save initial state to KV cache for shipment ${shipmentId}.`);
+            logger.error(`[${actionId}] Failed: setSimulationState returned false.`);
             return { success: false, error: "Failed to save initial simulation state to cache." };
         }
-        logger.info(`[Server Action startSimulation] Successfully saved initial state to KV for shipment ${shipmentId}.`);
+        logger.info(`[${actionId}] Successfully saved initial state to KV.`);
 
         // 3. Add the shipmentId to the list of active simulations
-        logger.debug(`[Server Action startSimulation] Attempting to register shipment ${shipmentId} as active.`);
-        const addActiveSuccess = await addActiveSimulation(shipmentId);
+        logger.debug(`[${actionId}] Attempting to register simulation as active.`);
+        const addActiveSuccess = await addActiveSimulation(shipmentId); // Call KV service
 
         if (!addActiveSuccess) {
-            // Log error but maybe don't fail the whole process? 
-            // The simulation state IS saved, but enqueue might miss it initially.
-            // Neurotic choice: Return success with a warning message.
-            logger.warn(`[Server Action startSimulation] WARNING: Failed to add shipment ${shipmentId} to the active simulation list in KV. Enqueue process might be delayed.`);
+            logger.warn(`[${actionId}] WARNING: addActiveSimulation returned false. Activation registration failed.`);
             return { success: true, message: `Simulation for ${shipmentId} started, but activation registration failed. Tracking might be delayed.` };
         }
-        logger.info(`[Server Action startSimulation] Successfully registered shipment ${shipmentId} as active.`);
+        logger.info(`[${actionId}] Successfully registered simulation as active.`);
 
         return { success: true, message: `Simulation initiated successfully for ${shipmentId}.` };
 
     } catch (error) {
-        logger.error(`[Server Action startSimulation] CRITICAL ERROR starting simulation for ${shipmentId}:`, error);
+        logger.error(`[${actionId}] CRITICAL ERROR:`, error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while starting the simulation.";
         return { success: false, error: errorMessage };
+    }
+}
+
+// --- UPDATED SERVER ACTION: stopSimulation ---
+/**
+ * Stops an active simulation by removing it from the active list in KV
+ * and updating its cached state status to 'Idle'.
+ * 
+ * @param shipmentId The ID of the shipment simulation to stop.
+ * @returns Promise resolving to an object with success status, an optional message,
+ *          an optional error, and the potentially updated vehicle state (or null).
+ */
+export async function stopSimulation(
+    shipmentId: string
+): Promise<{ 
+    success: boolean; 
+    message?: string; 
+    error?: string; 
+    updatedState?: Partial<SimulatedVehicle> | null; // Return updated status
+}> {
+    const actionId = `stopSim-${shipmentId.substring(0, 4)}`;
+    logger.info(`[${actionId}] INVOKED`);
+
+    if (!shipmentId) {
+        logger.error(`[${actionId}] Failed: Invalid or missing shipmentId.`);
+        return { success: false, error: "Invalid Shipment ID provided.", updatedState: null };
+    }
+
+    let kvStateUpdated = false;
+    let activeListRemoved = false;
+    let finalStateForReturn: Partial<SimulatedVehicle> | null = null; // Variable to hold state for return
+
+    try {
+        // 1. Remove from the active simulations list
+        logger.debug(`[${actionId}] Attempting to remove simulation from active list.`);
+        activeListRemoved = await removeActiveSimulation(shipmentId); 
+        if (activeListRemoved) {
+            logger.info(`[${actionId}] Successfully removed from active simulation list.`);
+        } else {
+            // Log a warning if it wasn't found, but don't necessarily fail the whole operation
+            logger.warn(`[${actionId}] Simulation ID was not found in the active list (or error occurred during removal).`);
+        }
+
+        // 2. Fetch the current state
+        logger.debug(`[${actionId}] Attempting to fetch current state from KV to update status.`);
+        const currentState = await getSimulationState(shipmentId);
+
+        if (currentState) {
+            // 3. Update the status to 'Idle' (or a dedicated 'Stopped' status if preferred)
+            const statusToSet: VehicleStatus = 'Idle'; // Define target status
+            if (currentState.status === statusToSet || currentState.status === 'Completed' || currentState.status === 'Error') {
+                 logger.info(`[${actionId}] Current state is already non-active (${currentState.status}). Skipping KV state update.`);
+                 kvStateUpdated = true; 
+                 finalStateForReturn = { status: currentState.status }; // Return current status
+            } else {
+                logger.info(`[${actionId}] Updating KV state status from '${currentState.status}' to '${statusToSet}'.`);
+                const updatedState: SimulatedVehicle = { 
+                    ...currentState, 
+                    status: statusToSet, 
+                    lastUpdateTime: Date.now()
+                };
+                kvStateUpdated = await setSimulationState(shipmentId, updatedState);
+                if (kvStateUpdated) {
+                    logger.info(`[${actionId}] Successfully updated KV state status to '${statusToSet}'.`);
+                    finalStateForReturn = { status: statusToSet, lastUpdateTime: updatedState.lastUpdateTime }; // Return new status and time
+                } else {
+                    logger.error(`[${actionId}] Failed to update KV state status.`);
+                    finalStateForReturn = null; // Indicate update failure
+                }
+            }
+        } else {
+            // If state doesn't exist, we can't update it, but removal from active list might have worked.
+            logger.warn(`[${actionId}] No KV state found for simulation ${shipmentId}. Cannot update status, but proceeding if removed from active list.`);
+            kvStateUpdated = true; // Consider this path 'successful' for stopping state
+            finalStateForReturn = null; // No state to return
+        }
+
+        // Determine overall success based on *at least* removal from active list
+        if (activeListRemoved) {
+             return { 
+                 success: true, 
+                 message: `Simulation stop processed for ${shipmentId}. Removed from active list.` + (kvStateUpdated ? " State updated." : " State update failed or skipped."),
+                 updatedState: finalStateForReturn // Return the determined state
+             };
+        } else {
+             return { 
+                 success: false, 
+                 error: `Failed to remove simulation ${shipmentId} from active list.` + (!kvStateUpdated ? " KV state update also failed or skipped." : ""),
+                 updatedState: finalStateForReturn // Return state even on partial failure if available
+             };
+        }
+
+    } catch (error) {
+        logger.error(`[${actionId}] CRITICAL ERROR during stop attempt:`, error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while stopping the simulation.";
+        return { success: false, error: errorMessage, updatedState: null };
     }
 }
 // --- END NEW SERVER ACTION --- 

@@ -5,6 +5,7 @@ import { calculateNewPosition } from '../../utils/simulation/simulationUtils'; /
 import type { SimulationInput } from '@/types/simulation'; // <<< ADD: Import SimulationInput type
 import { getSimulationFromShipmentServiceInstance } from '@/services/shipment/SimulationFromShipmentService'; // <<< FIX: Import the getter function, not the class directly
 import { updateShipmentLastPosition } from '@/lib/actions/shipmentUpdateActions'; // <<< ADDED: Import server action
+import { stopSimulation as stopSimulationServerAction } from "@/lib/actions/simulationActions"; // Import the server action
 
 // Define the state structure for the simulation store
 export interface SimulationState {
@@ -258,17 +259,17 @@ export const createSimulationStore = () => {
                 if (!response.ok) {
                   // Log an error but don't crash the frontend simulation
                   logger.error(`[Tick] Backend API call failed for ${vehicle.id}`, { status: response.status, statusText: response.statusText });
-                }
-              })
+                      }
+                    })
               .catch(error => {
                 logger.error(`[Tick] Network error during backend API call for ${vehicle.id}`, { error });
-              });
+                    });
 
               // Update the last DB update time locally
-              set(state => ({
-                lastDbUpdateTime: { ...state.lastDbUpdateTime, [vehicle.id]: timeNow }
-              }));
-            } else if (!vehiclesToUpdate[vehicle.id]) { // Only warn if not already marked for Error status update
+                  set(state => ({
+                      lastDbUpdateTime: { ...state.lastDbUpdateTime, [vehicle.id]: timeNow }
+                  }));
+        } else if (!vehiclesToUpdate[vehicle.id]) { // Only warn if not already marked for Error status update
                 logger.warn(`[Tick] calculateNewPosition returned null for ${vehicle.id}`);
         }
       });
@@ -326,8 +327,10 @@ export const createSimulationStore = () => {
     },
 
     stopGlobalSimulation: () => {
-      const { isSimulationRunning, simulationIntervalId } = get();
-      logger.info('[Store] stopGlobalSimulation action called.', { currentState: isSimulationRunning, intervalId: simulationIntervalId });
+      const { isSimulationRunning, simulationIntervalId, selectedVehicleId, updateVehicleState } = get(); // Get selectedVehicleId AND updateVehicleState action
+      logger.info('[Store] stopGlobalSimulation action called.', { currentState: isSimulationRunning, intervalId: simulationIntervalId, selectedId: selectedVehicleId });
+      
+      // --- Stop local interval FIRST --- 
       if (isSimulationRunning) {
         if (simulationIntervalId) {
           logger.info(`[Store] Clearing simulation interval ID: ${simulationIntervalId}`);
@@ -335,15 +338,54 @@ export const createSimulationStore = () => {
         } else {
           logger.warn('[Store] Simulation was running but interval ID was missing.');
         }
-        logger.info('[Store] Setting isSimulationRunning = false, simulationIntervalId = null.');
+        logger.info('[Store] Setting local state: isSimulationRunning = false, simulationIntervalId = null.');
         set({ isSimulationRunning: false, simulationIntervalId: null });
       } else {
-        logger.warn('[Store] stopGlobalSimulation called but simulation was not running.');
-        if (simulationIntervalId) {
-            logger.warn('[Store] Clearing lingering interval ID found while simulation was stopped.');
-            clearInterval(simulationIntervalId);
-            set({ simulationIntervalId: null }); 
-        }
+         logger.warn('[Store] stopGlobalSimulation called but simulation was not running locally.');
+         // Still attempt backend cleanup even if local state is already stopped
+         if (simulationIntervalId) {
+             logger.warn('[Store] Clearing lingering interval ID found while simulation was stopped locally.');
+             clearInterval(simulationIntervalId);
+             set({ simulationIntervalId: null }); 
+         }
+      }
+      
+      // --- Trigger Backend Cleanup --- 
+      if (selectedVehicleId) {
+           const vehicleIdToStop = selectedVehicleId; // Capture ID for async context
+           logger.info(`[Store] Triggering backend stopSimulation Server Action for shipment ID: ${vehicleIdToStop}`);
+           stopSimulationServerAction(vehicleIdToStop)
+             .then(result => {
+                 if (result.success) {
+                     logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}. Message: ${result.message}`);
+                     // --- ADDED: Update local store state based on backend result --- 
+                     if (result.updatedState?.status) {
+                         logger.info(`[Store] Updating local vehicle ${vehicleIdToStop} status to '${result.updatedState.status}' based on backend response.`);
+                         // Check if updateVehicleState action exists before calling
+                         if (typeof updateVehicleState === 'function') {
+                              updateVehicleState(vehicleIdToStop, { 
+                                  status: result.updatedState.status, 
+                                  // Optionally update lastUpdateTime if provided by backend
+                                  ...(result.updatedState.lastUpdateTime && { lastUpdateTime: result.updatedState.lastUpdateTime })
+                              });
+                         } else {
+                              logger.error('[Store] updateVehicleState action is not available on the store!');
+                         }
+                     } else {
+                          logger.warn(`[Store] Backend stopSimulation response for ${vehicleIdToStop} did not include an updated status to apply locally.`);
+                     }
+                     // --- END ADDED --- 
+                 } else {
+                     logger.error(`[Store] Backend stopSimulation failed for ${vehicleIdToStop}: ${result.error}`);
+                     // get().setError(`Failed to fully stop simulation on backend: ${result.error}`);
+                 }
+             })
+             .catch(error => {
+                 logger.error(`[Store] CRITICAL error calling stopSimulation Server Action for ${vehicleIdToStop}:`, error);
+                 // get().setError(`Error communicating with backend to stop simulation: ${error.message}`);
+             });
+      } else {
+          logger.warn('[Store] Cannot trigger backend stopSimulation: No vehicle is selected.');
       }
     },
 
@@ -385,7 +427,7 @@ export const createSimulationStore = () => {
 
     loadSimulationFromInput: async (input: SimulationInput) => {
       logger.info('[loadSimulationFromInput] Attempting to load simulation from input', { shipmentId: input.shipmentId });
-
+      
       // Set loading state at the beginning of the operation (managed externally now, but useful to keep here)
       set({ isLoading: true, error: null }); // Clear previous errors
 
@@ -414,7 +456,7 @@ export const createSimulationStore = () => {
           }));
           
           logger.info('[loadSimulationFromInput] Successfully loaded and selected vehicle.', { vehicleId: vehicle.id });
-          
+
         } else {
           // Handle case where service returns null
           logger.warn('[loadSimulationFromInput] Simulation service returned null for vehicle creation.', { shipmentId: input.shipmentId });

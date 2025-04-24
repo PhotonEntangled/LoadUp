@@ -72,24 +72,28 @@ export default function SimulationDocumentPage() {
 
   // Access store actions
   const loadSimulationFromInput = useSimulationStoreContext((state: SimulationStoreApi) => state.loadSimulationFromInput);
-  // Get sim running state to disable selection while running
   const isSimulationRunning = useSimulationStoreContext((state: SimulationStoreApi) => state.isSimulationRunning);
-  // <<< ADDED: Get the start action >>>
+  const selectedVehicleId = useSimulationStoreContext((state: SimulationStoreApi) => state.selectedVehicleId);
+  const vehicles = useSimulationStoreContext((state: SimulationStoreApi) => state.vehicles);
+  const selectedVehicle: SimulatedVehicle | undefined = selectedVehicleId ? vehicles[selectedVehicleId] : undefined;
+  // Get the local start action
   const startGlobalSimulation = useSimulationStoreContext((state: SimulationStoreApi) => state.startGlobalSimulation);
 
-  // ADDED: Access the necessary store state for the start button logic
-  const selectedVehicleId = useSimulationStoreContext((state: SimulationStoreApi) => state.selectedVehicleId); // Re-use selectedShipmentId for this? No, need vehicle state.
-  const vehicles = useSimulationStoreContext((state: SimulationStoreApi) => state.vehicles);
-  // Corrected: Access vehicle from Record using ID, not find()
-  const selectedVehicle: SimulatedVehicle | undefined = selectedVehicleId ? vehicles[selectedVehicleId] : undefined;
-
-  // <<< ADDED: useEffect hook for auto-starting simulation >>>
+  // <<< RE-ADDED & MODIFIED: useEffect hook for auto-starting LOCAL simulation animation >>>
   useEffect(() => {
+    // Only run if we have a selected vehicle, it's 'En Route', and the LOCAL simulation isn't already running.
     if (selectedVehicle && selectedVehicle.status === 'En Route' && !isSimulationRunning) {
-      logger.info(`[SimulationDocumentPage Auto-Start] Conditions met for vehicle ${selectedVehicleId}. Starting global simulation.`);
-      startGlobalSimulation();
+      logger.info(`[SimulationDocumentPage Auto-Start] Conditions met for vehicle ${selectedVehicleId}. Starting LOCAL simulation loop.`);
+      // Check if the action function exists before calling
+      if (typeof startGlobalSimulation === 'function') {
+          startGlobalSimulation(); // Calls the LOCAL store action to start setInterval
+      } else {
+           logger.error('[SimulationDocumentPage Auto-Start] startGlobalSimulation action is not available on the store!');
+      }
     }
-  }, [selectedVehicleId, selectedVehicle?.status, isSimulationRunning, startGlobalSimulation]); // Depend on relevant state and actions
+    // Intentionally NOT depending on startGlobalSimulation action itself if it's stable
+    // Dependencies ensure this runs when selection, status, or running state change.
+  }, [selectedVehicleId, selectedVehicle?.status, isSimulationRunning]); 
 
   // Effect for fetching the initial shipment list AND SETTING INITIAL SELECTION
   useEffect(() => {
