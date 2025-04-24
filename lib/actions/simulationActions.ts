@@ -20,8 +20,7 @@ import {
     setSimulationState, 
     addActiveSimulation, 
     getSimulationState,
-    removeActiveSimulation,
-    deleteSimulationState
+    removeActiveSimulation
 } from '@/services/kv/simulationCacheService';
 import type { SimulatedVehicle, VehicleStatus } from '@/types/vehicles';
 
