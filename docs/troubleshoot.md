@@ -857,7 +857,7 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 **Investigation:**
 - Analysis of server logs confirmed the `startSimulation` action detected pre-existing state in Vercel KV for the target `shipmentId`.
 - The action's logic was designed to skip execution if state already existed, preventing overwriting.
-- This skip prevented the crucial steps of saving the *new* initial state and adding the `shipmentId` to the active simulation set (`ACTIVE_SIM_LIST_KEY`).
+- This skip prevented the crucial steps of saving the *new* initial state and adding the `shipmentId` to the active simulation set (`ACTIVE_SIMULATIONS_KEY`).
 - Consequentially, the `tick-worker` couldn't find the active state, and the `stopSimulation` action failed, leading to the frontend restart loop due to the failed backend call not updating the local store state correctly.
 
 **Root Cause Identified:** Stale state remaining in Vercel KV from previous simulation runs or failed attempts prevented new simulations from initializing correctly.
@@ -865,10 +865,72 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 **Action Taken (2024-07-30):**
 - Modified the `startSimulation` server action in `lib/actions/simulationActions.ts`.
 - Added cleanup logic at the beginning of the `try` block to explicitly call:
-    1. `removeActiveSimulation(shipmentId)`: To remove the ID from the active set (ignoring errors if not found).
-    2. `deleteSimulationState(shipmentId)`: To delete the individual simulation state key (ignoring errors if not found).
+    1. `simulationCacheService.setActiveSimulation(shipmentId, false)`: To remove the ID from the active set (handling potential errors).
+    2. `simulationCacheService.deleteSimulationState(shipmentId)`: To delete the individual simulation state key (handling potential errors).
 - Removed the previous check that skipped execution if state existed.
 
 **Hypothesis:** This cleanup ensures a clean slate in KV before attempting to create and register a new simulation, resolving the premature exit and subsequent failures in the tick worker and stop action.
 
-**(Next Step):** Push changes, trigger redeploy, and re-test the simulation flow. Verify server logs show successful KV `set` and `sadd` operations during `startSimulation` and that the `tick-worker` logs show it's processing the state. Then, verify the stop button works and database persistence (Step 3 of verification plan).
+**(Next Step):** Push changes, trigger redeploy, and re-test the simulation flow. Verify server logs show successful KV cleanup, state setting (`setSimulationState`), and activation (`setActiveSimulation(true)`) operations during `startSimulation` and that the `tick-worker` logs show it's processing the state. Then, verify the stop button works and database persistence (Step 3 of verification plan).
+
+## Issue: KV Service Refactoring & Caller Updates
+
+**Date:** 2024-07-30
+
+**Symptoms:**
+- Contradictory behavior where `startSimulation` appeared to succeed but `tick-worker` failed to find the simulation state.
+- Stop button failure linked to inability to find simulation ID in active set.
+
+**Investigation:**
+- Deep code review of `services/kv/simulationCacheService.ts`, `lib/actions/simulationActions.ts`, and `app/api/simulation/tick-worker/route.ts`.
+- **Identified Duplication:** `simulationCacheService.ts` contained both top-level exported functions and an exported object (`simulationCacheService`) with methods performing the same tasks.
+- **Identified Inconsistency:** Different key names (`ACTIVE_SIMULATIONS_KEY` vs. `ACTIVE_SIM_LIST_KEY`) were used for the active simulation set.
+- **Identified Usage Mismatch:** Server actions (`simulationActions.ts`) were importing and using the top-level functions, while the intended structure was likely to use the exported service object.
+
+**Root Cause Identified:** Structural flaws in the KV service (duplicate functions, inconsistent keys) and incorrect usage by callers led to unpredictable state management and the observed contradictions.
+
+**Action Taken (2024-07-30):**
+- **Refactored `services/kv/simulationCacheService.ts`:**
+    - Removed all duplicated top-level functions.
+    - Standardized key constants (`SIMULATION_KEY_PREFIX`, `ACTIVE_SIMULATIONS_KEY`).
+    - Ensured all logic resides within the methods of the exported `simulationCacheService` object.
+    - Improved error handling to throw errors consistently on failures.
+    - Verified logging was present in the object methods.
+- **Updated `lib/actions/simulationActions.ts`:**
+    - Changed imports to use `simulationCacheService.methodName()` instead of top-level functions.
+    - Adjusted error handling (using `try/catch`) as service methods now throw.
+- **Updated `app/api/simulation/tick-worker/route.ts`:**
+    - Changed imports to use `simulationCacheService.methodName()`.
+    - Added logging for received `shipmentId` and the result of `getSimulationState`.
+
+**Hypothesis:** Standardizing the KV service structure and ensuring all callers use the same object methods with consistent keys will resolve the state inconsistency, allowing the `tick-worker` to find the active simulation state and the `stopSimulation` action to function correctly.
+
+**(Next Step):** Push changes, trigger redeploy, re-test simulation flow. Verify server logs for `startSimulation` success (cleanup, set, sadd) and `tick-worker` success (get state). Verify stop button functionality in browser.
+
+## Issue: Linter Errors and Incorrect Method Assumptions in Tick Worker
+
+**Date:** 2024-07-30
+
+**Symptoms:**
+- After refactoring KV service usage, linter errors appeared in `app/api/simulation/tick-worker/route.ts`:
+    - `Property 'calculateNextStep' does not exist on type 'SimulationFromShipmentService'.`
+    - `Property 'getInstance' does not exist on type 'typeof VehicleTrackingService'.`
+    - Subsequent errors related to accessing coordinates on `nextState.currentPosition`.
+
+**Investigation:**
+- **Reviewed `services/shipment/SimulationFromShipmentService.ts`:** Confirmed it does *not* export a `calculateNextStep` method. Calculation logic resides in `utils/simulation/simulationUtils.ts` (`calculateNewPosition`) and is used by the *frontend store*. The worker should not duplicate this calculation ideally.
+- **Reviewed `services/VehicleTrackingService.ts`:** Confirmed it's a standard class and does *not* use a `getInstance()` singleton pattern.
+- **Reviewed `SimulatedVehicle` type (`types/vehicles.ts`) and GeoJSON:** Confirmed `currentPosition` is a GeoJSON `Feature<Point>`, so coordinates are accessed via `currentPosition.geometry.coordinates[0]` (lon) and `currentPosition.geometry.coordinates[1]` (lat).
+
+**Root Cause Identified:** Incorrect assumptions about service method names (`calculateNextStep`) and instantiation patterns (`getInstance`). Incorrect access pattern for GeoJSON coordinates.
+
+**Action Taken (2024-07-30):**
+- **Modified `app/api/simulation/tick-worker/route.ts`:**
+    - Removed import and usage of `SimulationFromShipmentService` for calculation.
+    - Imported `calculateNewPosition` from `utils/simulation/simulationUtils.ts` and used it directly within the worker (**Note:** Acknowledged this duplicates logic and is technical debt).
+    - Changed `VehicleTrackingService.getInstance()` to `new VehicleTrackingService()`.
+    - Corrected coordinate access to `nextState.currentPosition.geometry.coordinates[0]` and `[1]` before passing to `updateShipmentLastKnownLocation`.
+
+**Hypothesis:** Fixing the method calls, instantiation, and coordinate access will resolve the linter errors and allow the tick worker to execute its intended (though architecturally imperfect) logic.
+
+**(Next Step):** Commit and push fixes. Redeploy and re-test the full simulation flow, focusing on Vercel logs for `startSimulation` and `tick-worker` execution, including the DB update logs within the worker.

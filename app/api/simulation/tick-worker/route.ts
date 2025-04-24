@@ -1,144 +1,149 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { SimulatedVehicle, VehicleStatus } from '@/types/vehicles'; // Import VehicleStatus type
-import { db } from '@/lib/database/drizzle'; // Import Drizzle client
-import { shipmentsErd } from '@/lib/database/schema'; // Import shipments table schema
-import { eq } from 'drizzle-orm'; // Import eq operator
-import { kv } from '@vercel/kv'; // Import Vercel KV client
-import { calculateNewPosition as calculateVehiclePosition } from '@/utils/simulation/simulationUtils'; // Import position calculation utility
+import { simulationCacheService } from "@/services/kv/simulationCacheService"; 
+import { VehicleTrackingService } from "@/services/VehicleTrackingService"; 
+import { calculateNewPosition } from '@/utils/simulation/simulationUtils'; // Import position calculation utility
 
 const LOG_PREFIX = "[API /simulation/tick-worker POST]";
 
 // TODO: Make speed configurable (e.g., via env var or KV state)
 
+// Disable edge runtime for DB access
+export const runtime = "nodejs";
+// Revalidate every 0 seconds (effectively disable caching for this dynamic route)
+export const revalidate = 0; 
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
-    logger.info(`${LOG_PREFIX} Request received`);
+    logger.info(`${LOG_PREFIX} Received request.`);
 
     let requestBody;
     try {
         requestBody = await request.json();
-        logger.info(`${LOG_PREFIX} Parsed request body`);
+        logger.debug(`${LOG_PREFIX} Parsed request body:`, requestBody);
     } catch (error) {
-        logger.error(`${LOG_PREFIX} Error parsing request body`, error);
-        return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+        logger.error(`${LOG_PREFIX} Error parsing request JSON:`, error);
+        return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { shipmentId } = requestBody;
+    const { shipmentId, timeDelta, speedMultiplier } = requestBody;
+    const shortId = shipmentId?.substring(0, 4) || "INVALID";
 
-    if (!shipmentId || typeof shipmentId !== 'string') {
-        logger.warn(`${LOG_PREFIX} Invalid or missing shipmentId`);
-        return NextResponse.json({ error: 'Missing or invalid shipmentId.' }, { status: 400 });
+    if (!shipmentId || typeof timeDelta !== "number" || typeof speedMultiplier !== "number") {
+        logger.error(`${LOG_PREFIX} Invalid request body parameters.`, { shipmentId, timeDelta, speedMultiplier });
+        return NextResponse.json(
+            { message: "Missing or invalid parameters: shipmentId, timeDelta, speedMultiplier required." },
+            { status: 400 }
+        );
     }
-
-    logger.info(`${LOG_PREFIX} Processing tick for shipment: ${shipmentId}`);
+    logger.info(`${LOG_PREFIX}(${shortId}) Processing tick...`);
 
     try {
-        // Fetch current state from KV
-        const currentStateJson = await kv.get<string>(`simulation:${shipmentId}`);
-        if (!currentStateJson) {
-            logger.warn(`${LOG_PREFIX} No active simulation found in KV for shipment: ${shipmentId}. Stopping.`);
-            // Consider removing the key or setting an 'ended' flag if appropriate
-            // await kv.del(`simulation:${shipmentId}`); 
-            return NextResponse.json({ message: 'Simulation not found or already ended.' }, { status: 200 });
-        }
+        // 1. Get current state from KV
+        logger.debug(`${LOG_PREFIX}(${shortId}) Getting simulation state from KV...`);
+        const currentState = await simulationCacheService.getSimulationState(shipmentId);
 
-        const currentState = JSON.parse(currentStateJson) as SimulatedVehicle;
-        logger.debug(`${LOG_PREFIX} Current state fetched from KV for ${shipmentId}`, { status: currentState.status });
-
-        // Check if simulation should proceed based on status
-        if (currentState.status !== 'En Route') {
-             logger.info(`${LOG_PREFIX} Simulation for ${shipmentId} is not 'En Route' (status: ${currentState.status}). Skipping database update.`);
-             return NextResponse.json({ message: `Simulation status is ${currentState.status}, no update needed.` }, { status: 200 });
-        }
-
-
-        // Calculate the next state (reuse existing logic)
-        const timeNow = Date.now();
-        const timeDeltaSeconds = (timeNow - currentState.lastUpdateTime) / 1000;
-
-        if (timeDeltaSeconds <= 0) {
-             logger.warn(`${LOG_PREFIX} Skipping update for ${shipmentId}, timeDelta <= 0`, { timeDeltaSeconds });
-             return NextResponse.json({ message: 'Time delta too small, skipping update.' }, { status: 200 });
-        }
-        
-        // Assuming simulationSpeedMultiplier is constant or retrieved elsewhere if needed
-        const simulationSpeedMultiplier = 1; // Or fetch from config/KV if dynamic
-        
-        let newStateData: Pick<SimulatedVehicle, 'currentPosition' | 'bearing' | 'traveledDistance'> | null = null;
-        try {
-            newStateData = calculateVehiclePosition(
-                currentState,
-                timeDeltaSeconds,
-                simulationSpeedMultiplier
+        if (!currentState) {
+            logger.warn(`${LOG_PREFIX}(${shortId}) No active simulation found in KV for shipment. Stopping.`);
+            await simulationCacheService.setActiveSimulation(shipmentId, false);
+            return NextResponse.json(
+                { message: `Simulation state not found for shipment ${shipmentId}.` },
+                { status: 404 } 
             );
-        } catch (calcError) {
-             logger.error(`${LOG_PREFIX} Critical error during calculateNewPosition:`, calcError, { shipmentId });
-             // Decide how to handle - stop simulation? Mark vehicle as error?
-             // For now, just prevent DB update and return error
-             return NextResponse.json({ error: 'Failed to calculate next position.' }, { status: 500 });
+        }
+        logger.debug(`${LOG_PREFIX}(${shortId}) Current state retrieved:`, { status: currentState.status });
+
+        // 2. Check if simulation should proceed based on status
+        if (currentState.status !== 'En Route') {
+            logger.info(`${LOG_PREFIX}(${shortId}) Simulation status is ${currentState.status}. No update needed. Removing from active list if terminal.`);
+            if (currentState.status === "Completed" || currentState.status === "Error") {
+                await simulationCacheService.setActiveSimulation(shipmentId, false);
+            }
+            return NextResponse.json({ message: `Simulation status is ${currentState.status}. No tick processed.` });
         }
 
-
-        if (!newStateData) {
-             logger.warn(`${LOG_PREFIX} calculateNewPosition returned null for ${shipmentId}. Skipping database update.`);
-             return NextResponse.json({ message: 'Position calculation resulted in no change.' }, { status: 200 });
-        }
-
-        let newStatus: VehicleStatus = currentState.status;
-        if (newStateData.traveledDistance >= currentState.routeDistance) {
-             newStatus = 'Pending Delivery Confirmation';
-             logger.info(`${LOG_PREFIX} Vehicle ${shipmentId} reached destination, status changing to Pending Delivery Confirmation.`);
-             newStateData.traveledDistance = currentState.routeDistance; // Cap distance
-        }
-
-        const updatedVehicleState: SimulatedVehicle = {
-            ...currentState,
-            ...newStateData,
-            status: newStatus,
-            lastUpdateTime: timeNow,
-        };
-
-        // Update KV store with the new state
-        await kv.set(`simulation:${shipmentId}`, JSON.stringify(updatedVehicleState));
-        logger.debug(`${LOG_PREFIX} Successfully updated KV state for ${shipmentId}`);
-
-        // --- Persist to Database ---
-        const lat = updatedVehicleState.currentPosition.geometry.coordinates[1];
-        const lon = updatedVehicleState.currentPosition.geometry.coordinates[0];
-        const timestamp = new Date(updatedVehicleState.lastUpdateTime);
-
-        logger.info(`${LOG_PREFIX} Attempting to update shipments_erd for ${shipmentId}`, { lat, lon, timestamp });
-
+        // 3. Calculate next state using the utility function
+        logger.debug(`${LOG_PREFIX}(${shortId}) Calculating next state using utility...`);
+        let nextStepData: Pick<SimulatedVehicle, 'currentPosition' | 'bearing' | 'traveledDistance'> | null = null;
         try {
-            const updateResult = await db.update(shipmentsErd)
-                .set({
-                    lastKnownLatitude: lat.toString(), // Ensure conversion to string if DB expects decimal/string
-                    lastKnownLongitude: lon.toString(),
-                    lastKnownTimestamp: timestamp,
-                    shipmentDateModified: new Date(), // Update modified timestamp
-                })
-                .where(eq(shipmentsErd.id, shipmentId));
-            
-            // Add log for successful update, potentially including result info if useful
-            logger.info(`${LOG_PREFIX} Successfully updated shipments_erd for ${shipmentId}.`, { updateResult }); 
-
-        } catch (dbError) {
-            // Log the specific database error
-            logger.error(`${LOG_PREFIX} Database update failed for ${shipmentId}:`, { 
-                error: dbError,
-                errorMessage: (dbError as Error)?.message, // Type assertion for message
-                errorStack: (dbError as Error)?.stack    // Type assertion for stack
-            });
-            // Decide if this should be a fatal error for the tick request
-            // return Response.json({ error: 'Failed to update database.' }, { status: 500 }); 
+             nextStepData = calculateNewPosition(currentState, timeDelta, speedMultiplier);
+        } catch (calcError) {
+             logger.error(`${LOG_PREFIX}(${shortId}) Critical error during calculateNewPosition:`, calcError);
+             // Mark state as Error in KV and DB? For now, just return error response
+             await simulationCacheService.updateSimulationState(shipmentId, { status: 'Error' }); // Update KV
+             await simulationCacheService.setActiveSimulation(shipmentId, false); // Deactivate
+             return NextResponse.json({ message: `Error calculating next position: ${calcError instanceof Error ? calcError.message : 'Unknown calculation error'}` }, { status: 500 });
         }
-        // --- End Persist ---
+        
+        if (!nextStepData) {
+            logger.warn(`${LOG_PREFIX}(${shortId}) Calculation resulted in null/no change. Skipping further updates for this tick.`);
+            // Still return success, as no error occurred, just no movement
+             return NextResponse.json({ message: "Tick processed, no position change.", status: currentState.status });
+        }
+        
+        // Determine new status based on calculated distance
+        let newStatus: VehicleStatus = 'En Route';
+        if (nextStepData.traveledDistance >= currentState.routeDistance) {
+            newStatus = 'Pending Delivery Confirmation';
+            logger.info(`${LOG_PREFIX}(${shortId}) Vehicle reached destination, status changing to Pending Delivery Confirmation.`);
+            nextStepData.traveledDistance = currentState.routeDistance; // Cap distance
+        }
+        
+        const nextState: SimulatedVehicle = {
+            ...currentState,
+            ...nextStepData,
+            status: newStatus,
+            lastUpdateTime: Date.now(), // Update timestamp
+        };
+        
+        logger.debug(`${LOG_PREFIX}(${shortId}) Next state calculated:`, { status: nextState.status, position: nextState.currentPosition });
 
+        // 4. Update state in KV
+        logger.debug(`${LOG_PREFIX}(${shortId}) Updating simulation state in KV...`);
+        await simulationCacheService.setSimulationState(shipmentId, nextState); 
+        logger.debug(`${LOG_PREFIX}(${shortId}) KV state update successful.`);
 
-        return NextResponse.json({ message: 'Tick processed successfully.', newState: updatedVehicleState }, { status: 200 });
+        // 5. Persist last known location to primary database (shipments_erd)
+        const trackingService = new VehicleTrackingService(); 
+        logger.debug(`${LOG_PREFIX}(${shortId}) Attempting to update shipments_erd in DB...`);
+        try {
+            // Access coordinates correctly from GeoJSON structure
+            const longitude = nextState.currentPosition.geometry.coordinates[0];
+            const latitude = nextState.currentPosition.geometry.coordinates[1];
+            
+            if (latitude == null || longitude == null) {
+                throw new Error("Calculated position coordinates are null or undefined.");
+            }
 
+            const dbUpdateSuccess = await trackingService.updateShipmentLastKnownLocation({
+                shipmentId: shipmentId, 
+                latitude: latitude, // Use extracted latitude
+                longitude: longitude, // Use extracted longitude
+                timestamp: new Date(nextState.lastUpdateTime) 
+            });
+            if (dbUpdateSuccess) {
+                logger.info(`${LOG_PREFIX}(${shortId}) Successfully updated shipments_erd.`);
+            } else {
+                logger.warn(`${LOG_PREFIX}(${shortId}) DB update function returned false.`);
+            }
+        } catch (dbError) {
+            logger.error(`${LOG_PREFIX}(${shortId}) Error during DB update:`, dbError);
+        }
+
+        // 6. If the simulation just reached a terminal state, remove from active set
+        if (nextState.status === "Completed" || nextState.status === "Pending Delivery Confirmation" || nextState.status === "Error") {
+            logger.info(`${LOG_PREFIX}(${shortId}) Simulation reached terminal state: ${nextState.status}. Removing from active list.`);
+            await simulationCacheService.setActiveSimulation(shipmentId, false);
+        }
+
+        logger.info(`${LOG_PREFIX}(${shortId}) Tick processed successfully.`);
+        return NextResponse.json({ message: "Tick processed successfully", status: nextState.status });
     } catch (error) {
-        logger.error(`${LOG_PREFIX} General error processing tick for shipment: ${shipmentId}`, error);
-        return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+        logger.error(`${LOG_PREFIX}(${shortId}) CRITICAL Error processing simulation tick:`, error);
+        try { await simulationCacheService.setActiveSimulation(shipmentId, false); } catch {} 
+        return NextResponse.json(
+            { message: `Error processing tick: ${error instanceof Error ? error.message : "Unknown error"}` },
+            { status: 500 }
+        );
     }
 } 
