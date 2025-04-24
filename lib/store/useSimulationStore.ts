@@ -248,27 +248,13 @@ export const createSimulationStore = () => {
                                      newPositionData?.currentPosition?.geometry?.coordinates?.length === 2;
 
               if (shouldUpdateDb && newPositionData?.currentPosition?.geometry?.coordinates) {
-                  const [lon, lat] = newPositionData.currentPosition.geometry.coordinates;
                   logger.info(`[Tick] Throttled DB update triggered for ${vehicle.id}`);
-                  // Call server action - DO NOT await, handle errors async
-                  updateShipmentLastPosition(vehicle.id, lat, lon, new Date(timeNow))
-                    .then(result => {
-                      if (!result.success) {
-                        logger.error(`[Tick] Background DB update failed for ${vehicle.id}: ${result.error}`);
-                        // Optionally set a non-critical error state in the store?
-                      } else {
-                        logger.debug(`[Tick] Background DB update successful for ${vehicle.id}`);
-                      }
-                    })
-                    .catch(err => {
-                      logger.error(`[Tick] Exception during background DB update for ${vehicle.id}:`, err);
-                    });
-                  // Update the last update time immediately in local state
-                  set(state => ({
-                      lastDbUpdateTime: { ...state.lastDbUpdateTime, [vehicle.id]: timeNow }
-                  }));
+                  // Update the lastDbUpdateTime immediately to prevent rapid retries
+                  // even if the async call above hasn't finished/failed yet.
+                  // We will rely on the backend tick handler for persistence.
+                  set((state) => ({ lastDbUpdateTime: { ...state.lastDbUpdateTime, [vehicle.id]: timeNow } }));
               }
-              // <<< END: DB Update Logic >>>
+              // <<< END DB Update Logic >>>
         } else if (!vehiclesToUpdate[vehicle.id]) { // Only warn if not already marked for Error status update
                 logger.warn(`[Tick] calculateNewPosition returned null for ${vehicle.id}`);
         }

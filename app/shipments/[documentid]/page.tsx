@@ -172,7 +172,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                          if (initialPosition) {
                             logger.info("[ShipmentPage] Initial last known position set from fetch.", initialPosition);
                          } else {
-                            logger.info("[ShipmentPage] No initial last known position found in fetched data.");
+                            logger.info(`[ShipmentPage] No initial last known position found in fetched data for shipment ID: ${initialSelected.coreInfo.id}. Lat: ${initialSelected.coreInfo.lastKnownLatitude}, Lon: ${initialSelected.coreInfo.lastKnownLongitude}`);
                          }
                          // --- END PROCESS INITIAL LAST KNOWN LOCATION ---
 
@@ -238,7 +238,8 @@ export default function Page({ params }: { params: { documentid: string } }) {
              if (newPosition) {
                  logger.info("[ShipmentPage] Last known position updated on selection change.", newPosition);
              } else {
-                 logger.info("[ShipmentPage] No last known position found for newly selected shipment.");
+                 const shipmentId = selectedShipment.coreInfo.id ?? 'UNKNOWN_ID';
+                 logger.info(`[ShipmentPage] No last known position found for newly selected shipment ID: ${shipmentId}. Lat: ${selectedShipment.coreInfo.lastKnownLatitude}, Lon: ${selectedShipment.coreInfo.lastKnownLongitude}`);
              }
         } else {
              setCurrentLastPosition(null); // Clear if no shipment selected
