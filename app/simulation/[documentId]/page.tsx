@@ -232,52 +232,39 @@ export default function SimulationDocumentPage() {
     }
   };
 
-  // --- ADDED: Handler for the new "Start Backend Simulation" button ---
+  // --- ADDED HANDLER TO START BACKEND SIMULATION ---
   const handleStartBackendSimulation = async () => {
-    // Use selectedVehicleId from the Zustand store state
-    const currentSelectedVehicleId = selectedVehicleId; 
-    if (!currentSelectedVehicleId) {
-        toast({
-            title: "Error",
-            description: "No shipment selected in the store to start backend simulation.",
-            variant: "destructive",
-        });
+    logger.info("[SimulationDocumentPage] handleStartBackendSimulation triggered.");
+    if (!selectedVehicleId) {
+        toast({ title: "Error", description: "No vehicle selected.", variant: "destructive" });
         return;
     }
 
-    // Get the vehicle state directly from the store to check status
-    // Corrected: Access vehicle from Record using ID, not find()
-    const vehicleToStart: SimulatedVehicle | undefined = currentSelectedVehicleId ? vehicles[currentSelectedVehicleId] : undefined;
+    // Check if the simulation *worker* is already active for this shipment
+    // This prevents starting it twice from this UI if KV state somehow persists
+    // TODO: Ideally, add a check `isSimulationActiveInKV(selectedVehicleId)`
+    // For now, we rely on the button being disabled/status checks.
 
-    // Refactored: Check for invalid states first to avoid type narrowing issues
-    if (!vehicleToStart) {
-      toast({ title: "Error", description: "No vehicle selected.", variant: "destructive" });
-      return;
-    }
-    if (isSimulationRunning) {
-      toast({ title: "Info", description: "Simulation is already running." });
-      return;
-    }
-    // Explicitly check for states that prevent starting
-    if (vehicleToStart.status === 'AWAITING_STATUS') {
-         toast({ title: "Info", description: "Cannot start simulation for shipments awaiting status." });
-         return;
-    }
-    if (vehicleToStart.status !== 'Idle') { // Check if not in the required starting state
-         toast({
-            title: "Info",
-            description: `Simulation cannot be started from current state (${vehicleToStart.status}). Must be Idle.`,
-         });
-         return;
-    }
-
-    // If all checks pass, status MUST be 'Idle', proceed to start
     setIsStartingBackendSim(true);
     setSimError(null); // Clear previous errors
 
     try {
-        logger.info(`[SimulationDocumentPage] Calling Server Action: startSimulation(${currentSelectedVehicleId})`);
-        const result = await startSimulation(currentSelectedVehicleId);
+        // 1. Get the simulation input required by startSimulation
+        logger.info(`[SimulationDocumentPage] Fetching simulation input for: ${selectedVehicleId}`);
+        const simulationInputResult = await getSimulationInputForShipment(selectedVehicleId);
+
+        // --- TYPE CHECK: Ensure we have SimulationInput, not an error object ---
+        if ('error' in simulationInputResult) {
+            throw new Error(`Failed to get simulation input: ${simulationInputResult.error}`);
+        }
+        // --- END TYPE CHECK ---
+        
+        logger.debug("[SimulationDocumentPage] Successfully fetched simulation input.");
+
+        // 2. Call the actual startSimulation server action
+        // Now we know simulationInputResult is of type SimulationInput
+        logger.info(`[SimulationDocumentPage] Calling Server Action: startSimulation with input for ${selectedVehicleId}`);
+        const result = await startSimulation(simulationInputResult);
         logger.debug("[SimulationDocumentPage] startSimulation Server Action result:", result);
 
         if (result?.error) {
@@ -286,13 +273,14 @@ export default function SimulationDocumentPage() {
 
         toast({
             title: "Success",
-            description: `Backend simulation initiated for ${currentSelectedVehicleId}. Ticks will be enqueued shortly.`,
+            description: `Backend simulation initiated for ${selectedVehicleId}. Ticks should start shortly.`,
         });
-        // Optionally: Update frontend state if needed, though the backend worker handles ticks.
-        // e.g., maybe disable this button permanently after successful start?
+        // Optionally: Update frontend state immediately if needed,
+        //             e.g., optimistically set status to 'En Route'?
+        //             Or disable the start button permanently?
 
     } catch (error: any) {
-        logger.error(`[SimulationDocumentPage] Error calling startSimulation action:`, error);
+        logger.error(`[SimulationDocumentPage] Error starting backend simulation:`, error);
         const errorMessage = error.message || "Failed to start backend simulation.";
         setSimError(errorMessage);
         toast({
@@ -304,8 +292,6 @@ export default function SimulationDocumentPage() {
         setIsStartingBackendSim(false);
     }
 };
-
-  // --- END ADDED HANDLER ---
 
   // Handlers for download/edit (needed for content)
   const handleDownload = (shipment: ApiShipmentDetail, format: string) => {
