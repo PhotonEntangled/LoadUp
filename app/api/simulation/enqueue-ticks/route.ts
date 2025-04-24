@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client } from '@upstash/qstash'; // Corrected Import: Use Client
 import { logger } from '@/utils/logger';
-import { getActiveSimulations, getSimulationState, removeActiveSimulation } from '@/services/kv/simulationCacheService';
-import { VehicleStatus } from '@/types/vehicles'; // Import VehicleStatus type
+import { simulationCacheService } from '@/services/kv/simulationCacheService';
+import type { VehicleStatus } from '@/types/vehicles'; // Import if needed for status checks
 
 // Use the standard QStash variables provided by the Vercel integration
 const QSTASH_URL = process.env.loadupstorage_QSTASH_URL; 
@@ -26,111 +26,119 @@ type ProcessingOutcome =
     | { status: 'cleaned'; shipmentId: string; reason: string } 
     | { status: 'error'; shipmentId: string; error: string };
 
-export async function GET(request: NextRequest) {
-    logger.info('API: Enqueue ticks endpoint called (likely by Cron).');
+const LOG_PREFIX = "[API /simulation/enqueue-ticks GET]";
 
-    // Pre-flight checks for essential config
-    if (!qstashClient) { // Check if client initialized
-        logger.error('API: QStash Client not initialized due to missing environment variables.'); // Changed variable name in log
-        return NextResponse.json({ message: 'Server configuration error: QStash client failed to initialize.' }, { status: 500 });
-    }
+// Triggered by Cron job or external scheduler
+export async function GET(request: Request) {
+  // Basic security: Check for a secret header/query param if needed
+  // const secret = request.headers.get('Authorization') || new URL(request.url).searchParams.get('secret');
+  // if (secret !== process.env.CRON_SECRET) {
+  //   logger.warn(`${LOG_PREFIX} Unauthorized access attempt.`);
+  //   return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  // }
 
-    let enqueuedCount = 0;
-    let skippedCount = 0;
-    let cleanupCount = 0;
-    let errorCount = 0;
+  logger.info(`${LOG_PREFIX} Request received. Fetching active simulations...`);
 
+  let activeSimulationIds: string[] = [];
+  try {
+    activeSimulationIds = await simulationCacheService.getActiveSimulations();
+  } catch (error) {
+    logger.error(`${LOG_PREFIX} Failed to get active simulations from KV:`, error);
+    return NextResponse.json({ message: "Error fetching active simulations" }, { status: 500 });
+  }
+
+  if (activeSimulationIds.length === 0) {
+    logger.info(`${LOG_PREFIX} No active simulations found. Exiting.`);
+    return NextResponse.json({ message: "No active simulations to enqueue." });
+  }
+
+  logger.info(`${LOG_PREFIX} Found ${activeSimulationIds.length} potentially active simulations. Checking status and enqueuing tick jobs...`);
+
+  const enqueuePromises: Promise<any>[] = [];
+  const inactiveIdsToClean: string[] = [];
+  let enqueuedCount = 0;
+  let skippedCount = 0;
+  let errorCount = 0;
+
+  for (const shipmentId of activeSimulationIds) {
+    const shortId = shipmentId.substring(0, 4);
     try {
-        const activeIds = await getActiveSimulations();
-        logger.info(`API: Found ${activeIds.length} potential simulations in active set.`);
+      // Check actual status from KV state, not just presence in active set
+      logger.debug(`${LOG_PREFIX}(${shortId}) Checking state for shipment ID: ${shipmentId}`);
+      const currentState = await simulationCacheService.getSimulationState(shipmentId);
 
-        if (activeIds.length === 0) {
-             return NextResponse.json({ message: 'No active simulations found to enqueue.', enqueuedCount, skippedCount, cleanupCount, errorCount }, { status: 200 });
-        }
+      if (!currentState) {
+        logger.warn(`${LOG_PREFIX}(${shortId}) State not found in KV for supposedly active simulation. Marking for cleanup.`);
+        inactiveIdsToClean.push(shipmentId);
+        skippedCount++;
+        continue; // Skip to next ID
+      }
 
-        const results = await Promise.allSettled<ProcessingOutcome>(
-            activeIds.map(async (shipmentId): Promise<ProcessingOutcome> => {
-                try {
-                    const state = await getSimulationState(shipmentId);
+      // Only enqueue tick if the status is En Route
+      if (currentState.status === 'En Route') {
+        logger.info(`${LOG_PREFIX}(${shortId}) Status is 'En Route'. Enqueuing tick job...`);
+        // TODO: Replace fetch with actual Vercel Queue client if available/preferred
+        // Simulating enqueue via fetch POST to queue endpoint
+        const enqueuePromise = fetch(process.env.VERCEL_QUEUE_TICK_ENDPOINT || '/api/simulation/tick-worker', { // Use env var for endpoint
+           method: 'POST',
+           headers: {
+              'Content-Type': 'application/json',
+              // Add authorization if the target endpoint requires it
+              // 'Authorization': `Bearer ${process.env.VERCEL_QUEUE_SECRET}` 
+           },
+           body: JSON.stringify({ 
+             shipmentId: shipmentId,
+             // Pass necessary parameters if needed by worker, though ideally worker fetches state
+             timeDelta: 1, // Example fixed delta, worker should calculate based on lastUpdateTime
+             speedMultiplier: 1 // Example speed, worker should ideally fetch from state
+           }),
+         }).then(async res => {
+           if (!res.ok) {
+             const errorText = await res.text();
+             logger.error(`${LOG_PREFIX}(${shortId}) Failed to enqueue tick job. Status: ${res.status}. Error: ${errorText}`);
+             errorCount++;
+           } else {
+             logger.info(`${LOG_PREFIX}(${shortId}) Successfully enqueued tick job.`);
+             enqueuedCount++;
+           }
+         }).catch(err => {
+             logger.error(`${LOG_PREFIX}(${shortId}) Network error enqueuing tick job:`, err);
+             errorCount++;
+         });
+        enqueuePromises.push(enqueuePromise);
 
-                    if (!state) {
-                        logger.warn(`API: Stale active simulation ID found: ${shipmentId}. Removing from active set.`);
-                        await removeActiveSimulation(shipmentId); // Attempt cleanup
-                        return { status: 'cleaned', shipmentId, reason: 'State not found' };
-                    }
-
-                    // Check if simulation should be ticked
-                    if (state.status === 'En Route') {
-                        logger.debug(`API: Enqueueing tick job for ${shipmentId} via QStash SDK`);
-                        
-                        // Construct the absolute target URL using Vercel System Environment Variable
-                        if (!process.env.VERCEL_URL) {
-                            logger.error('API: VERCEL_URL system environment variable is not defined. Cannot construct target URL for QStash.');
-                            // Decide how to handle this - skip, error out, use a fallback? Erroring out seems safest.
-                             return { status: 'error', shipmentId, error: 'Server configuration error: VERCEL_URL not set.' };
-                        }
-                        const targetUrl = `https://${process.env.VERCEL_URL}/api/simulation/tick`; 
-                        
-                        logger.debug(`API: Target URL for QStash: ${targetUrl}`);
-
-                        const messageResult = await qstashClient!.publishJSON({
-                          url: targetUrl, // Use the constructed absolute URL
-                          body: { shipmentId: shipmentId }, 
-                        });
-
-                        logger.debug(`API: Successfully enqueued tick job for ${shipmentId} with message ID: ${messageResult.messageId}`);
-                        return { status: 'enqueued', shipmentId };
-
-                    } else if (state.status === 'Completed' || state.status === 'Error' || state.status === 'AWAITING_STATUS') {
-                        // Cleanup inactive simulations
-                        logger.info(`API: Simulation ${shipmentId} has status ${state.status}. Removing from active set.`);
-                        await removeActiveSimulation(shipmentId); // Attempt cleanup
-                        return { status: 'cleaned', shipmentId, reason: `Inactive status: ${state.status}` };
-                    } else {
-                        // Skip other statuses (Idle, Pending Delivery Confirmation, etc.)
-                        logger.debug(`API: Skipping enqueue for ${shipmentId} with status ${state.status}.`);
-                        return { status: 'skipped', shipmentId, reason: `Status: ${state.status}` };
-                    }
-                } catch (err: any) {
-                    logger.error(`API: Error processing shipmentId ${shipmentId} during enqueue loop`, { error: err });
-                    // If the error is from the SDK enqueue itself
-                    if (err.message?.includes('QStash')) { 
-                       return { status: 'error', shipmentId, error: `QStash SDK error: ${err.message}` };
-                    }
-                    return { status: 'error', shipmentId, error: err.message || 'Unknown processing error' };
-                }
-            })
-        );
-
-        // Process results
-        results.forEach(result => {
-            if (result.status === 'fulfilled') {
-                const outcome = result.value;
-                switch (outcome.status) {
-                    case 'enqueued': enqueuedCount++; break;
-                    case 'skipped': skippedCount++; break;
-                    case 'cleaned': cleanupCount++; break;
-                    case 'error': errorCount++; break;
-                }
-            } else {
-                // Log errors from the Promise.allSettled itself (e.g., unhandled exception in map function)
-                logger.error('API: Unhandled error processing an active simulation ID:', { reason: result.reason });
-                errorCount++; // Count as error
-            }
-        });
-
-        logger.info(`API: Enqueue ticks processing finished. Enqueued: ${enqueuedCount}, Skipped: ${skippedCount}, Cleaned: ${cleanupCount}, Errors: ${errorCount}`);
-        return NextResponse.json({ 
-            message: 'Enqueue processing finished.', 
-            foundActive: activeIds.length,
-            enqueuedCount, 
-            skippedCount, 
-            cleanupCount, 
-            errorCount 
-        }, { status: 200 });
-
+      } else {
+        // If status is terminal (Completed, Error, Idle) or Awaiting/Pending, mark for cleanup from active list
+        logger.info(`${LOG_PREFIX}(${shortId}) Status is ${currentState.status}. Skipping enqueue and marking for cleanup from active list.`);
+        inactiveIdsToClean.push(shipmentId);
+        skippedCount++;
+      }
     } catch (error) {
-        logger.error(`API: Unexpected error in enqueue ticks endpoint`, { error });
-        return NextResponse.json({ message: 'Internal server error during enqueue processing' }, { status: 500 });
+      logger.error(`${LOG_PREFIX}(${shortId}) Error processing shipment ID ${shipmentId}:`, error);
+      errorCount++;
+      // Don't necessarily mark for cleanup on transient error fetching state
     }
+  }
+
+  // Wait for all enqueue attempts to finish (optional, depends on desired atomicity)
+  await Promise.allSettled(enqueuePromises);
+  logger.info(`${LOG_PREFIX} Enqueue loop finished. Enqueued: ${enqueuedCount}, Skipped/Inactive: ${skippedCount}, Errors: ${errorCount}.`);
+
+  // Clean up inactive IDs from the active set
+  if (inactiveIdsToClean.length > 0) {
+    logger.info(`${LOG_PREFIX} Cleaning up ${inactiveIdsToClean.length} inactive simulation IDs from the active set...`);
+    for (const idToClean of inactiveIdsToClean) {
+      try {
+        await simulationCacheService.setActiveSimulation(idToClean, false); 
+        logger.debug(`${LOG_PREFIX} Successfully removed inactive ID ${idToClean.substring(0,4)} from active set.`);
+      } catch (cleanupError) {
+        logger.error(`${LOG_PREFIX} Failed to remove inactive ID ${idToClean.substring(0,4)} from active set:`, cleanupError);
+      }
+    }
+    logger.info(`${LOG_PREFIX} Inactive ID cleanup finished.`);
+  }
+
+  return NextResponse.json({
+    message: `Tick enqueue process completed. Enqueued: ${enqueuedCount}, Skipped/Inactive: ${skippedCount}, Errors: ${errorCount}, Cleaned: ${inactiveIdsToClean.length}`,
+  });
 } 
