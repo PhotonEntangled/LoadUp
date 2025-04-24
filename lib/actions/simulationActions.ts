@@ -254,79 +254,75 @@ export async function getSimulationInputForShipment(
         });
         // <<< Removed Marker Comment >>>
 
-        logger.info(`[Server Action] Successfully created SimulationInput for shipment: ${shipmentId}`);
+        logger.info(`[Server Action] Successfully prepared SimulationInput for shipment ${shipmentId}.`);
         return simulationInput;
 
-    } catch (error: unknown) {
-        let errorMessage = "An unknown error occurred while preparing simulation data.";
-        if (error instanceof Error) {
-            errorMessage = error.message;
-        }
-        logger.error(`[Server Action] Error fetching/transforming data for shipment ${shipmentId}:`, error);
-        return { error: `Failed to prepare simulation data: ${errorMessage}` };
+    } catch (error) {
+        logger.error(`[Server Action] CRITICAL ERROR in getSimulationInputForShipment for ID ${shipmentId}:`, error);
+         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while preparing simulation data.";
+         return { error: errorMessage };
     }
 }
 
+// --- NEW SERVER ACTION: startSimulation ---
 /**
- * Server Action to initiate a vehicle simulation for a given shipment.
- * Fetches necessary data, creates the initial simulation state, 
- * saves it to KV cache, and marks the simulation as active.
- * 
- * @param shipmentId - The UUID of the shipment to simulate.
- * @returns A Promise resolving to an object with success status and optional message/error.
+ * Creates the initial simulation state, saves it to KV cache keyed by shipmentId,
+ * and registers the simulation as active.
+ *
+ * @param simulationInput The prepared input data for the simulation.
+ * @returns Promise indicating success or failure.
  */
 export async function startSimulation(
-    shipmentId: string
+    simulationInput: SimulationInput
 ): Promise<{ success: boolean; message?: string; error?: string }> {
-    logger.info(`[Server Action] startSimulation called for ID: ${shipmentId}`);
+    const { shipmentId } = simulationInput;
+    logger.info(`[Server Action startSimulation] INVOKED for shipment: ${shipmentId}`);
 
     if (!shipmentId) {
-        logger.error("[Server Action] Invalid shipmentId provided to startSimulation.");
-        return { success: false, error: "Invalid Shipment ID provided." };
+        logger.error("[Server Action startSimulation] Failed: simulationInput is missing shipmentId.");
+        return { success: false, error: "Invalid input: Missing Shipment ID." };
     }
 
     try {
-        // 1. Get Simulation Input (includes fetching data and route)
-        const simulationInputResult = await getSimulationInputForShipment(shipmentId);
+        // 1. Create the initial SimulatedVehicle state
+        const simService = getSimulationFromShipmentServiceInstance();
+        const initialVehicleState = await simService.createVehicleFromShipment(simulationInput);
 
-        if ('error' in simulationInputResult) {
-            logger.error(`[Server Action] Failed to get simulation input for ${shipmentId}: ${simulationInputResult.error}`);
-            return { success: false, error: `Failed to prepare simulation data: ${simulationInputResult.error}` };
+        if (!initialVehicleState) {
+            logger.error(`[Server Action startSimulation] Failed: SimulationFromShipmentService returned null for shipment ${shipmentId}.`);
+            return { success: false, error: "Failed to create initial vehicle state." };
         }
-        const simulationInput = simulationInputResult;
-        logger.debug(`[Server Action] Successfully retrieved simulation input for ${shipmentId}.`);
+        logger.debug(`[Server Action startSimulation] Initial vehicle state created for ${shipmentId}. Vehicle ID: ${initialVehicleState.id}`);
 
-        // 2. Create Initial Vehicle State using the service
-        const simulationService = getSimulationFromShipmentServiceInstance();
-        const initialVehicleState: SimulatedVehicle | null = await simulationService.createVehicleFromShipment(simulationInput);
-        
-        if (initialVehicleState === null) { 
-             logger.error(`[Server Action] Failed to create initial vehicle state for ${shipmentId} (service returned null).`);
-             return { success: false, error: "Failed to create simulation state (null returned from service)." };
-        }
-        logger.debug(`[Server Action] Successfully created initial vehicle state for ${shipmentId}. Status: ${initialVehicleState.status}`);
-        
-        // 3. Save Initial State to KV Cache
-        const kvSaveSuccess = await setSimulationState(shipmentId, initialVehicleState);
-        if (!kvSaveSuccess) {
-            logger.error(`[Server Action] Failed to save initial state to KV for ${shipmentId}.`);
+        // 2. Save the initial state to KV cache using shipmentId as the key
+        logger.debug(`[Server Action startSimulation] Attempting to save initial state to KV for key (shipmentId): ${shipmentId}`);
+        const setStateSuccess = await setSimulationState(shipmentId, initialVehicleState);
+
+        if (!setStateSuccess) {
+            logger.error(`[Server Action startSimulation] Failed: Could not save initial state to KV cache for shipment ${shipmentId}.`);
             return { success: false, error: "Failed to save initial simulation state to cache." };
         }
-        logger.debug(`[Server Action] Successfully saved initial state to KV for ${shipmentId}.`);
+        logger.info(`[Server Action startSimulation] Successfully saved initial state to KV for shipment ${shipmentId}.`);
 
-        // 4. Mark Simulation as Active
-        const markActiveSuccess = await addActiveSimulation(shipmentId);
-        if (!markActiveSuccess) {
-            logger.error(`[Server Action] Failed to mark simulation as active in KV for ${shipmentId}.`);
-            return { success: false, error: "Failed to mark simulation as active." }; 
+        // 3. Add the shipmentId to the list of active simulations
+        logger.debug(`[Server Action startSimulation] Attempting to register shipment ${shipmentId} as active.`);
+        const addActiveSuccess = await addActiveSimulation(shipmentId);
+
+        if (!addActiveSuccess) {
+            // Log error but maybe don't fail the whole process? 
+            // The simulation state IS saved, but enqueue might miss it initially.
+            // Neurotic choice: Return success with a warning message.
+            logger.warn(`[Server Action startSimulation] WARNING: Failed to add shipment ${shipmentId} to the active simulation list in KV. Enqueue process might be delayed.`);
+            return { success: true, message: `Simulation for ${shipmentId} started, but activation registration failed. Tracking might be delayed.` };
         }
-         logger.info(`[Server Action] Successfully marked simulation as active for ${shipmentId}.`);
+        logger.info(`[Server Action startSimulation] Successfully registered shipment ${shipmentId} as active.`);
 
-        // 5. Return Success
-        return { success: true, message: `Simulation started successfully for ${shipmentId}.` };
+        return { success: true, message: `Simulation initiated successfully for ${shipmentId}.` };
 
-    } catch (error: any) {
-        logger.error(`[Server Action] Unexpected error during startSimulation for ${shipmentId}: ${error.message}`, { error });
-        return { success: false, error: "An unexpected error occurred while starting the simulation." };
+    } catch (error) {
+        logger.error(`[Server Action startSimulation] CRITICAL ERROR starting simulation for ${shipmentId}:`, error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while starting the simulation.";
+        return { success: false, error: errorMessage };
     }
-} 
+}
+// --- END NEW SERVER ACTION --- 

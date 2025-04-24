@@ -17,6 +17,7 @@ import type { SimulationStoreApi } from '@/lib/store/useSimulationStore';
 import { toast } from "@/hooks/use-toast";
 import { Accordion } from "@/components/ui/accordion";
 import { getShipmentLastKnownLocation } from '@/lib/actions/shipmentActions';
+import { startSimulation } from '@/lib/actions/simulationActions';
 
 // Simple debounce hook
 function useDebounce(callback: (...args: any[]) => void, delay: number) {
@@ -324,44 +325,53 @@ export default function Page({ params }: { params: { documentid: string } }) {
     const handleViewTracking = async (shipmentId: string, documentId: string) => {
         logger.info(`Shipment Page: View Tracking clicked for shipment ${shipmentId} in doc ${documentId}`);
         setIsSimLoading(true);
-        setError(null); 
-        
+        setError(null);
+
         try {
-            // Fetch the simulation input data using the server action
+            // 1. Fetch the simulation input data using the server action
             const simulationInputResult = await getSimulationInputForShipment(shipmentId);
 
             if ('error' in simulationInputResult) {
-                throw new Error(simulationInputResult.error);
+                throw new Error(`Failed to get simulation input: ${simulationInputResult.error}`);
             }
-            
-            console.log('[handleViewTracking] Received SimulationInput from Server Action:', simulationInputResult);
-            logger.info('[handleViewTracking] Status from Server Action:', simulationInputResult.initialStatus);
 
+            logger.info('[handleViewTracking] Received SimulationInput:', simulationInputResult);
+
+            // 2. Call the startSimulation server action with the fetched input
+            const startResult = await startSimulation(simulationInputResult);
+
+            if (startResult.error) {
+                throw new Error(`Failed to start simulation: ${startResult.error}`);
+            }
+
+            logger.info('[handleViewTracking] Simulation started successfully on the server.');
+
+            // 3. Load data into the client-side store (Optional - if still needed immediately)
             // CORRECTED STORE ACCESS:
             if (!storeApi) { // Check if context value is available
                 throw new Error("Simulation store context is not available.");
             }
-            // Access action via getState() on the context value
-            const loadAction = storeApi.getState().loadSimulationFromInput; 
+            const loadAction = storeApi.getState().loadSimulationFromInput;
 
-            if (typeof loadAction !== 'function') { 
-                 logger.error('[handleViewTracking] loadSimulationFromInput action is not available via context!', { storeState: storeApi.getState() });
-                 throw new Error('Simulation loading action failed.');
+            if (typeof loadAction !== 'function') {
+                logger.error('[handleViewTracking] loadSimulationFromInput action is not available via context!', { storeState: storeApi.getState() });
+                throw new Error('Simulation loading action failed.');
             }
 
-            // Load data into the store using the action obtained via context
-            await loadAction(simulationInputResult); 
+            await loadAction(simulationInputResult);
+            logger.info(`Shipment Page: Simulation data loaded into client store for ${shipmentId}.`);
 
-            logger.info(`Shipment Page: Simulation data loaded for ${shipmentId}, navigating...`);
-            // Navigate to the simulation page for the specific document
+            // 4. Navigate to the simulation page for the specific document
+            logger.info(`Shipment Page: Navigating to simulation page...`);
             router.push(`/simulation/${documentId}?selectedShipmentId=${shipmentId}`);
 
         } catch (err) {
-            logger.error('Shipment Page: Error preparing or loading simulation:', err);
+            logger.error('Shipment Page: Error preparing or starting simulation:', err);
             const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-            setError(`Failed to load simulation: ${errorMessage}`); 
+            setError(`Failed to start tracking: ${errorMessage}`);
+            toast({ title: "Error Starting Tracking", description: errorMessage, variant: "destructive" }); // Show toast on error
         } finally {
-            setIsSimLoading(false); 
+            setIsSimLoading(false);
         }
     };
 
@@ -512,37 +522,33 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                             return <div className="aspect-video bg-muted/50 flex items-center justify-center rounded animate-pulse">Loading Map...</div>;
                                         } else if (originCoords && destCoords) { 
                                             return (
-                                                <div className="relative">
-                                                    <StaticRouteMap
-                                                        mapboxToken={mapboxAccessToken}
-                                                        originCoordinates={originCoords}
-                                                        destinationCoordinates={destCoords}
-                                                        routeGeometry={currentRouteGeometry}
-                                                        lastKnownPosition={currentLastPosition}
-                                                        className="w-full aspect-video rounded"
-                                                    />
-                                                    {/* --- ADDED: Map Overlay Buttons Container --- */} 
-                                                    <div className="absolute top-2 right-2 flex flex-col space-y-1 z-10"> 
-                                                        {/* Refresh Button */}
-                                                         <Button 
-                                                             variant="outline" 
-                                                             size="icon" 
-                                                             onClick={handleRefreshLocation} 
-                                                             disabled={!selectedShipment || isRefreshingLocation}
-                                                             title="Refresh Last Known Location"
-                                                             className="bg-card hover:bg-muted"
-                                                         >
-                                                            {isRefreshingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                                                         </Button>
-                                                         {/* View Tracking/Simulation Button (conditionally rendered by parent) */}
-                                                         {/* The parent logic already handles showing this button */}
-                                                         {/* We might need to adjust positioning if both are visible */}
-                                                         {/* This button is handled outside the map component itself */} 
-                                                         {/* If showTrackingButton is true, the button below renders */} 
-                                                    </div> 
-                                                    {/* --- END ADDED: Map Overlay Buttons Container --- */}
-                                                </div>
-                                            );
+                                                 <div className="relative w-full h-full"> {/* Ensure relative positioning for overlay */}
+                                                      <StaticRouteMap
+                                                          mapboxToken={mapboxAccessToken}
+                                                          originCoordinates={originCoords}
+                                                          destinationCoordinates={destCoords}
+                                                          routeGeometry={currentRouteGeometry}
+                                                          lastKnownPosition={currentLastPosition}
+                                                          className="w-full h-full rounded" // Make map fill the container
+                                                      />
+                                                      {/* --- MOVED: Map Overlay Buttons Container --- */} 
+                                                     <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10"> {/* Changed right-2 to left-2 */} 
+                                                         {/* Refresh Button */}
+                                                          <Button 
+                                                              variant="outline" 
+                                                              size="icon" 
+                                                              onClick={handleRefreshLocation} 
+                                                              disabled={!selectedShipment || isRefreshingLocation}
+                                                              title="Refresh Last Known Location"
+                                                              className="bg-card hover:bg-muted"
+                                                          >
+                                                             {isRefreshingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                                          </Button>
+                                                          {/* Other potential overlay buttons could go here */}
+                                                     </div> 
+                                                     {/* --- END MOVED: Map Overlay Buttons Container --- */}
+                                                 </div>
+                                              );
                                         } else { 
                                             return (
                                                 <div className="aspect-video flex items-center justify-center h-full bg-muted border border-border rounded-lg">
