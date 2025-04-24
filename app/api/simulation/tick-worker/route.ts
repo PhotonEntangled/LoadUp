@@ -140,7 +140,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ message: "Tick processed successfully", status: nextState.status });
     } catch (error) {
         logger.error(`${LOG_PREFIX}(${shortId}) CRITICAL Error processing simulation tick:`, error);
-        try { await simulationCacheService.setActiveSimulation(shipmentId, false); } catch {} 
+        try { 
+            await simulationCacheService.setActiveSimulation(shipmentId, false); 
+        } catch {
+            // Attempt to deactivate simulation, but ignore errors if it fails
+        } 
         return NextResponse.json(
             { message: `Error processing tick: ${error instanceof Error ? error.message : "Unknown error"}` },
             { status: 500 }
