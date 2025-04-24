@@ -242,18 +242,25 @@ export const createSimulationStore = () => {
                   lastUpdateTime: timeNow,
               };
 
-              // <<< ADDED: DB Update Logic (Throttled) >>>
-              const dbUpdatePayload = {
-                shipmentId: vehicle.id,
-                latitude: newPositionData.currentPosition.geometry.coordinates[1],
-                longitude: newPositionData.currentPosition.geometry.coordinates[0],
-                timestamp: new Date(timeNow)
+              // --- CORRECTED: Send Tick Payload to Worker --- 
+              // Get necessary parameters from store state
+              const { simulationSpeedMultiplier } = get(); 
+              // Ensure timeDelta is calculated (assuming it's available from the outer scope of tickSimulation)
+              // const timeDelta = timeNow - lastTickTime; // Example: Make sure this is correctly scoped
+
+              // CONSTRUCT THE CORRECT PAYLOAD for the tick-worker
+              const tickWorkerPayload = {
+                shipmentId: vehicle.shipmentId, // Use the correct shipment ID associated with the vehicle
+                timeDelta: timeDeltaSeconds, // Pass the calculated time difference
+                speedMultiplier: simulationSpeedMultiplier // Get from store
               };
-              logger.info(`[Tick] Throttled DB update triggered for ${vehicle.id}. Calling backend API.`);
+
+              logger.debug(`[Tick] Sending payload to /api/simulation/tick-worker for ${vehicle.shipmentId}:`, tickWorkerPayload);
+              
               fetch('/api/simulation/tick-worker', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dbUpdatePayload),
+                body: JSON.stringify(tickWorkerPayload), // SEND THE CORRECT PAYLOAD
               })
               .then(response => {
                 if (!response.ok) {
