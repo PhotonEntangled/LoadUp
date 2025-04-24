@@ -22,12 +22,21 @@ interface LastKnownLocation {
 export async function getShipmentLastKnownLocation(
   shipmentId: string
 ): Promise<{ position: Feature<Point> | null; timestamp: string | null; error?: string }> {
-  logger.info(`[Server Action] Fetching last known location for shipment: ${shipmentId}`);
+  // --- ADDED: Entry Log ---
+  logger.info(`
+-------
+[Server Action getShipmentLastKnownLocation] INVOKED for shipment: ${shipmentId}
+-------
+`);
+  // --- END ADDED --- 
+
   if (!shipmentId) {
+    logger.error("[Server Action getShipmentLastKnownLocation] Failed: Shipment ID is required.")
     return { position: null, timestamp: null, error: 'Shipment ID is required.' };
   }
 
   try {
+    logger.debug(`[Server Action getShipmentLastKnownLocation] Executing DB query for ${shipmentId}...`);
     const result = await db
       .select({
         latitude: shipmentsErd.lastKnownLatitude,
@@ -37,16 +46,28 @@ export async function getShipmentLastKnownLocation(
       .from(shipmentsErd)
       .where(eq(shipmentsErd.id, shipmentId))
       .limit(1);
+      
+    // --- ADDED: Log DB Result ---
+    logger.debug(`[Server Action getShipmentLastKnownLocation] DB Query Result for ${shipmentId}:`, JSON.stringify(result, null, 2));
+    // --- END ADDED --- 
 
     if (!result || result.length === 0) {
-      logger.warn(`[Server Action] No shipment found with ID: ${shipmentId}`);
-      return { position: null, timestamp: null, error: 'Shipment not found.' };
+      logger.warn(`[Server Action getShipmentLastKnownLocation] No shipment found in DB with ID: ${shipmentId}`);
+      return { position: null, timestamp: null, error: 'Shipment not found.' }; // Keep error for frontend clarity
     }
 
     const locationData = result[0];
+    // --- ADDED: Log Raw Data --- 
+    logger.debug(`[Server Action getShipmentLastKnownLocation] Raw locationData:`, JSON.stringify(locationData, null, 2));
+    // --- END ADDED --- 
+    
     const lat = locationData.latitude ? parseFloat(locationData.latitude) : null;
     const lon = locationData.longitude ? parseFloat(locationData.longitude) : null;
     const timestamp = locationData.timestamp ? locationData.timestamp.toISOString() : null;
+    
+    // --- ADDED: Log Parsed Data ---
+    logger.debug(`[Server Action getShipmentLastKnownLocation] Parsed lat: ${lat} (type: ${typeof lat}), lon: ${lon} (type: ${typeof lon}), timestamp: ${timestamp}`);
+    // --- END ADDED ---
 
     let positionFeature: Feature<Point> | null = null;
     if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
@@ -58,14 +79,16 @@ export async function getShipmentLastKnownLocation(
         },
         properties: { timestamp: timestamp },
       };
-      logger.info(`[Server Action] Found last known location for ${shipmentId}: [${lon}, ${lat}] at ${timestamp}`);
+      logger.info(`[Server Action getShipmentLastKnownLocation] SUCCESS: Found and formatted position for ${shipmentId}.`);
     } else {
-      logger.info(`[Server Action] No valid last known location coordinates found for ${shipmentId}`);
+      logger.warn(`[Server Action getShipmentLastKnownLocation] No valid coordinates after parsing for ${shipmentId}. Lat: ${locationData.latitude}, Lon: ${locationData.longitude}`);
     }
 
     return { position: positionFeature, timestamp: timestamp };
   } catch (error) {
-    logger.error(`[Server Action] Error fetching last known location for ${shipmentId}:`, error);
-    return { position: null, timestamp: null, error: 'Database error fetching location.' };
+    logger.error(`[Server Action getShipmentLastKnownLocation] CRITICAL ERROR fetching location for ${shipmentId}:`, error);
+    // Ensure the error is propagated
+    const errorMessage = error instanceof Error ? error.message : 'Database error fetching location.';
+    return { position: null, timestamp: null, error: errorMessage };
   }
 } 
