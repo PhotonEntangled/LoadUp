@@ -682,18 +682,25 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 - When viewing the `/shipments/[documentid]` page, the `StaticRouteMap` component does not display a marker for the vehicle's last known location, even if a simulation has been run previously for that shipment.
 - The route line is displayed correctly.
 
-**Investigation & Root Cause:**
-- **Browser Log Analysis:**
-    - Repeated logs like `[INFO] [ShipmentPage] No initial last known position found in fetched data.` confirm the API response for the shipment page lacks valid `lastKnownLatitude/Longitude`.
-    - Logs like `[INFO] [ShipmentPage] No location data returned after refresh.` show that attempts to fetch updates also fail to retrieve coordinates.
-    - The `StaticRouteMap` component likely requires these coordinates to render the marker.
-- **Terminal Log Analysis (`docs/log.md`):**
-    - Server logs show `[INFO] [Server Action] Successfully updated last known position...`, seemingly triggered by the frontend's `[Tick] Throttled DB update triggered...` log messages.
-    - However, a warning `[WARN] [Server Action getShipmentLastKnownLocation] No valid coordinates after parsing for ... Lat: null, Lon: null` suggests that the database read or parsing within these server actions might be encountering `NULL` values.
-- **Correlation with Previous Findings:** This issue directly relates to the earlier finding ("Simulation Not Updating `shipments_erd` Location Fields") where it was determined that the backend persistence logic (`VehicleTrackingService.ts`) for simulation state is missing or incomplete.
-- **Root Cause Confirmed:** The last known location marker is not displayed because the underlying data (`last_known_latitude`, `last_known_longitude`) in the `shipments_erd` database table is not being correctly and persistently updated during the simulation. The backend logic to handle this persistence is missing. The API fetches `NULL` for these fields, and the frontend map cannot render a marker without valid coordinates.
+**Investigation:**
+- **Browser Log Analysis (2024-07-29):**
+    - Repeated logs like `[INFO] [ShipmentPage] No initial last known position found in fetched data.` indicate the API initially returns NULL location data, as expected before updates.
+    - **CRITICAL:** Logs like `[WARN] [loadSimulationFromInput] Stopping any existing simulation...` and subsequent auto-start logs **persist**. This confirms the **incorrect frontend code** (specifically the old version of `lib/store/useSimulationStore.ts`) is running in the deployed environment.
+    - Frontend continues to log `[INFO] [Tick] Throttled DB update triggered...` but this doesn't confirm backend activity.
+    - Refresh logs (`[INFO] [ShipmentPage] No location data returned after refresh.`) confirm DB location fields remain `NULL`.
+- **Server Log Analysis (`docs/log.md`):**
+    - The latest available server logs still **do not contain** the new detailed logging added to the backend tick handler (`app/api/simulation/tick/route.ts`), such as `Attempting to update shipments_erd...`.
 
-**(Next Step):** Implement the backend simulation state persistence logic, likely starting with creating and implementing `services/VehicleTrackingService.ts` and integrating it into a backend simulation loop or tick handler (as outlined previously).
+**Root Cause Analysis:**
+- **Primary Cause:** Incorrect code deployment. The version of the application running in the test environment does not contain the crucial frontend refactoring (commit `423357e` or later) that fixed the simulation start/reset logic in the Zustand store and simulation page. This invalidates the entire test scenario.
+- **Secondary Possibility:** Even if the frontend were correct, the lack of new server logs *might* indicate the backend deployment is also stale or the tick handler isn't being called/executing correctly.
+
+**(Next Step - HIGHEST PRIORITY):**
+1.  **Verify/Fix Vercel Deployment:** Ensure the latest commit (`423357e` or newer) is successfully built and deployed to the testing environment.
+2.  **Retest (POST-DEPLOYMENT CONFIRMATION):** Run the test flow again.
+3.  **Analyze FRESH Logs:** If the problem persists *after* confirming the correct deployment, provide **new** browser and server logs. Focus on:
+    - Browser: Absence of the `[WARN] [loadSimulationFromInput] Stopping...` log.
+    - Server: Presence of `[API /simulation/tick POST] Attempting to update shipments_erd...` and subsequent success/failure logs.
 
 ## Update (2024-07-29): Implemented DB Update in Tick Handler
 
@@ -706,3 +713,29 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 - **Status:** Backend logic for persisting location updates during simulation ticks is now in place.
 
 **(Next Step):** Run `npm run build` to check for build errors and then test the end-to-end flow to verify the database is updated and the last known location marker appears on the shipment page map.
+
+## Issue: Last Known Location Marker Still Missing (Deployment Issue Suspected)
+
+**Date:** 2024-07-29 (Continued)
+
+**Symptoms:**
+- Last known location marker still missing after attempting fixes to backend tick handler.
+
+**Investigation:**
+- **Browser Log Analysis (Post-Tick Handler Fix Attempt):**
+    - **CRITICAL:** Logs like `[WARN] [loadSimulationFromInput] Stopping any existing simulation...` and subsequent auto-start logs **persist**. This confirms the **incorrect frontend code** (specifically the old version of `lib/store/useSimulationStore.ts`) is running in the deployed environment.
+    - Frontend continues to log `[INFO] [Tick] Throttled DB update triggered...` but this doesn't confirm backend activity.
+    - Refresh logs (`[INFO] [ShipmentPage] No location data returned after refresh.`) confirm DB location fields remain `NULL`.
+- **Server Log Analysis (`docs/log.md`):**
+    - The latest available server logs still **do not contain** the new detailed logging added to the backend tick handler (`app/api/simulation/tick/route.ts`), such as `Attempting to update shipments_erd...`.
+
+**Root Cause Analysis:**
+- **Primary Cause:** Incorrect code deployment. The version of the application running in the test environment does not contain the crucial frontend refactoring (commit `423357e` or later) that fixed the simulation start/reset logic in the Zustand store and simulation page. This invalidates the entire test scenario.
+- **Secondary Possibility:** Even if the frontend were correct, the lack of new server logs *might* indicate the backend deployment is also stale or the tick handler isn't being called/executing correctly.
+
+**(Next Step - HIGHEST PRIORITY):**
+1.  **Verify/Fix Vercel Deployment:** Ensure the latest commit (`423357e` or newer) is successfully built and deployed to the testing environment.
+2.  **Retest (POST-DEPLOYMENT CONFIRMATION):** Run the test flow again.
+3.  **Analyze FRESH Logs:** If the problem persists *after* confirming the correct deployment, provide **new** browser and server logs. Focus on:
+    - Browser: Absence of the `[WARN] [loadSimulationFromInput] Stopping...` log.
+    - Server: Presence of `[API /simulation/tick POST] Attempting to update shipments_erd...` and subsequent success/failure logs.

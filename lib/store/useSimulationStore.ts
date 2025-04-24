@@ -361,62 +361,38 @@ export const createSimulationStore = () => {
 
     loadSimulationFromInput: async (input: SimulationInput) => {
       logger.info('[loadSimulationFromInput] Attempting to load simulation from input', { shipmentId: input.shipmentId });
-      
-      // <<< STRENGTHENED RESET >>>
-      logger.warn('[loadSimulationFromInput] Stopping any existing simulation and resetting store before loading new simulation.');
-      get().stopGlobalSimulation(); // Explicitly stop interval
-      set({
-        vehicles: {},
-        selectedVehicleId: null,
-        isSimulationRunning: false, // Ensure simulation is stopped
-        error: null,
-        isLoading: true, // Set loading true
-        simulationIntervalId: null, // Clear interval ID in state
-        isFollowingVehicle: false, // Reset follow mode
-        // isInitialized can remain true
-      });
-      logger.debug('[loadSimulationFromInput] Simulation state reset for new load.');
+
+      // Set loading state at the beginning of the operation (managed externally now, but useful to keep here)
+      set({ isLoading: true, error: null }); // Clear previous errors
 
       let vehicle: SimulatedVehicle | null = null;
       try {
         const simService = getSimulationFromShipmentServiceInstance();
         if (!simService) {
-            // This check might be redundant if the getter always returns or throws, but good for safety
             throw new Error('SimulationFromShipmentService instance could not be obtained.');
         }
         
         vehicle = await simService.createVehicleFromShipment(input);
 
         if (vehicle) {
-          logger.info('[loadSimulationFromInput] Vehicle created successfully, adding to store.', { vehicleId: vehicle.id, shipmentId: vehicle.shipmentId });
-          // Clear potentially conflicting existing state for this shipment ID if needed
-          // (Consider if removing old vehicle with same shipmentId is desired)
+          logger.info('[loadSimulationFromInput] Vehicle created successfully, preparing to add/update in store.', { vehicleId: vehicle.id, shipmentId: vehicle.shipmentId });
+
+          // <<< REVISED: Add/Update vehicle without full reset >>>
+          const vehicleToAdd = vehicle; // Assign to a const within the non-null scope
+          set((state) => ({
+            vehicles: {
+              ...state.vehicles,
+              [vehicleToAdd.id]: vehicleToAdd // Add or overwrite the vehicle
+            },
+            selectedVehicleId: vehicleToAdd.id, // Automatically select the newly loaded vehicle
+            isLoading: false, // Set loading false on success
+            error: null // Clear any previous error
+          }));
           
-          // Use existing addVehicle action
-          get().addVehicle(vehicle);
-          // Automatically select the newly loaded vehicle
-          set({ selectedVehicleId: vehicle.id, isLoading: false }); 
           logger.info('[loadSimulationFromInput] Successfully loaded and selected vehicle.', { vehicleId: vehicle.id });
-
-          // <<< ADDED: Log store state right before auto-start check >>>
-          const currentState = get().vehicles;
-          logger.debug('[loadSimulationFromInput] Vehicle state in store just before auto-start check:', { vehicleId: vehicle.id, statusInStore: currentState[vehicle.id]?.status });
-
-          // <<< ADDED: Auto-start simulation if loaded vehicle is already En Route >>>
-          // <<< ADDED: Log the status being checked >>>
-          logger.info(`[loadSimulationFromInput] Checking vehicle status for auto-start. Vehicle ID: ${vehicle.id}, Status: ${vehicle.status}`);
-          if (vehicle.status === 'En Route') {
-            logger.info(`[loadSimulationFromInput] Vehicle ${vehicle.id} has status 'En Route'. Attempting to auto-start simulation.`); // <<< MODIFIED Log
-            get().startGlobalSimulation();
-            logger.info(`[loadSimulationFromInput] Call to startGlobalSimulation completed for vehicle ${vehicle.id}.`); // <<< ADDED: Log after call
-          } else {
-            // <<< ADDED: Log if status is NOT En Route >>>
-            logger.warn(`[loadSimulationFromInput] Vehicle ${vehicle.id} status is '${vehicle.status}', not 'En Route'. Simulation will not auto-start.`);
-          }
-          // <<< END ADDED >>>
-
+          
         } else {
-          // Handle case where service returns null (e.g., invalid input, cancelled shipment handled internally)
+          // Handle case where service returns null
           logger.warn('[loadSimulationFromInput] Simulation service returned null for vehicle creation.', { shipmentId: input.shipmentId });
           set({ isLoading: false, error: 'Failed to create vehicle simulation (Service returned null).' });
         }
@@ -426,7 +402,7 @@ export const createSimulationStore = () => {
             errorMessage: error?.message, 
             errorStack: error?.stack 
         });
-        // <<< FIX: Call setError via get() >>>
+        // Use setError action to handle the error state update
         get().setError(`SimulationFromShipmentService failed: ${error.message || 'Unknown error'}`);
         set({ isLoading: false }); // Ensure loading is set to false on error
       }

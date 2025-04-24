@@ -74,12 +74,22 @@ export default function SimulationDocumentPage() {
   const loadSimulationFromInput = useSimulationStoreContext((state: SimulationStoreApi) => state.loadSimulationFromInput);
   // Get sim running state to disable selection while running
   const isSimulationRunning = useSimulationStoreContext((state: SimulationStoreApi) => state.isSimulationRunning);
+  // <<< ADDED: Get the start action >>>
+  const startGlobalSimulation = useSimulationStoreContext((state: SimulationStoreApi) => state.startGlobalSimulation);
 
   // ADDED: Access the necessary store state for the start button logic
   const selectedVehicleId = useSimulationStoreContext((state: SimulationStoreApi) => state.selectedVehicleId); // Re-use selectedShipmentId for this? No, need vehicle state.
   const vehicles = useSimulationStoreContext((state: SimulationStoreApi) => state.vehicles);
   // Corrected: Access vehicle from Record using ID, not find()
   const selectedVehicle: SimulatedVehicle | undefined = selectedVehicleId ? vehicles[selectedVehicleId] : undefined;
+
+  // <<< ADDED: useEffect hook for auto-starting simulation >>>
+  useEffect(() => {
+    if (selectedVehicle && selectedVehicle.status === 'En Route' && !isSimulationRunning) {
+      logger.info(`[SimulationDocumentPage Auto-Start] Conditions met for vehicle ${selectedVehicleId}. Starting global simulation.`);
+      startGlobalSimulation();
+    }
+  }, [selectedVehicleId, selectedVehicle?.status, isSimulationRunning, startGlobalSimulation]); // Depend on relevant state and actions
 
   // Effect for fetching the initial shipment list AND SETTING INITIAL SELECTION
   useEffect(() => {
