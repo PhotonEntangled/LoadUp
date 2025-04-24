@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { getSimulationState, setSimulationState } from '@/services/kv/simulationCacheService';
-import { VehicleTrackingService } from '@/services/VehicleTrackingService'; // Assuming VehicleTrackingService is correctly structured for instantiation or static methods
 import { SimulatedVehicle, VehicleStatus } from '@/types/vehicles'; // Import VehicleStatus type
 import * as turf from '@turf/turf'; // Import Turf.js
 import { Feature, Point, LineString } from 'geojson'; // Ensure GeoJSON types are available
+import { db } from '@/lib/database/drizzle'; // Import Drizzle client
+import { shipmentsErd } from '@/lib/database/schema'; // Import shipments table schema
+import { eq } from 'drizzle-orm'; // Import eq operator
 
 // TODO: Make speed configurable (e.g., via env var or KV state)
 const DEFAULT_SIMULATION_SPEED_MPS = 15; // Approx 54 km/h or 34 mph
@@ -37,9 +39,6 @@ export async function POST(request: NextRequest) {
     // --- End Payload Validation ---
 
     logger.info(`API: Processing simulation tick for shipmentId: ${shipmentId}`);
-
-    // Instantiate the tracking service
-    const trackingService = new VehicleTrackingService(); 
 
     try {
         // --- Get Current State --- 
@@ -129,26 +128,32 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Failed to update simulation state cache' }, { status: 500 }); 
         }
 
-        // 5. Persist Location to DB
+        // 5. Persist Location to DB using Drizzle directly
         try {
             const [newLon, newLat] = newState.currentPosition.geometry.coordinates;
-            // Corrected call: Pass parameters as a single object
-            const dbUpdateSuccess = await trackingService.updateShipmentLastKnownLocation({
-                shipmentId: shipmentId,
-                latitude: newLat,
-                longitude: newLon,
-                timestamp: new Date(newState.lastUpdateTime) // Expects Date object
-            });
-            
-            if (dbUpdateSuccess) {
+            const updateTimestamp = new Date(newState.lastUpdateTime);
+
+            const result = await db.update(shipmentsErd)
+                .set({
+                    lastKnownLatitude: newLat.toString(), // Ensure string conversion for decimal
+                    lastKnownLongitude: newLon.toString(), // Ensure string conversion for decimal
+                    lastKnownTimestamp: updateTimestamp,
+                    shipmentDateModified: new Date() 
+                })
+                .where(eq(shipmentsErd.id, shipmentId))
+                .returning({ updatedId: shipmentsErd.id }); // Optional: return ID to confirm update
+
+            if (result && result.length > 0) {
                  logger.info(`API: Successfully persisted location for ${shipmentId} to DB.`);
             } else {
-                // Log warning here instead of just in the service for route-specific context
-                 logger.warn(`API: Failed to persist location to DB for ${shipmentId} (update returned false).`);
+                 logger.warn(`API: Failed to persist location to DB for ${shipmentId} (update returned no rows).`);
                  // Continue even if DB write fails for now, as cache was updated.
             }
         } catch (dbError) {
-            logger.error(`API: Error calling updateShipmentLastKnownLocation for ${shipmentId}`, { dbError });
+            logger.error(`API: Error updating shipment location in DB for ${shipmentId}`, { 
+                message: dbError instanceof Error ? dbError.message : String(dbError),
+                stack: dbError instanceof Error ? dbError.stack : undefined,
+             });
             // Continue even if DB write fails for now, as cache was updated.
         }
         // --- End Core Tick Logic --- 

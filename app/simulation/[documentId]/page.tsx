@@ -354,11 +354,11 @@ export default function SimulationDocumentPage() {
           {/* --- END ADDED BUTTON --- */}
         
           {/* Link to Old Test Scenario Page - Keep for now if needed */}
-          <Link href="/simulation" passHref legacyBehavior>
-              <Button variant="outline" size="icon" asChild title="Go to Old Test Scenario Loader">
-                  <a><TestTube className="h-4 w-4" /></a>
-              </Button>
-          </Link>
+        <Link href="/simulation" passHref legacyBehavior>
+            <Button variant="outline" size="icon" asChild title="Go to Old Test Scenario Loader">
+                <a><TestTube className="h-4 w-4" /></a>
+            </Button>
+        </Link>
         </div> 
       </div>
 

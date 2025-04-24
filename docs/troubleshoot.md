@@ -498,7 +498,7 @@ A frontend-driven approach (e.g., calling Server Actions on tick) is deemed too 
 1.  Create the missing `services/VehicleTrackingService.ts` file.
 2.  Implement a function within this service (e.g., `updateShipmentLastKnownLocation`) to handle the `UPDATE shipments_erd ...` database operation using Drizzle.
 3.  **Future Work:** Refactor or implement the simulation *loop* itself on the backend (likely within `VehicleTrackingService` or related services), which will call the update function.
-4.  **Future Work:** Implement a real-time communication mechanism (e.g., WebSockets) for the backend to push simulation state updates to the frontend map.
+4. **Future Work:** Implement a real-time communication mechanism (e.g., WebSockets) for the backend to push simulation state updates to the frontend map.
 
 ## Issue: Multiple Linter Errors in `app/api/documents/route.ts` (GET Handler)
 
@@ -673,3 +673,36 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 9.  **Fixed `react-hooks/exhaustive-deps` in `components/ui/file-upload.tsx:95`:** Reordered `simulateUpload` and `handleFileChange` definitions and added `simulateUpload` to the dependency array of `handleFileChange`.
 
 **(Next Step):** Proceed with next build error (`@typescript-eslint/no-explicit-any` in `app/api/ai/document-processing/route.ts:34`).
+
+## Issue: Last Known Location Marker Not Displaying on Shipment Page Map
+
+**Date:** 2024-07-29
+
+**Symptoms:**
+- When viewing the `/shipments/[documentid]` page, the `StaticRouteMap` component does not display a marker for the vehicle's last known location, even if a simulation has been run previously for that shipment.
+- The route line is displayed correctly.
+
+**Investigation & Root Cause:**
+- **Browser Log Analysis:**
+    - Repeated logs like `[INFO] [ShipmentPage] No initial last known position found in fetched data.` confirm the API response for the shipment page lacks valid `lastKnownLatitude/Longitude`.
+    - Logs like `[INFO] [ShipmentPage] No location data returned after refresh.` show that attempts to fetch updates also fail to retrieve coordinates.
+    - The `StaticRouteMap` component likely requires these coordinates to render the marker.
+- **Terminal Log Analysis (`docs/log.md`):**
+    - Server logs show `[INFO] [Server Action] Successfully updated last known position...`, seemingly triggered by the frontend's `[Tick] Throttled DB update triggered...` log messages.
+    - However, a warning `[WARN] [Server Action getShipmentLastKnownLocation] No valid coordinates after parsing for ... Lat: null, Lon: null` suggests that the database read or parsing within these server actions might be encountering `NULL` values.
+- **Correlation with Previous Findings:** This issue directly relates to the earlier finding ("Simulation Not Updating `shipments_erd` Location Fields") where it was determined that the backend persistence logic (`VehicleTrackingService.ts`) for simulation state is missing or incomplete.
+- **Root Cause Confirmed:** The last known location marker is not displayed because the underlying data (`last_known_latitude`, `last_known_longitude`) in the `shipments_erd` database table is not being correctly and persistently updated during the simulation. The backend logic to handle this persistence is missing. The API fetches `NULL` for these fields, and the frontend map cannot render a marker without valid coordinates.
+
+**(Next Step):** Implement the backend simulation state persistence logic, likely starting with creating and implementing `services/VehicleTrackingService.ts` and integrating it into a backend simulation loop or tick handler (as outlined previously).
+
+## Update (2024-07-29): Implemented DB Update in Tick Handler
+
+- **Decision:** Instead of creating a new `VehicleTrackingService.ts` file, the database persistence logic was added directly into the existing backend tick handler `app/api/simulation/tick/route.ts`.
+- **Implementation:**
+    - Added imports for Drizzle (`db`), the `shipmentsErd` schema, and `eq` operator.
+    - Within the `POST` handler, after successfully calculating the `newState` and updating the KV cache, added a Drizzle `db.update(shipmentsErd)` call.
+    - This update sets `lastKnownLatitude`, `lastKnownLongitude`, `lastKnownTimestamp`, and `shipmentDateModified` for the specific `shipmentId`.
+    - Removed references to the non-existent `VehicleTrackingService`.
+- **Status:** Backend logic for persisting location updates during simulation ticks is now in place.
+
+**(Next Step):** Run `npm run build` to check for build errors and then test the end-to-end flow to verify the database is updated and the last known location marker appears on the shipment page map.

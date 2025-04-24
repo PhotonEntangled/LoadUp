@@ -269,7 +269,7 @@ export async function getSimulationInputForShipment(
 /**
  * Creates the initial simulation state, saves it to KV cache keyed by shipmentId,
  * and registers the simulation as active, *unless* an active simulation already exists.
- *
+ * 
  * @param simulationInput The prepared input data for the simulation.
  * @returns Promise indicating success or failure.
  */
@@ -298,13 +298,13 @@ export async function startSimulation(
         // 1. Create the initial SimulatedVehicle state
         const simService = getSimulationFromShipmentServiceInstance();
         const initialVehicleState = await simService.createVehicleFromShipment(simulationInput);
-
+        
         if (!initialVehicleState) {
             logger.error(`[Server Action startSimulation] Failed: SimulationFromShipmentService returned null for shipment ${shipmentId}.`);
             return { success: false, error: "Failed to create initial vehicle state." };
         }
         logger.debug(`[Server Action startSimulation] Initial vehicle state created for ${shipmentId}. Vehicle ID: ${initialVehicleState.id}`);
-
+        
         // 2. Save the initial state to KV cache using shipmentId as the key
         logger.debug(`[Server Action startSimulation] Attempting to save initial state to KV for key (shipmentId): ${shipmentId}`);
         const setStateSuccess = await setSimulationState(shipmentId, initialVehicleState);

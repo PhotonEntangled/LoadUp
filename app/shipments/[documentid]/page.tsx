@@ -325,8 +325,8 @@ export default function Page({ params }: { params: { documentid: string } }) {
     const handleViewTracking = async (shipmentId: string, documentId: string) => {
         logger.info(`Shipment Page: View Tracking clicked for shipment ${shipmentId} in doc ${documentId}`);
         setIsSimLoading(true);
-        setError(null);
-
+        setError(null); 
+        
         try {
             // 1. Fetch the simulation input data using the server action
             const simulationInputResult = await getSimulationInputForShipment(shipmentId);
@@ -334,7 +334,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             if ('error' in simulationInputResult) {
                 throw new Error(`Failed to get simulation input: ${simulationInputResult.error}`);
             }
-
+            
             logger.info('[handleViewTracking] Received SimulationInput:', simulationInputResult);
 
             // 2. Call the startSimulation server action with the fetched input
@@ -351,14 +351,14 @@ export default function Page({ params }: { params: { documentid: string } }) {
             if (!storeApi) { // Check if context value is available
                 throw new Error("Simulation store context is not available.");
             }
-            const loadAction = storeApi.getState().loadSimulationFromInput;
+            const loadAction = storeApi.getState().loadSimulationFromInput; 
 
-            if (typeof loadAction !== 'function') {
-                logger.error('[handleViewTracking] loadSimulationFromInput action is not available via context!', { storeState: storeApi.getState() });
-                throw new Error('Simulation loading action failed.');
+            if (typeof loadAction !== 'function') { 
+                 logger.error('[handleViewTracking] loadSimulationFromInput action is not available via context!', { storeState: storeApi.getState() });
+                 throw new Error('Simulation loading action failed.');
             }
 
-            await loadAction(simulationInputResult);
+            await loadAction(simulationInputResult); 
             logger.info(`Shipment Page: Simulation data loaded into client store for ${shipmentId}.`);
 
             // 4. Navigate to the simulation page for the specific document
@@ -371,7 +371,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             setError(`Failed to start tracking: ${errorMessage}`);
             toast({ title: "Error Starting Tracking", description: errorMessage, variant: "destructive" }); // Show toast on error
         } finally {
-            setIsSimLoading(false);
+            setIsSimLoading(false); 
         }
     };
 
@@ -523,12 +523,12 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                         } else if (originCoords && destCoords) { 
                                             return (
                                                  <div className="relative w-full h-full"> {/* Ensure relative positioning for overlay */}
-                                                      <StaticRouteMap
-                                                          mapboxToken={mapboxAccessToken}
-                                                          originCoordinates={originCoords}
-                                                          destinationCoordinates={destCoords}
-                                                          routeGeometry={currentRouteGeometry}
-                                                          lastKnownPosition={currentLastPosition}
+                                                <StaticRouteMap
+                                                    mapboxToken={mapboxAccessToken}
+                                                    originCoordinates={originCoords}
+                                                    destinationCoordinates={destCoords}
+                                                    routeGeometry={currentRouteGeometry}
+                                                    lastKnownPosition={currentLastPosition}
                                                           className="w-full h-full rounded" // Make map fill the container
                                                       />
                                                       {/* --- MOVED: Map Overlay Buttons Container --- */} 
@@ -548,7 +548,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                                      </div> 
                                                      {/* --- END MOVED: Map Overlay Buttons Container --- */}
                                                  </div>
-                                              );
+                                            );
                                         } else { 
                                             return (
                                                 <div className="aspect-video flex items-center justify-center h-full bg-muted border border-border rounded-lg">
@@ -563,34 +563,34 @@ export default function Page({ params }: { params: { documentid: string } }) {
                         </div>
 
                             {/* Prominent View Tracking Button -- Positioned below map */}
-                            {showTrackingButton && (
-                                <div className="mt-4 flex justify-center"> 
-                                    <Button 
-                                            // Restore original onClick:
-                                            onClick={() => {
-                                                // Keep previous logging here for now:
-                                                logger.info('[ShipmentPage Button onClick] Triggered!'); 
-                                                console.log('[ShipmentPage Button onClick] Triggered!');
-                                                if (selectedShipment?.coreInfo?.id) {
-                                                    logger.info(`[ShipmentPage Button onClick] Calling handleViewTracking for: ${selectedShipment.coreInfo.id}`);
-                                                    handleViewTracking(selectedShipment.coreInfo.id, documentid);
-                                                } else {
-                                                    logger.warn('[ShipmentPage Button onClick] Cannot call handleViewTracking: selectedShipment or ID missing.');
-                                                }
-                                            }} 
-                                        variant="secondary"
-                                        size="sm"
-                                        disabled={isSimLoading}
-                                    >
-                                        {isSimLoading ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                        <ExternalLink className="mr-2 h-4 w-4" />
-                                        )}
-                                        {isSimLoading ? "Loading Simulation..." : "View Live Tracking / Simulation"}
-                                    </Button>
-                                </div>
-                            )}
+                        {showTrackingButton && (
+                            <div className="mt-4 flex justify-center"> 
+                                <Button 
+                                        // Restore original onClick:
+                                        onClick={() => {
+                                            // Keep previous logging here for now:
+                                            logger.info('[ShipmentPage Button onClick] Triggered!'); 
+                                            console.log('[ShipmentPage Button onClick] Triggered!');
+                                            if (selectedShipment?.coreInfo?.id) {
+                                                logger.info(`[ShipmentPage Button onClick] Calling handleViewTracking for: ${selectedShipment.coreInfo.id}`);
+                                                handleViewTracking(selectedShipment.coreInfo.id, documentid);
+                                            } else {
+                                                logger.warn('[ShipmentPage Button onClick] Cannot call handleViewTracking: selectedShipment or ID missing.');
+                                            }
+                                        }} 
+                                    variant="secondary"
+                                    size="sm"
+                                    disabled={isSimLoading}
+                                >
+                                    {isSimLoading ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                    )}
+                                    {isSimLoading ? "Loading Simulation..." : "View Live Tracking / Simulation"}
+                                </Button>
+                            </div>
+                        )}
 
                         {/* Shipment Details View */}
                             <ShipmentDetailView shipment={selectedShipment} />
