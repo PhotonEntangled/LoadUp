@@ -248,11 +248,41 @@ export const createSimulationStore = () => {
                                      newPositionData?.currentPosition?.geometry?.coordinates?.length === 2;
 
               if (shouldUpdateDb && newPositionData?.currentPosition?.geometry?.coordinates) {
-                  logger.info(`[Tick] Throttled DB update triggered for ${vehicle.id}`);
-                  // Update the lastDbUpdateTime immediately to prevent rapid retries
-                  // even if the async call above hasn't finished/failed yet.
-                  // We will rely on the backend tick handler for persistence.
+                  logger.info(`[Tick] Throttled DB update triggered for ${vehicle.id}. Calling backend API.`);
+                  
+                  // Update the lastDbUpdateTime *before* the async call to prevent rapid retries
                   set((state) => ({ lastDbUpdateTime: { ...state.lastDbUpdateTime, [vehicle.id]: timeNow } }));
+
+                  // --- ADDED: Call backend tick handler --- 
+                  // Use IIFE for async operation within sync loop
+                  (async () => {
+                      try {
+                          const response = await fetch('/api/simulation/tick', {
+                              method: 'POST',
+                              headers: {
+                                  'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({ shipmentId: vehicle.shipmentId }), // Use the correct shipmentId
+                          });
+
+                          if (!response.ok) {
+                              // Log error but don't necessarily stop frontend simulation
+                              logger.error(`[Tick] Backend API call failed for ${vehicle.shipmentId}`, { 
+                                  status: response.status,
+                                  statusText: response.statusText 
+                              });
+                              // Optionally set an error state in the store here?
+                              // get().setError(`Backend tick failed: ${response.statusText}`);
+                          } else {
+                               logger.debug(`[Tick] Backend API call successful for ${vehicle.shipmentId}.`);
+                          }
+                      } catch (error) {
+                          logger.error(`[Tick] Network error calling backend API for ${vehicle.shipmentId}:`, error);
+                          // Optionally set an error state in the store here?
+                          // get().setError(`Backend tick network error: ${error.message}`);
+                      }
+                  })();
+                  // --- END: Call backend tick handler ---
               }
               // <<< END DB Update Logic >>>
         } else if (!vehiclesToUpdate[vehicle.id]) { // Only warn if not already marked for Error status update
