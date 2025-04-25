@@ -778,7 +778,7 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 - **Server Log Analysis (`docs/log.md` - Post Redeploy):**
     - Searched logs extensively for patterns related to the tick handler: `[API /simulation/tick POST] Received request.`, `Attempting to update shipments_erd`, `Successfully updated shipments_erd`, `Database update failed`.
     - **CRITICAL FINDING:** None of these specific log messages were found.
-- **Conclusion:** The `/api/simulation/tick` POST handler is **not being executed** in the latest deployment. The 404 error received by the browser is accurate; the endpoint is not accessible.
+- **Conclusion:** The `/api/simulation/tick` POST handler is **not being executed** in the latest deployment. The 400 error received by the browser is accurate; the endpoint is not accessible.
 
 **Root Cause Analysis:**
 - **Build/Routing Failure:** The Vercel deployment process is failing to correctly build and register the API route defined in `app/api/simulation/tick/route.ts`. Potential causes include:
@@ -972,3 +972,29 @@ ound.tsx` (Line 27):** Replaced `'` in `you're` with `&apos;`.
 1.  **Re-investigate Stop Button Loop:** Prioritize fixing this state synchronization issue. Verify deployment of backend changes. Add detailed logging to the frontend store's `stopGlobalSimulation` action to inspect the exact response received from the server action.
 2.  **Re-investigate Tick Worker DB Update:** Add verbose logging immediately around the `db.update` call in the tick worker to confirm execution and capture potential errors.
 3.  **Inspect `StaticRouteMap`:** If DB updates are confirmed and refresh fetches valid data, debug the `StaticRouteMap` component's handling and rendering of the `lastKnownPosition` prop.
+
+## Issue: Last Known Location Marker Not Displaying on Static Map (Shipment Page)
+
+**Date:** 2024-07-30
+
+**Symptoms:**
+- The `StaticRouteMap` component on the `/shipments/[documentid]` page does not visually display the marker for the `lastKnownPosition`.
+- This occurs even after clicking the "Refresh Location" button, which successfully fetches the LKL data (confirmed by success toast and browser/server logs showing valid GeoJSON Point feature being returned).
+- The route line and origin/destination markers render correctly.
+
+**Investigation:**
+- Verified browser logs showing `currentLastPosition` state being set with valid GeoJSON after refresh.
+- Verified server logs showing `getShipmentLastKnownLocation` action succeeding.
+- Compared with `/simulation` page where vehicle markers render.
+- Confirmed `TruckIcon.tsx` component does not exist; icon usage relies on embedding SVG path data directly (from `icons8-truck-top-view-48.svg`).
+
+**Hypothesis:** The issue lies within `StaticRouteMap.tsx`:
+    1. Error in the conditional rendering logic for the `lastKnownPosition` marker.
+    2. ~~Incorrect icon/SVG being used (or default invisible marker).~~ (Addressed by embedding SVG)
+    3. Marker is being rendered off-screen or with conflicting styles (e.g., z-index, opacity).
+
+**(Next Steps - Implementation Plan):**
+1.  ~~Modify `StaticRouteMap.tsx` to use the standard truck SVG icon for the LKL marker.~~ **(Done - Embedded SVG directly)**
+2.  Add a "Zoom to Last Location" button to the map overlay to help locate the marker. **(Done)**
+3.  Perform detailed code review of marker rendering logic within `StaticRouteMap.tsx`.
+4.  Test the component visually after deployment.
