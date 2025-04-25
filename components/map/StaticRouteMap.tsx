@@ -263,82 +263,81 @@ export const StaticRouteMap = React.memo(({
           {/* --- End Route --- */}
 
           {/* --- Render Markers --- */}
-          {isMapLoaded && (
-            <>
-              {/* Origin Marker */}
-              {originCoordinates && (
-                <Marker longitude={originCoordinates[0]} latitude={originCoordinates[1]} anchor="bottom">
-                  <span title="Origin"><Home size={28} className="text-blue-400 opacity-90 drop-shadow" /></span>
-                </Marker>
-              )}
-
-              {/* Destination Marker */}
-              {destinationCoordinates && (
-                <Marker longitude={destinationCoordinates[0]} latitude={destinationCoordinates[1]} anchor="bottom">
-                  <span title="Destination"><Flag size={28} className="text-green-400 opacity-90 drop-shadow"/></span>
-                </Marker>
-              )}
-
-              {/* Last Known Position Marker */} 
-              {lastKnownPosition && lastKnownPosition.geometry?.coordinates && (
-                <Marker
-                  longitude={lastKnownPosition.geometry.coordinates[0]}
-                  latitude={lastKnownPosition.geometry.coordinates[1]}
-                  anchor="center" // Center anchor often better for icons
-                  // Rotation can be added later if needed via style prop
-                >
-                  {/* Embed the truck SVG directly */}
-                  <svg 
-                    viewBox="0 0 48 48" // Use viewBox from original SVG
-                    width="24" // Set desired size (e.g., h-6 w-6 -> 24px)
-                    height="24"
-                    className="text-blue-500 drop-shadow-md" // Apply color via text-* and add shadow
-                    style={{ transform: 'translate(-50%, -50%)' }} // Adjust positioning if needed for anchor
-                  >
-                     {/* Use only the primary path for the shape, adjust fill */}
-                     {/* Note: Extracted the core path from the SVG, might need adjustment */}
-                     {/* Combining paths might be complex; using the first one for shape */}
-                     <path 
-                       d="M0 0 C0.66 0 1.32 0 2 0 C2 0.99 2 1.98 2 3 C2.94875 2.938125 3.8975 2.87625 4.875 2.8125 C5.90625 2.874375 6.9375 2.93625 8 3 C10.84799817 7.27199725 10.33018316 10.97798285 10.3125 16 C10.32861328 16.91523438 10.34472656 17.83046875 10.36132812 18.7734375 C10.36197266 19.65257813 10.36261719 20.53171875 10.36328125 21.4375 C10.36626221 22.24058594 10.36924316 23.04367188 10.37231445 23.87109375 C9.90941468 26.51796982 9.13462297 27.40861466 7 29 C4.3125 29.1875 4.3125 29.1875 2 29 C2 29.99 2 30.98 2 32 C1.34 32 0.68 32 0 32 C0 31.01 0 30.02 0 29 C-2.97 29 -5.94 29 -9 29 C-9 20.42 -9 11.84 -9 3 C-6.03 3 -3.06 3 0 3 C0 2.01 0 1.02 0 0 Z"
-                       fill="currentColor" // Use Tailwind text color
-                       transform="translate(38,9)" // Keep original transform from SVG
-                     />
-                     {/* Add other paths if needed for details/colors, adjusting fill */}
-                   </svg>
-                </Marker>
-              )}
-            </>
+          {isMapLoaded && originCoordinates && (
+            <Marker longitude={originCoordinates[0]} latitude={originCoordinates[1]} anchor="bottom">
+              {/* Use a simple SVG or styled div for origin */}
+               <Home className="h-6 w-6 text-green-600 fill-green-200" /> 
+            </Marker>
           )}
-          {/* --- End Markers --- */}
+          {isMapLoaded && destinationCoordinates && (
+            <Marker longitude={destinationCoordinates[0]} latitude={destinationCoordinates[1]} anchor="bottom">
+              {/* Use a simple SVG or styled div for destination */}
+               <Flag className="h-6 w-6 text-red-600 fill-red-200" />
+            </Marker>
+          )}
+          {isMapLoaded && lastKnownPosition?.geometry?.coordinates && (
+            (() => {
+              const [lon, lat] = lastKnownPosition.geometry.coordinates;
+              // --- REPLACE LKL MARKER ---
+              return (
+                <Marker longitude={lon} latitude={lat} anchor="center">
+                  {/* Placeholder Truck SVG - Replace with actual simulation SVG later */}
+                   <svg 
+                     xmlns="http://www.w3.org/2000/svg" 
+                     viewBox="0 0 24 24" 
+                     fill="currentColor" 
+                     className="h-8 w-8 text-blue-500 drop-shadow-lg" // Increased size (h-8 w-8)
+                   >
+                     <path d="M21.55 11.371l-1.684-4.112A4.501 4.501 0 0016.141 5H7.859a4.501 4.501 0 00-3.725 2.259L2.45 11.37A4.501 4.501 0 005.683 16h1.588l-.794 2.54a1 1 0 00.943 1.332h1.216a1 1 0 00.994-.86l.66-2.993h4.28l.66 2.993a1 1 0 00.994.86h1.216a1 1 0 00.943-1.332L16.73 16h1.588a4.501 4.501 0 003.232-4.629zM5.198 10.916l1.2-2.938A2.5 2.5 0 018.61 7h6.78a2.5 2.5 0 012.212.978l1.2 2.938a2.5 2.5 0 01-.412 3.084H5.61a2.5 2.5 0 01-.412-3.084z"/>
+                     <circle cx="7" cy="15" r="2"/>
+                     <circle cx="17" cy="15" r="2"/>
+                   </svg> 
+                </Marker>
+              );
+              // --- END REPLACE LKL MARKER ---
+            })()
+          )}
 
+          {/* --- Map Overlay Buttons --- */}
+          {/* Container for buttons - Already top-left */}
+           <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10"> 
+              {/* Refresh Button */}
+               <Button 
+                   variant="outline" 
+                   size="icon" 
+                   onClick={onRefreshLocation} 
+                   disabled={!onRefreshLocation || isRefreshingLocation}
+                   title="Refresh Last Known Location"
+                   className="bg-card hover:bg-muted"
+               >
+                  {isRefreshingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+               </Button>
+              {/* Zoom to Last Location Button */}
+               <Button 
+                   variant="outline" 
+                   size="icon" 
+                   onClick={handleZoomToLastLocation} 
+                   disabled={!lastKnownPosition?.geometry?.coordinates}
+                   title="Zoom to Last Known Location"
+                   className="bg-card hover:bg-muted"
+               >
+                  <LocateFixed className="h-4 w-4" />
+               </Button>
+              {/* View Tracking/Simulation Button - Keep only if prop provided */}
+              {onViewTracking && (
+                  <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={onViewTracking} 
+                      title="View Live Tracking / Simulation"
+                      className="bg-card hover:bg-muted"
+                  >
+                     <ExternalLink className="h-4 w-4" />
+                  </Button>
+              )}
+           </div> 
         </Map>
       </MapProvider>
-
-      <div className="absolute top-2 right-2 flex flex-col space-y-1 z-10">
-        {onRefreshLocation && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onRefreshLocation}
-            disabled={isRefreshingLocation}
-            title="Refresh Last Known Location"
-            className="bg-card hover:bg-muted"
-          >
-            {isRefreshingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          </Button>
-        )}
-        {lastKnownPosition && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleZoomToLastLocation}
-            title="Zoom to Last Known Location"
-            className="bg-card hover:bg-muted"
-          >
-            <LocateFixed className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
     </div>
   );
 });
