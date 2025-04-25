@@ -316,7 +316,6 @@ export async function GET(
         },
         contacts: { primaryShipperContact: null, primaryConsigneeContact: null, primaryBillToContact: null, otherContacts: [] }, // Placeholder
         financials: { totalCharges: 0, currency: 'USD', invoiceNumber: '', paymentTerms: '', rateDetails: [], billingAddress: null, taxInformation: { taxId: '', taxAmount: 0 } }, // Placeholder
-        statusUpdates: [], // Placeholder
         shipper: null, // Placeholder - Needs data source
         recipient: null, // Placeholder - Needs data source (maybe from dropoffData.contact?)
     };
