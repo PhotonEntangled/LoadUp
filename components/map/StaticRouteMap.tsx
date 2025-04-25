@@ -292,10 +292,10 @@ export const StaticRouteMap = React.memo(({
               // --- REPLACE LKL MARKER with structure from SimulationMap --- 
               return (
                 <Marker longitude={lon} latitude={lat} anchor="center">
-                  {/* Sizing and ROTATION div - Match SimulationMap size */}
+                  {/* Sizing and ROTATION div - Match OBSERVED SimulationMap size */}
                   <div style={{
-                      width: '32px',  // Match SimulationMap size
-                      height: '32px', // Match SimulationMap size
+                      width: '40px',  // Match OBSERVED SimulationMap size
+                      height: '40px', // Match OBSERVED SimulationMap size
                       transform: 'rotate(-90deg)', // Apply rotation
                       transformOrigin: 'center center', // Ensure rotation is centered
                       transition: 'none' 
