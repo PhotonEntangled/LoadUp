@@ -350,7 +350,7 @@ export async function PATCH(
   try {
     const { id } = params;
     const body = await request.json();
-
+    
     // Mock implementation - CLEANED UP MOCK DATA
     const mockUpdatedShipment = {
       id,

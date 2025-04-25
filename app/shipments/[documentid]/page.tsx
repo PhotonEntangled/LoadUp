@@ -523,8 +523,8 @@ export default function Page({ params }: { params: { documentid: string } }) {
                         <>
                     {/* Map Preview Section */}
                     <div className="bg-card p-4 rounded-lg shadow w-full">
-                        {/* Map Container */}
-                        <div className="mt-4 w-full rounded-lg overflow-hidden"> {/* Removed fixed height */}
+                        {/* Map Container - ADD HEIGHT HERE */}
+                        <div className="mt-4 w-full rounded-lg overflow-hidden h-[400px]"> {/* Added h-[400px] */}
                                     {(() => {
                                         const originCoords = getCoordinates(selectedShipment.originAddress);
                                         const destCoords = getCoordinates(selectedShipment.destinationAddress);
