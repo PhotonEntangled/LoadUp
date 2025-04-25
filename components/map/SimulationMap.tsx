@@ -395,15 +395,28 @@ export const SimulationMap = React.memo(forwardRef<SimulationMapRef, SimulationM
 
         {/* Render Vehicle Markers */}
         {isMapLoaded && vehicleList.map((vehicle) => {
+            // --- BEGIN ADDED LOGGING ---
+            logger.debug(`[MapMarker Render] Processing vehicle: ${vehicle.id}, Status: ${vehicle.status}`);
+            // --- END ADDED LOGGING ---
             if (!vehicle.currentPosition) {
-                logger.warn(`Vehicle ${vehicle.id} has no currentPosition, skipping marker render.`);
+                logger.warn(`[MapMarker Render] Vehicle ${vehicle.id} has no currentPosition, skipping marker render.`);
                 return null;
             }
             const [longitude, latitude] = vehicle.currentPosition.geometry.coordinates;
+            // --- BEGIN ADDED LOGGING ---
+            if (longitude === undefined || latitude === undefined || !isFinite(longitude) || !isFinite(latitude)) {
+                logger.warn(`[MapMarker Render] Invalid coordinates for vehicle ${vehicle.id}: Lon=${longitude}, Lat=${latitude}. Skipping marker.`);
+                return null;
+            }
+            logger.debug(`[MapMarker Render] Rendering marker for ${vehicle.id} at Lon=${longitude}, Lat=${latitude}, Bearing=${vehicle.bearing}`);
+            // --- END ADDED LOGGING ---
             const isSelected = vehicle.id === selectedVehicleId;
             const statusColor = getStatusColor(vehicle.status); // Get status color
 
             return (
+                // --- BEGIN ADDED LOGGING ---
+                // Note: Cannot easily log *inside* JSX return block itself, logging just before is sufficient.
+                // --- END ADDED LOGGING ---
                 <Marker
                     key={vehicle.id}
                     longitude={longitude}

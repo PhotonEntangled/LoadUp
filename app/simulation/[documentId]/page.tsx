@@ -81,19 +81,21 @@ export default function SimulationDocumentPage() {
 
   // <<< RE-ADDED & MODIFIED: useEffect hook for auto-starting LOCAL simulation animation >>>
   useEffect(() => {
-    // Only run if we have a selected vehicle, it's 'En Route', and the LOCAL simulation isn't already running.
-    if (selectedVehicle && selectedVehicle.status === 'En Route' && !isSimulationRunning) {
-      logger.info(`[SimulationDocumentPage Auto-Start] Conditions met for vehicle ${selectedVehicleId}. Starting LOCAL simulation loop.`);
+    // Auto-start LOCAL animation only when selection changes to an 'En Route' vehicle
+    // or when the selected vehicle's status CHANGES to 'En Route'.
+    // Relies on startGlobalSimulation action having its own check to prevent duplicates.
+    if (selectedVehicle && selectedVehicle.status === 'En Route') {
+      logger.info(`[SimulationDocumentPage Auto-Start Effect] Conditions met for vehicle ${selectedVehicleId} (Status: En Route). Attempting to start LOCAL simulation loop.`);
       // Check if the action function exists before calling
       if (typeof startGlobalSimulation === 'function') {
-          startGlobalSimulation(); // Calls the LOCAL store action to start setInterval
+          startGlobalSimulation(); // Calls the LOCAL store action to start setInterval (idempotent check inside)
       } else {
-           logger.error('[SimulationDocumentPage Auto-Start] startGlobalSimulation action is not available on the store!');
+           logger.error('[SimulationDocumentPage Auto-Start Effect] startGlobalSimulation action is not available on the store!');
       }
-    }
-    // Intentionally NOT depending on startGlobalSimulation action itself if it's stable
-    // Dependencies ensure this runs when selection, status, or running state change.
-  }, [selectedVehicleId, selectedVehicle?.status, isSimulationRunning]); 
+    } 
+    // Removed isSimulationRunning dependency to prevent restarting immediately after stop.
+    // Effect now triggers primarily on selection/status change.
+  }, [selectedVehicleId, selectedVehicle?.status]); 
 
   // Effect for fetching the initial shipment list AND SETTING INITIAL SELECTION
   useEffect(() => {

@@ -362,38 +362,18 @@ export const createSimulationStore = () => {
            const vehicleIdToStop = selectedVehicleId; // Capture ID for async context
            logger.info(`[Store] Triggering backend stopSimulation Server Action for shipment ID: ${vehicleIdToStop}`);
            stopSimulationServerAction(vehicleIdToStop)
-             .then(result => {
-                 // <<< ADDED: Log the entire result from server action >>>
-                 logger.debug(`[Store] Received result from stopSimulationServerAction for ${vehicleIdToStop}:`, result);
-                 // <<< END ADDED >>>
-
-                 if (result.success) {
-                     logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}. Message: ${result.message}`);
-                     // --- ADDED: Update local store state based on backend result --- 
-                     if (result.updatedState?.status) {
-                         logger.info(`[Store] Updating local vehicle ${vehicleIdToStop} status to '${result.updatedState.status}' based on backend response.`);
-                         // Check if updateVehicleState action exists before calling
-                         if (typeof updateVehicleState === 'function') {
-                              updateVehicleState(vehicleIdToStop, { 
-                                  status: result.updatedState.status, 
-                                  // Optionally update lastUpdateTime if provided by backend
-                                  ...(result.updatedState.lastUpdateTime && { lastUpdateTime: result.updatedState.lastUpdateTime })
-                              });
-                         } else {
-                              logger.error('[Store] updateVehicleState action is not available on the store!');
-                         }
-                     } else {
-                          logger.warn(`[Store] Backend stopSimulation response for ${vehicleIdToStop} did not include an updated status to apply locally.`);
-                     }
-                     // --- END ADDED --- 
-                 } else {
-                     logger.error(`[Store] Backend stopSimulation failed for ${vehicleIdToStop}: ${result.error}`);
-                     // get().setError(`Failed to fully stop simulation on backend: ${result.error}`);
-                 }
+             .then((result) => {
+               if (result?.success) {
+                 logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}. Message: ${result.message}`);
+               } else {
+                 // Handle potential error from server action
+                 logger.error(`[Store] Backend stopSimulation failed for ${vehicleIdToStop}.`, { error: result?.error });
+                 set({ error: `Backend stop failed: ${result?.error || 'Unknown error'}` });
+               }
              })
-             .catch(error => {
-                 logger.error(`[Store] CRITICAL error calling stopSimulation Server Action for ${vehicleIdToStop}:`, error);
-                 // get().setError(`Error communicating with backend to stop simulation: ${error.message}`);
+             .catch((error) => {
+               logger.error(`[Store] CRITICAL error calling stopSimulation Server Action for ${vehicleIdToStop}:`, error);
+               set({ error: `Error communicating with backend to stop simulation: ${error.message}` });
              });
       } else {
           logger.warn('[Store] Cannot trigger backend stopSimulation: No vehicle is selected.');

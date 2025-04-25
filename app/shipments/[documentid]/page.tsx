@@ -70,13 +70,17 @@ export default function Page({ params }: { params: { documentid: string } }) {
 
     // Helper to convert lat/lon/timestamp to GeoJSON Point Feature
     const createPositionFeature = useCallback((lat: number | null, lon: number | null, timestamp: string | null): Feature<Point> | null => {
+        logger.debug(`[createPositionFeature] Input - Lat: ${lat}, Lon: ${lon}, Timestamp: ${timestamp}`);
         if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
-            return {
+            const feature: Feature<Point> = {
                 type: 'Feature',
                 geometry: { type: 'Point', coordinates: [lon, lat] },
                 properties: { timestamp: timestamp },
             };
+            logger.debug('[createPositionFeature] Created feature:', feature);
+            return feature;
         }
+        logger.debug('[createPositionFeature] Returning null (invalid lat/lon).');
         return null;
     }, []); // Wrap in useCallback with empty dependency array
 
@@ -150,6 +154,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                     }
                 } else {
                      const data: ApiShipmentDetail[] = await res.json();
+                     logger.debug('[fetchShipments] Raw data received from API:', data);
     
                      if (!Array.isArray(data)) {
                           throw new Error(`API did not return an array. Received: ${JSON.stringify(data)}`);
@@ -163,6 +168,12 @@ export default function Page({ params }: { params: { documentid: string } }) {
                          setSelectedShipment(initialSelected);
 
                          // --- PROCESS INITIAL LAST KNOWN LOCATION ---
+                         logger.debug('[fetchShipments] Processing initial LKL for:', {
+                             id: initialSelected?.coreInfo?.id,
+                             lat: initialSelected?.coreInfo?.lastKnownLatitude,
+                             lon: initialSelected?.coreInfo?.lastKnownLongitude,
+                             ts: initialSelected?.coreInfo?.lastKnownTimestamp
+                         });
                          const initialPosition = createPositionFeature(
                              initialSelected.coreInfo.lastKnownLatitude,
                              initialSelected.coreInfo.lastKnownLongitude,
@@ -229,6 +240,12 @@ export default function Page({ params }: { params: { documentid: string } }) {
 
         // --- PROCESS LAST KNOWN LOCATION ON SELECTION CHANGE ---
         if (selectedShipment) {
+            logger.debug('[Selection Effect] Processing LKL for selected:', {
+                id: selectedShipment?.coreInfo?.id,
+                lat: selectedShipment?.coreInfo?.lastKnownLatitude,
+                lon: selectedShipment?.coreInfo?.lastKnownLongitude,
+                ts: selectedShipment?.coreInfo?.lastKnownTimestamp
+            });
             const newPosition = createPositionFeature(
                 selectedShipment.coreInfo.lastKnownLatitude,
                 selectedShipment.coreInfo.lastKnownLongitude,
@@ -529,8 +546,11 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                                     originCoordinates={originCoords}
                                                     destinationCoordinates={destCoords}
                                                     routeGeometry={currentRouteGeometry}
-                                                    lastKnownPosition={currentLastPosition}
-                                                          className="w-full h-full rounded" // Make map fill the container
+                                                    lastKnownPosition={(() => { 
+                                                        logger.debug('[Render] Passing lastKnownPosition to StaticRouteMap:', currentLastPosition);
+                                                        return currentLastPosition; 
+                                                    })()}
+                                                    className="w-full h-full rounded" // Make map fill the container
                                                       />
                                                       {/* --- MOVED: Map Overlay Buttons Container --- */} 
                                                      <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10"> {/* Changed right-2 to left-2 */} 
