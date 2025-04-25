@@ -282,18 +282,18 @@ export const StaticRouteMap = React.memo(({
               return (
                 <Marker longitude={lon} latitude={lat} anchor="center">
                   {/* Remove outer rotation div from SimulationMap */}
-                  {/* Sizing div - Adapt size if needed, remove filter */}
+                  {/* Sizing div - Increase size and remove filter */}
                   <div style={{
-                      width: '32px', 
-                      height: '32px',
+                      width: '48px',  // Increased size
+                      height: '48px', // Increased size
                       // filter: 'none', // Explicitly no filter
                       transition: 'none' // No transition needed
                    }}>
                     {/* Use the exact SVG structure from icons8-truck-top-view-48.svg / SimulationMap */}
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
-                      {/* Main body - Use a fixed color (e.g., blue) instead of dynamic statusColor */}
+                      {/* Main body - Use fixed GREY color to improve detail visibility */}
                       {/* Path data extracted from the provided SVG */}
-                      <path d="M0 0 C0.66 0 1.32 0 2 0 C2 0.99 2 1.98 2 3 C2.94875 2.938125 3.8975 2.87625 4.875 2.8125 C5.90625 2.874375 6.9375 2.93625 8 3 C10.84799817 7.27199725 10.33018316 10.97798285 10.3125 16 C10.32861328 16.91523438 10.34472656 17.83046875 10.36132812 18.7734375 C10.36197266 19.65257813 10.36261719 20.53171875 10.36328125 21.4375 C10.36626221 22.24058594 10.36924316 23.04367188 10.37231445 23.87109375 C9.90941468 26.51796982 9.13462297 27.40861466 7 29 C4.3125 29.1875 4.3125 29.1875 2 29 C2 29.99 2 30.98 2 32 C1.34 32 0.68 32 0 32 C0 31.01 0 30.02 0 29 C-2.97 29 -5.94 29 -9 29 C-9 20.42 -9 11.84 -9 3 C-6.03 3 -3.06 3 0 3 C0 2.01 0 1.02 0 0 Z " fill="#3B82F6" transform="translate(38,9)"/> {/* Blue-500 */} 
+                      <path d="M0 0 C0.66 0 1.32 0 2 0 C2 0.99 2 1.98 2 3 C2.94875 2.938125 3.8975 2.87625 4.875 2.8125 C5.90625 2.874375 6.9375 2.93625 8 3 C10.84799817 7.27199725 10.33018316 10.97798285 10.3125 16 C10.32861328 16.91523438 10.34472656 17.83046875 10.36132812 18.7734375 C10.36197266 19.65257813 10.36261719 20.53171875 10.36328125 21.4375 C10.36626221 22.24058594 10.36924316 23.04367188 10.37231445 23.87109375 C9.90941468 26.51796982 9.13462297 27.40861466 7 29 C4.3125 29.1875 4.3125 29.1875 2 29 C2 29.99 2 30.98 2 32 C1.34 32 0.68 32 0 32 C0 31.01 0 30.02 0 29 C-2.97 29 -5.94 29 -9 29 C-9 20.42 -9 11.84 -9 3 C-6.03 3 -3.06 3 0 3 C0 2.01 0 1.02 0 0 Z " fill="#9CA3AF" transform="translate(38,9)"/> {/* Gray-400 */} 
                       {/* Other parts (windshield, wheels) - keep original fills */}
                       <path d="M0 0 C2.875 -0.1875 2.875 -0.1875 6 0 C6.66 0.99 7.32 1.98 8 3 C5.36 3 2.72 3 0 3 C0 2.01 0 1.02 0 0 Z " fill="#6CAEEB" transform="translate(40,16)"/>
                       <path d="M0 0 C2.64 0 5.28 0 8 0 C7.01 1.485 7.01 1.485 6 3 C2.875 3.1875 2.875 3.1875 0 3 C0 2.01 0 1.02 0 0 Z " fill="#69B1EF" transform="translate(31,33)"/>
