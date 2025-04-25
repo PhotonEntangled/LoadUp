@@ -155,6 +155,17 @@ export async function GET(
             status: coreShipment.status,
             loadNumber: customDetails?.sovyJobNo ?? null,
             poNumber: destinationInfo?.dropoffs?.customerPoNumbers ?? null,
+            orderNumber: null, // Placeholder
+            totalWeight: null, // Placeholder
+            totalWeightUnit: null, // Placeholder
+            totalVolume: null, // Placeholder
+            totalVolumeUnit: null, // Placeholder
+            totalItems: null, // Placeholder
+            promisedShipDate: null, // Placeholder - Needs data source
+            actualPickupArrival: null, // Placeholder - Needs data source (from pickups?)
+            actualPickupDeparture: null, // Placeholder - Needs data source (from pickups?)
+            actualDeliveryArrival: null, // Placeholder - Needs data source (from dropoffs?)
+            actualDeliveryDeparture: null, // Placeholder - Needs data source (from dropoffs?)
             plannedDeliveryDate: toISOStringOrNull(destinationInfo?.dropoffs?.dropoff_date) ?? toISOStringOrNull(coreShipment.shipmentDateCreated) ?? new Date(0).toISOString(),
             lastKnownLatitude: toFloatOrNull(coreShipment.lastKnownLatitude),
             lastKnownLongitude: toFloatOrNull(coreShipment.lastKnownLongitude),
@@ -192,11 +203,14 @@ export async function GET(
             resolutionConfidence: toFloatOrNull(destinationInfo.addresses.resolutionConfidence),
             resolvedTimestamp: null // Assuming this is not available directly or needs separate logic
         } : null,
+        /* REMOVED old pickupDetails mapping
         pickupDetails: {
             actualPickupTime: toISOStringOrNull(originInfo?.pickups?.actualDateTimeOfArrival),
             pickupInstructions: null, 
             scheduledPickupTime: toISOStringOrNull(originInfo?.pickups?.pickup_date),
         },
+        */
+        /* REMOVED old dropoffDetails mapping
         dropoffDetails: {
             actualDeliveryTime: toISOStringOrNull(destinationInfo?.dropoffs?.actualDateTimeOfArrival),
             deliveryInstructions: null, 
@@ -204,17 +218,33 @@ export async function GET(
             recipientContactPhone: destinationInfo?.dropoffs?.recipientContactPhone ?? null,
             scheduledDeliveryTime: toISOStringOrNull(destinationInfo?.dropoffs?.dropoff_date),
         },
+        */
         customDetails: customDetails ? {
-            
+            // TODO: Map relevant fields from customDetails to ApiCustomDetails if needed
         } : null,
-        tripInfo: tripDetails ? {
+        tripAndCarrier: tripDetails ? {
+            carrierName: null,
             driverName: tripDetails.driverName ?? null,
-            driverPhone: tripDetails.driverPhone ?? null,
-            truckPlate: tripDetails.truckPlate ?? null,
+            driverCell: tripDetails.driverPhone ?? null,
             driverIc: tripDetails.driverIcNumber ?? null,
-        } : null,
-        items: [], 
-        history: [],
+            truckId: tripDetails.truckPlate ?? null,
+            trailerId: null,
+            modeOfTransport: null,
+            estimatedTravelTimeHours: null,
+            actualDistanceKm: null,
+        } : {
+            carrierName: null,
+            driverName: null,
+            driverCell: null,
+            driverIc: null,
+            truckId: null,
+            trailerId: null,
+            modeOfTransport: null,
+            estimatedTravelTimeHours: null,
+            actualDistanceKm: null,
+        },
+        items: [],
+        statusUpdates: [], // Placeholder
         metadata: {
              createdAt: toISOStringOrNull(coreShipment.shipmentDateCreated) ?? new Date(0).toISOString(), // Use fallback if null
              updatedAt: toISOStringOrNull(coreShipment.shipmentDateModified) ?? new Date(0).toISOString(), // Use fallback if null
@@ -222,11 +252,73 @@ export async function GET(
              dataSource: null, // Placeholder - needs data source
              remarks: customDetails?.remarks ?? null, // Example mapping from customDetails
         },
-        locationDetails: { pickups: [], dropoffs: [] }, // Placeholder
+        // --- CORRECTED locationDetails Mapping ---
+        locationDetails: {
+            pickups: pickupData.map(p => ({
+                locationType: 'Pickup',
+                sequence: p.pickups.pickup_position ?? 0,
+                locationName: p.addresses?.rawInput ?? 'Pickup Location',
+                address: p.addresses ? {
+                    id: p.addresses.id,
+                    fullAddress: p.addresses.rawInput ?? null,
+                    street: p.addresses.street1 ?? null,
+                    city: p.addresses.city ?? null,
+                    stateProvince: p.addresses.state ?? null,
+                    postalCode: p.addresses.postalCode ?? null,
+                    latitude: toFloatOrNull(p.addresses.latitude),
+                    longitude: toFloatOrNull(p.addresses.longitude),
+                    rawInput: p.addresses.rawInput ?? null,
+                    name: p.addresses.rawInput ?? 'Pickup Address',
+                    country: p.addresses.country ?? null,
+                    resolutionMethod: isValidResolutionMethod(p.addresses.resolutionMethod) ? p.addresses.resolutionMethod : null,
+                    resolutionConfidence: toFloatOrNull(p.addresses.resolutionConfidence),
+                    resolvedTimestamp: null,
+                } : null,
+                contact: null, // Placeholder
+                scheduledDateTimeUTC: toISOStringOrNull(p.pickups.pickup_date),
+                actualDateTimeUTC: toISOStringOrNull(p.pickups.actualDateTimeOfArrival),
+                notes: '', // Changed from null to empty string to satisfy type
+                resolutionStatus: 'Pending', // Placeholder
+                driverInstructions: '', // Changed from null to empty string to satisfy type
+            })),
+            dropoffs: dropoffData.map(d => ({
+                locationType: 'Dropoff',
+                sequence: d.dropoffs.dropoff_position ?? 0,
+                locationName: d.addresses?.rawInput ?? 'Dropoff Location',
+                address: d.addresses ? {
+                    id: d.addresses.id,
+                    fullAddress: d.addresses.rawInput ?? null,
+                    street: d.addresses.street1 ?? null,
+                    city: d.addresses.city ?? null,
+                    stateProvince: d.addresses.state ?? null,
+                    postalCode: d.addresses.postalCode ?? null,
+                    latitude: toFloatOrNull(d.addresses.latitude),
+                    longitude: toFloatOrNull(d.addresses.longitude),
+                    rawInput: d.addresses.rawInput ?? null,
+                    name: d.addresses.rawInput ?? 'Dropoff Address',
+                    country: d.addresses.country ?? null,
+                    resolutionMethod: isValidResolutionMethod(d.addresses.resolutionMethod) ? d.addresses.resolutionMethod : null,
+                    resolutionConfidence: toFloatOrNull(d.addresses.resolutionConfidence),
+                    resolvedTimestamp: null,
+                } : null,
+                contact: {
+                     // Map from dropoffs table if fields exist
+                     contactName: d.dropoffs.recipientContactName ?? null,
+                     contactNumber: d.dropoffs.recipientContactPhone ?? null,
+                     contactEmail: null, // Placeholder
+                 }, 
+                scheduledDateTimeUTC: toISOStringOrNull(d.dropoffs.dropoff_date),
+                actualDateTimeUTC: toISOStringOrNull(d.dropoffs.actualDateTimeOfArrival),
+                notes: '', // Changed from null to empty string to satisfy type
+                resolutionStatus: 'Pending', // Placeholder
+                driverInstructions: '', // Changed from null to empty string to satisfy type
+            })),
+        },
         contacts: { primaryShipperContact: null, primaryConsigneeContact: null, primaryBillToContact: null, otherContacts: [] }, // Placeholder
         financials: { totalCharges: 0, currency: 'USD', invoiceNumber: '', paymentTerms: '', rateDetails: [], billingAddress: null, taxInformation: { taxId: '', taxAmount: 0 } }, // Placeholder
-        tripAndCarrier: { carrierName: null, driverName: null, driverCell: null, driverIc: null, truckId: null, trailerId: null, modeOfTransport: null, estimatedTravelTimeHours: null, actualDistanceKm: null }, // Placeholder
-        statusUpdates: [] // Placeholder
+        statusUpdates: [], // Placeholder
+        shipper: null, // Placeholder - Needs data source
+        recipient: null, // Placeholder - Needs data source (maybe from dropoffData.contact?)
     };
 
     if (!apiShipmentDetail) { // Should not happen with inline mapping unless core fails
@@ -259,8 +351,8 @@ export async function PATCH(
   try {
     const { id } = params;
     const body = await request.json();
-    
-    // Mock implementation
+
+    // Mock implementation - CLEANED UP MOCK DATA
     const mockUpdatedShipment = {
       id,
       trackingNumber: `TRK-${id}`,
@@ -270,14 +362,14 @@ export async function PATCH(
         city: "Origin City",
         state: "CA",
         zipCode: "90001",
-        country: "USA"
+        country: "USA",
       },
       destination: body.destination || {
         address: "456 Delivery Ave",
         city: "Destination City",
         state: "NY",
         zipCode: "10001",
-        country: "USA"
+        country: "USA",
       },
       customer: {
         id: "cust1",
@@ -289,12 +381,10 @@ export async function PATCH(
         id: body.driverId,
         name: "New Driver",
         phone: "555-9876",
-        vehicle: "Van XL"
       } : {
         id: "driver1",
         name: "John Driver",
         phone: "555-5678",
-        vehicle: "Truck XL"
       },
       items: [
         {
