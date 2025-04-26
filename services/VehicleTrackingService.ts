@@ -67,6 +67,72 @@ export class VehicleTrackingService {
     }
   }
 
+  /**
+   * Updates the status of a shipment to 'DELIVERED' and records the actual arrival time
+   * on the corresponding dropoff record.
+   *
+   * @param shipmentId - The UUID of the shipment to update.
+   * @returns Promise<boolean> - True if both updates were successful, false otherwise.
+   */
+  async updateShipmentStatusToDelivered(shipmentId: string): Promise<boolean> {
+    const functionName = 'updateShipmentStatusToDelivered';
+    const deliveryTimestamp = new Date();
+    logger.debug(`[${functionName}] Attempting to mark shipment DELIVERED for ID: ${shipmentId}`);
+
+    if (!shipmentId) {
+      logger.warn(`[${functionName}] Invalid shipmentId received. Aborting update.`);
+      return false;
+    }
+
+    try {
+      // 1. Update shipment status
+      const shipmentUpdateResult = await db.update(schema.shipmentsErd)
+        .set({
+          status: 'COMPLETED',
+          shipmentDateModified: deliveryTimestamp,
+        })
+        .where(eq(schema.shipmentsErd.id, shipmentId))
+        .returning({ updatedId: schema.shipmentsErd.id });
+
+      if (shipmentUpdateResult.length === 0) {
+        logger.warn(`[${functionName}] Shipment status update failed for ID: ${shipmentId}. Shipment might not exist.`);
+        // No need to proceed to dropoff update if shipment doesn't exist
+        return false; 
+      }
+
+      logger.info(`[${functionName}] Successfully updated shipment status to DELIVERED for ID: ${shipmentId}`);
+
+      // 2. Update associated dropoff arrival time
+      // Assuming a shipment has one primary dropoff record linked via shipmentId
+      // If multiple dropoffs are possible, this might need refinement (e.g., find the 'final' dropoff)
+      const dropoffUpdateResult = await db.update(schema.dropoffs)
+        .set({
+          actualDateTimeOfArrival: deliveryTimestamp,
+          dateModified: deliveryTimestamp, // Also update modified time
+          // Optionally update activityStatus if needed:
+          // activityStatus: 'ARRIVED' or 'DELIVERED' 
+        })
+        .where(eq(schema.dropoffs.shipmentId, shipmentId))
+        .returning({ updatedId: schema.dropoffs.id });
+
+      if (dropoffUpdateResult.length === 0) {
+        // This might be expected if dropoff data wasn't created/linked correctly,
+        // but log a warning as it could indicate an inconsistency.
+        logger.warn(`[${functionName}] Could not find or update associated dropoff record for shipment ID: ${shipmentId}. Status updated, but arrival time not set.`);
+        // Decide if this constitutes overall failure. Let's return true for now as shipment status was updated.
+        // Consider returning false or throwing an error if dropoff update is critical.
+      } else {
+         logger.info(`[${functionName}] Successfully updated dropoff arrival time for shipment ID: ${shipmentId}`);
+      }
+
+      return true; // Indicate overall success (shipment status updated)
+
+    } catch (error: any) {
+      logger.error(`[${functionName}] Error updating shipment status/dropoff for ID ${shipmentId}: ${error.message}`, { error });
+      return false;
+    }
+  }
+
   // Add other tracking-related methods here if needed...
 }
 

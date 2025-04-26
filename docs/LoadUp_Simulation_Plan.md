@@ -343,10 +343,19 @@ This confirms the necessity of the creation steps outlined in the subsequent pha
 - [ ] **Verification:** Vehicle only starts moving after explicit "Confirm Pickup & Start" action. Status updates correctly.
 
 ### 🛠️ 3.2: Implement "Confirm Delivery" Logic
-- [ ] **Store:** Modify `tickSimulation`: When destination reached, set status to `'Pending Delivery Confirmation'` instead of 'At Dropoff'.
-- [ ] **Store:** Create `confirmDelivery(vehicleId)` action (sets status to 'Completed' or 'At Dropoff', potentially stops simulation).
-- [ ] **UI (`SimulationControls`):** Add "Confirm Delivery" button, visible only when selected vehicle status is `'Pending Delivery Confirmation'`. Button calls `confirmDelivery`.
-- [ ] **Verification:** Vehicle stops at destination awaiting confirmation. Status updates correctly upon confirmation.
+- [X] **Store:** Modify `tickSimulation`: When destination reached, set status to `'Pending Delivery Confirmation'` instead of 'At Dropoff'.
+- [X] **Store:** Create `confirmDelivery(vehicleId)` action (sets status to 'Completed' or 'At Dropoff', potentially stops simulation). **(NOTE: Frontend state change implemented, backend DB update pending)** -> **NOW calls Server Action**
+- [X] **Task 3.2.1 (Backend DB Update):** Implement the backend logic triggered by the `confirmDelivery` action.
+    - [X] Create/Modify a Server Action (`confirmShipmentDelivery` in `actions/simulationActions.ts`).
+    - [X] This action calls a database service function (`updateShipmentStatusToDelivered` in `services/VehicleTrackingService.ts`).
+    - [X] The service function updates the corresponding shipment record (`shipments_erd` table): Set `status` to `'COMPLETED'`, Set `dropoffs.actualDateTimeOfArrival`.
+    - [X] Ensure the `confirmDelivery` action in the store calls this new Server Action.
+- [X] **UI (`SimulationControls`):** Add "Confirm Delivery" button, visible only when selected vehicle status is `'Pending Delivery Confirmation'`. Button calls `confirmDelivery`. **(UI Implemented, calls frontend action)**
+- [ ] **NEW Task 3.2.2 (Verification - CURRENT FOCUS):** Manually test the full "Confirm Delivery" flow originating from the `/simulation/[documentId]` page. Verify:
+    - [ ] Server Action `confirmShipmentDelivery` is called successfully.
+    - [ ] Database record for `shipments_erd` has `status` updated to `COMPLETED`.
+    - [ ] Database record for associated `dropoffs` has `actualDateTimeOfArrival` updated.
+    - [ ] (Expected) `/shipments/[documentid]` page status is *not* updated without refresh.
 
 ---
 
@@ -503,28 +512,70 @@ This confirms the necessity of the creation steps outlined in the subsequent pha
 
 **Goal:** Address minor UI/UX issues identified in the simulation prototype, perform code cleanup, and prepare for potential handoff or further feature development.
 
-- [ ] **Task 6.1 (Load Number Display):** Verify fix for `ShipmentCard` title fallback logic ensures correct display even if `loadNumber` is null in DB. **(Code updated, Needs Verification)**
-- [ ] **Task 6.2 (Address Tooltips):** Verify tooltip implementation on `ShipmentCard` works correctly for truncated addresses. **(Code updated, Needs Verification)**
+- [X] **Task 6.1 (Load Number Display):** Verify fix for `ShipmentCard` title fallback logic ensures correct display even if `loadNumber` is null in DB. **(Code updated, Needs Verification)** -> **VERIFIED COMPLETE**
+- [X] **Task 6.2 (Address Tooltips):** Verify tooltip implementation on `ShipmentCard` works correctly for truncated addresses. **(Code updated, Needs Verification)** -> **VERIFIED COMPLETE**
 - [X] **Task 6.3 (Column Widths):** Verify adjusted column widths (`minmax(350px, ...)`) on `/simulation/[documentId]` and `/shipments/[documentid]` prevent highlight clipping. **(Code updated, Needs Verification)** -> **VERIFIED COMPLETE**
-- [X] **NEW Task 6.4 (Accordion Trigger Sensitivity):** Prevent the `AccordionTrigger` click from re-selecting/re-loading the simulation if the item is already selected. The click should only toggle the accordion state in this case. -> **VERIFIED COMPLETE**
-- [X] **NEW Task 6.5 (Accordion UI Glitches):** 
+- [X] **Task 6.4 (Accordion Trigger Sensitivity):** Prevent the `AccordionTrigger` click from re-selecting/re-loading the simulation if the item is already selected. The click should only toggle the accordion state in this case. -> **VERIFIED COMPLETE**
+- [X] **Task 6.5 (Accordion UI Glitches):** 
     - [X] Fix duplicate loading spinners appearing on the `AccordionTrigger`.
     - [X] Fix duplicate dropdown arrows (one on trigger, one inside `ShipmentCard` content) by hiding the internal `ShipmentCard` arrow when rendered in the accordion. -> **VERIFIED COMPLETE**
-- [X] **NEW Task 6.6 (Initial Selection Highlight):** Ensure the shipment clicked on the `/shipments/[id]` page is automatically highlighted (selected) in the list when the `/simulation/[documentId]` page loads. (Implement via query parameter). -> **VERIFIED COMPLETE**
+- [X] **Task 6.6 (Initial Selection Highlight):** Ensure the shipment clicked on the `/shipments/[id]` page is automatically highlighted (selected) in the list when the `/simulation/[documentId]` page loads. (Implement via query parameter). -> **VERIFIED COMPLETE**
 - [ ] **Task 6.7 (Code Cleanup - Phase 4.8):** 
     - [ ] Review and refactor prototype code in map components, services, store, and page files for clarity, consistency, and removal of commented-out/unused code.
     - [ ] Ensure proper error handling and logging throughout the simulation flow.
     - [ ] Add necessary comments for complex sections.
 - [ ] **Task 6.8 (File Map Update):** Update/create `fileMap.json` (or similar documentation) to accurately reflect the key files involved in the simulation feature and their responsibilities.
-- [ ] **Task 5.6.7 (Revisit Entry Point):** Implement "Simulate" button on `/documents` page `DocumentCard` to link to `/simulation/[documentId]`.
+- [ ] **Task 5.6.7 (Revisit Entry Point):** Implement "Simulate" button on `/documents` page `DocumentCard` to link to `/simulation/[documentId]`. -> **VERIFIED COMPLETE**
 
 ---
 
-## 🌐 Phase 7 (Prev 6): Multi-Vehicle & Mock API (Deferred)
+## 🐞 Phase 7 (NEW): Debugging & Stabilization
+
+**Goal:** Investigate and resolve issues identified during testing related to simulation state persistence and static map accuracy.
+
+### 🛠️ 7.1: Investigate Simulation Restart Issue
+- [ ] **Task 7.1.1 (Analysis):** Examine `useEffect` hooks and data fetching logic in `app/simulation/[documentId]/page.tsx`. Determine why the simulation state might be reset on page navigation/re-mount.
+- [ ] **Task 7.1.2 (Fix):** Modify page load logic to check the Zustand store (`useSimulationStore`) *before* unconditionally calling `loadSimulationFromInput`. If a relevant simulation already exists in the store, avoid resetting it. Potentially just update `selectedVehicleId`.
+- [ ] **Task 7.1.3 (Verification):** Test navigation flows (e.g., Simulate -> Shipments Page -> Back to Simulate) to confirm the simulation state persists correctly.
+
+### 🛠️ 7.2: Investigate Static Map LKL Bug
+- [ ] **Task 7.2.1 (Logging):** Add detailed logging to trace the final position updates:
+    - `useSimulationStore.tickSimulation`: Log position just before status changes to `Pending Delivery Confirmation`.
+    - `/api/simulation/tick` worker: Log received payload and DB update attempt/result for LKL.
+    - `VehicleTrackingService.updateShipmentLastKnownLocation`: Log parameters and DB result.
+    - `StaticRouteMap` component / `app/shipments/[documentid]/page.tsx`: Log when LKL is fetched and the value received.
+- [ ] **Task 7.2.2 (Testing):** Test simulation completion at various speeds (normal and high) and observe logs and static map behavior.
+- [ ] **Task 7.2.3 (Analysis):** Analyze logs to identify timing issues or missed updates causing the stale LKL data. Is the final update persisted before the simulation stops sending ticks? Is the static map fetching LKL before the final update is available?
+- [ ] **Task 7.2.4 (Potential Fix 1):** Ensure the simulation sends one final LKL update *at the destination coordinates* upon reaching `routeDistance`.
+- [ ] **Task 7.2.5 (Potential Fix 2):** Modify `StaticRouteMap` or its parent page to hide the LKL marker if the fetched shipment status is `COMPLETED`.
+- [ ] **Task 7.2.6 (Potential Fix 3):** Consider adding a final explicit `updateShipmentLastKnownLocation` call within the `confirmShipmentDelivery` server action (or the service method it calls) to ensure the DB has the absolute final location upon completion.
+- [ ] **Task 7.2.7 (Verification):** Retest simulation completion and verify the LKL on the static map is either accurate (at destination) or correctly hidden for `COMPLETED` shipments.
 
 ---
 
-## 🔥 Phase 8 (Prev 7): Firebase Integration (Deferred)
+## ✨ Phase 8 (NEW - Was Phase 7): Enhance Snapshot Page Interactivity
+
+**Goal:** Add driver interaction emulation directly to the shipment snapshot page for better testing and workflow simulation.
+
+### 🛠️ 8.1: Add "Confirm Delivery" Button to Static Map Page
+- [ ] **Task 8.1.1 (UI):** Add a "Confirm Delivery" button within `app/shipments/[documentid]/page.tsx`, positioned logically near the `StaticRouteMap`.
+- [ ] **Task 8.1.2 (Visibility):** Make the button visible only when the *selected* shipment's fetched status is `AT_DROPOFF` or `PENDING_DELIVERY_CONFIRMATION`. (Requires checking the `selectedShipment` state).
+- [ ] **Task 8.1.3 (Client Logic):**
+    - Create an `onClick` handler for the button.
+    - Get the `shipmentId` from the `selectedShipment` state.
+    - Call the existing `confirmShipmentDelivery` Server Action.
+    - Add loading/disabled state to the button during the action call.
+- [ ] **Task 8.1.4 (Client State Update):**
+    - On successful Server Action response:
+        - Find and update the corresponding shipment object within the page's local state array (`filteredShipments` or equivalent) to set its status to `COMPLETED`.
+        - Trigger a re-render to update the `ShipmentCard`'s status badge.
+        - Optionally hide/update the LKL marker display logic in `StaticRouteMap` based on the new `COMPLETED` status.
+    - On error: Display an error message (e.g., toast).
+- [ ] **Task 8.1.5 (Verification):** Test clicking the button on the `/shipments` page. Verify the DB is updated, the button handles loading/errors, and the client-side status badge updates immediately without a page refresh.
+
+---
+
+## 🔥 Phase 9 (Prev 8): Firebase Integration (Deferred)
 
 **Goal:** Replace simulation with live data source for **single-shipment tracking**. **Deferring** significantly.
 
@@ -583,7 +634,7 @@ Task: Define Phase 3.1 Marker Styling & Popup Requirements for v0
     - [X] **Task 5.6.5 (Map & Controls Integration):** Place `<SimulationMap />` and `<SimulationControls />` in the right column as per layout (Map above, Controls below). Refactored controls for compactness.
     - [X] **Task 5.6.6 (Initiate Simulation):** Wire up selection (`onSelect` or `useEffect`): Find selected shipment data -> call `getSimulationInputForShipment` -> call `loadSimulationFromInput`.
     - [X] **Task 5.6.6a (Auto-Start):** Simulation auto-starts if loaded vehicle is 'En Route'.
-    - [X] **Task 5.6.7 (Entry Point):** Add "Simulate" button/link to `DocumentCard` on `/documents` page `DocumentCard` to link to `/simulation/[documentId]`.
+    - [X] **Task 5.6.7 (Entry Point):** Add "Simulate" button/link to `DocumentCard` on `/documents` page `DocumentCard` to link to `/simulation/[documentId]`. -> **VERIFIED COMPLETE**
 - [X] **NEW Task (Bug Fix - Store):** Fix SimulationFromShipmentService instantiation/usage in `loadSimulationFromInput`.
 - [X] **NEW Task (Bug Fix - Store):** Implement state cleanup in `loadSimulationFromInput` to remove previous simulation artifacts (markers, etc.) when loading a new one.
 - [ ] **Phase 6+ - Deferred:** Multi-vehicle, Live Data Integration, etc.
@@ -602,3 +653,8 @@ Task: Define Phase 3.1 Marker Styling & Popup Requirements for v0
 - [X] **NEW Task 5.7 (All-Status Mock) - COMPLETE:** Mock XLS created, parser adjusted, trigger added, verified end-to-end status handling.
 - [X] **NEW Phase 10 (Backend Simulation Arch) - Partially Completed / Pivoted:** KV Service, Tick Worker, Enqueuer API, Initiation Action, and Frontend Trigger implemented. Vercel Cron removed; **Requires external trigger setup.**
 - [ ] **Phase 6+ - Deferred:** Multi-vehicle, Live Data Integration, etc.
+- [X] **Phase 3.2.1 (Backend DB Update):** Completed backend logic for Confirm Delivery.
+- [ ] **NEW Task 3.2.2 (Verification):** Verify existing Confirm Delivery flow (DB update).
+- [ ] **Phase 7 (Debugging):** Investigate & Fix Simulation Restart and Static Map LKL bugs.
+- [ ] **Phase 8 (Snapshot Interactivity):** Add Confirm Delivery button to `/shipments` page.
+- [ ] **Phase 9+ (Live Data, etc.):** Deferred.

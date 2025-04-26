@@ -19,6 +19,7 @@ import { getSimulationFromShipmentServiceInstance } from '@/services/shipment/Si
 import { simulationCacheService } from '@/services/kv/simulationCacheService';
 import type { SimulatedVehicle, VehicleStatus } from '@/types/vehicles';
 import { revalidatePath } from "next/cache";
+import { VehicleTrackingService } from '@/services/VehicleTrackingService';
 
 // Helper to safely parse decimal string to float, returning undefined on error
 // Essential for coordinate and potentially other numeric fields from DB
@@ -272,7 +273,7 @@ export async function getSimulationInputForShipment(
  */
 export async function startSimulation(
     simulationInput: SimulationInput
-): Promise<{ success: boolean; message?: string; error?: string }> {
+): Promise<{ success: boolean; vehicleId?: string; error?: string }> {
     const { shipmentId } = simulationInput;
     const actionId = `startSim-${shipmentId.substring(0, 4)}`; // Short ID for logs
     logger.info(`[${actionId}] INVOKED`);
@@ -332,7 +333,7 @@ export async function startSimulation(
         // Assuming setActiveSimulation throws on failure now
         logger.info(`[${actionId}] Successfully registered simulation as active.`);
 
-        return { success: true, message: `Simulation initiated successfully for ${shipmentId}.` };
+        return { success: true, vehicleId: initialVehicleState.id };
 
     } catch (error) {
         // Catch errors from KV operations or vehicle creation
@@ -464,5 +465,44 @@ export async function stopSimulation(
             error: `Unexpected server error: ${error instanceof Error ? error.message : String(error)}`, 
         };
     }
+}
+
+/**
+ * Server action called when a user confirms delivery in the simulation UI.
+ * Updates the shipment status to COMPLETED and sets the arrival timestamp in the database.
+ * 
+ * @param shipmentId - The UUID of the shipment being confirmed as delivered.
+ * @returns Promise<{ success: boolean; error?: string }>
+ */
+export async function confirmShipmentDelivery(
+  shipmentId: string
+): Promise<{ success: boolean; error?: string }> {
+  const functionName = 'confirmShipmentDelivery(ServerAction)';
+  logger.info(`[${functionName}] Received confirmation for shipment ID: ${shipmentId}`);
+
+  if (!shipmentId) {
+    logger.warn(`[${functionName}] Invalid shipmentId provided.`);
+    return { success: false, error: 'Invalid Shipment ID' };
+  }
+
+  try {
+    // Instantiate the service
+    const trackingService = new VehicleTrackingService();
+
+    // Call the service method to update the database
+    const updateSuccess = await trackingService.updateShipmentStatusToDelivered(shipmentId);
+
+    if (!updateSuccess) {
+      logger.error(`[${functionName}] Database update failed for shipment ID: ${shipmentId}`);
+      return { success: false, error: 'Failed to update shipment status in database.' };
+    }
+
+    logger.info(`[${functionName}] Successfully processed delivery confirmation for shipment ID: ${shipmentId}`);
+    return { success: true };
+
+  } catch (error: any) {
+    logger.error(`[${functionName}] Unexpected error confirming delivery for shipment ID ${shipmentId}: ${error.message}`, { error });
+    return { success: false, error: 'An unexpected error occurred.' };
+  }
 }
 // --- END NEW SERVER ACTION --- 

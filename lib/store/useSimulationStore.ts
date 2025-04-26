@@ -6,6 +6,7 @@ import type { SimulationInput } from '@/types/simulation'; // <<< ADD: Import Si
 import { getSimulationFromShipmentServiceInstance } from '@/services/shipment/SimulationFromShipmentService'; // <<< FIX: Import the getter function, not the class directly
 import { updateShipmentLastPosition } from '@/lib/actions/shipmentUpdateActions'; // <<< ADDED: Import server action
 import { stopSimulation as stopSimulationServerAction } from "@/lib/actions/simulationActions"; // Import the server action
+import { confirmShipmentDelivery } from '@/lib/actions/simulationActions'; // Import the server action
 
 // Define the state structure for the simulation store
 export interface SimulationState {
@@ -25,6 +26,8 @@ export interface SimulationState {
   isFollowingVehicle: boolean; // <<< ADDED: Flag for follow mode
   isInitialized: boolean; // <<< ADDED: Flag to track client-side store readiness
   lastDbUpdateTime: Record<string, number>; // <<< ADDED: Track last DB update time per vehicle
+  loadingState: Record<string, boolean>; // <<< ADDED: Track loading state for actions
+  errorState: string | null; // <<< ADDED: Track error state for actions
 }
 
 // Define the actions available to modify the simulation state
@@ -53,7 +56,7 @@ export interface SimulationActions {
   /** Sets the selected vehicle status to 'En Route' */
   confirmPickup: (vehicleId: string) => void;
   /** Sets the vehicle status to Completed after delivery */
-  confirmDelivery: (vehicleId: string) => void;
+  confirmDelivery: (vehicleId: string) => Promise<void>;
   toggleFollowVehicle: () => void; // <<< ADDED: Action to toggle follow mode
   /** Loads simulation state from a prepared SimulationInput object */ 
   loadSimulationFromInput: (input: SimulationInput) => Promise<void>; // <<< FIX: Make async
@@ -78,6 +81,8 @@ export const initialSimulationState: SimulationState = {
   isFollowingVehicle: false, // <<< ADDED: Initialize follow mode to false
   isInitialized: false, // <<< ADDED: Initialize as false
   lastDbUpdateTime: {}, // <<< ADDED: Initialize DB update tracker
+  loadingState: {}, // <<< ADDED: Initialize loading state tracker
+  errorState: null, // <<< ADDED: Initialize error state to null
 };
 
 // Interval duration in milliseconds
@@ -156,31 +161,65 @@ export const createSimulationStore = () => {
       }
     },
 
-    confirmDelivery: (vehicleId) => {
-      const { vehicles } = get();
-      const vehicle = vehicles[vehicleId];
-      // Only confirm if pending
-      if (vehicle && vehicle.status === 'Pending Delivery Confirmation') { 
-        logger.info(`Confirming delivery for vehicle ${vehicleId}`);
-        set((state) => ({
+    confirmDelivery: async (vehicleId: string) => {
+      const vehicle = get().vehicles[vehicleId];
+      logger.info(`[Store] confirmDelivery action called for vehicle: ${vehicleId}`);
+
+      if (!vehicle || vehicle.status !== 'Pending Delivery Confirmation') {
+        logger.warn(`[Store] confirmDelivery: Vehicle not found or not in correct state: ${vehicleId}`, { status: vehicle?.status });
+        return;
+      }
+
+      const originalStatus = vehicle.status;
+
+      // Optimistic UI update
+      set((state: SimulationState) => ({
+        vehicles: {
+          ...state.vehicles,
+          [vehicleId]: { 
+            ...state.vehicles[vehicleId],
+            status: 'Completed',
+            lastUpdateTime: Date.now(),
+          },
+        },
+        loadingState: { ...state.loadingState, [`confirm_${vehicleId}`]: true },
+        errorState: null,
+      }));
+      logger.debug(`[Store] Optimistically updated vehicle ${vehicleId} status to Completed.`);
+
+      // Call Server Action
+      try {
+        const shipmentId = vehicle.shipmentId;
+        if (!shipmentId) {
+          throw new Error(`Cannot confirm delivery for vehicle ${vehicleId}: Missing shipmentId.`);
+        }
+
+        logger.info(`[Store] Calling confirmShipmentDelivery Server Action for shipment: ${shipmentId}`);
+        const result = await confirmShipmentDelivery(shipmentId);
+
+        if (!result.success) {
+          throw new Error(result.error || 'Server action failed to confirm delivery.');
+        }
+
+        logger.info(`[Store] Server Action confirmShipmentDelivery successful for shipment ${shipmentId}.`);
+        set((state: SimulationState) => ({
+          loadingState: { ...state.loadingState, [`confirm_${vehicleId}`]: false },
+        }));
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error(`[Store] Error during confirmShipmentDelivery for vehicle ${vehicleId}: ${errorMessage}`, error);
+        set((state: SimulationState) => ({
           vehicles: {
             ...state.vehicles,
-            [vehicleId]: {
+            [vehicleId]: { 
               ...state.vehicles[vehicleId],
-              status: 'Completed', // Final status
-              lastUpdateTime: Date.now(),
+              status: originalStatus,
             },
           },
+          errorState: `Failed to confirm delivery: ${errorMessage}`,
+          loadingState: { ...state.loadingState, [`confirm_${vehicleId}`]: false },
         }));
-        // Optional: Stop the global simulation if this was the only active vehicle
-        const remainingVehicles = Object.values(get().vehicles);
-        const stillEnRoute = remainingVehicles.some(v => v.status === 'En Route' || v.status === 'Pending Delivery Confirmation');
-        if (!stillEnRoute) {
-          logger.info(`No more active vehicles, stopping global simulation after delivery confirmation.`);
-          get().stopGlobalSimulation();
-        }
-      } else {
-        logger.warn(`confirmDelivery called for vehicle ${vehicleId} but status was not 'Pending Delivery Confirmation' or vehicle not found`, { currentStatus: vehicle?.status });
       }
     },
 
