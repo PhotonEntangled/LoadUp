@@ -105,22 +105,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         // 5. Persist last known location to primary database (shipments_erd)
         const trackingService = new VehicleTrackingService();
-        const latitude = nextState.currentPosition.geometry.coordinates[1];
-        const longitude = nextState.currentPosition.geometry.coordinates[0];
+        
+        logger.debug(`${LOG_PREFIX}(${shortId}) Proceeding to attempt database persistence...`);
+        
+        // Check if coordinates exist before accessing
+        if (!nextState.currentPosition?.geometry?.coordinates || nextState.currentPosition.geometry.coordinates.length < 2) {
+            logger.error(`${LOG_PREFIX}(${shortId}) Invalid coordinates in nextState for DB update. Skipping persistence.`, { position: nextState.currentPosition });
+            // Decide if this is an error state or just skip DB update
+        } else {
+            const latitude = nextState.currentPosition.geometry.coordinates[1];
+            const longitude = nextState.currentPosition.geometry.coordinates[0];
+            const timestamp = new Date(nextState.lastUpdateTime);
 
-        logger.debug(`[API /tick-worker] Attempting DB update for ${shipmentId}`, { latitude, longitude });
+            logger.debug(`${LOG_PREFIX}(${shortId}) Attempting DB update for ${shipmentId}`, { latitude, longitude, timestamp });
 
-        try {
-            await trackingService.updateShipmentLastKnownLocation({
-                shipmentId: shipmentId,
-                latitude: latitude,
-                longitude: longitude,
-                timestamp: new Date(nextState.lastUpdateTime)
-            });
-            logger.info(`[API /tick-worker] Successfully updated DB for ${shipmentId}`);
-        } catch (dbError) {
-            logger.error(`[API /tick-worker] Database update failed for ${shipmentId}`, { error: dbError });
-            // Decide if we should return an error or just log
+            try {
+                await trackingService.updateShipmentLastKnownLocation({
+                    shipmentId: shipmentId,
+                    latitude: latitude,
+                    longitude: longitude,
+                    timestamp: timestamp // Pass Date object
+                });
+                logger.info(`${LOG_PREFIX}(${shortId}) Successfully updated DB for ${shipmentId}`);
+            } catch (dbError) {
+                logger.error(`${LOG_PREFIX}(${shortId}) Database update failed for ${shipmentId}`, { error: dbError });
+                // Decide if we should return an error or just log
+            }
         }
 
         // 6. If the simulation just reached a terminal state, remove from active set

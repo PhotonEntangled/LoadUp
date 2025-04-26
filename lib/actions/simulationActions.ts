@@ -273,43 +273,48 @@ export async function getSimulationInputForShipment(
  */
 export async function startSimulation(
     simulationInput: SimulationInput
-): Promise<{ success: boolean; vehicleId?: string; error?: string }> {
+): Promise<{ data?: SimulatedVehicle; error?: string; vehicleId?: string }> {
     const { shipmentId } = simulationInput;
     const actionId = `startSim-${shipmentId.substring(0, 4)}`; // Short ID for logs
     logger.info(`[${actionId}] INVOKED`);
 
     if (!shipmentId) {
         logger.error(`[${actionId}] Failed: simulationInput is missing shipmentId.`);
-        return { success: false, error: "Invalid input: Missing Shipment ID." };
+        return { error: "Invalid input: Missing Shipment ID." };
     }
 
     try {
-        // --- START: KV CLEANUP using simulationCacheService object ---
-        logger.info(`[${actionId}] Attempting KV cleanup before starting...`);
+        // --- FIX: Check for existing simulation state FIRST ---
+        let existingState: SimulatedVehicle | null = null;
+        try {
+            existingState = await simulationCacheService.getSimulationState(shipmentId);
+        } catch (kvError) {
+            logger.error(`[${actionId}] Error checking for existing state in KV:`, kvError);
+            // Proceed as if state doesn't exist, but log the error
+        }
 
-        // 1. Remove from active list 
-        logger.debug(`[${actionId}] Cleaning up active simulation list...`);
-        // Using await/catch as setActiveSimulation now throws on error
-        try {
-            await simulationCacheService.setActiveSimulation(shipmentId, false);
-            logger.info(`[${actionId}] Successfully removed/ensured removal from active list.`);
-        } catch (cleanupError) {
-            logger.warn(`[${actionId}] Non-critical error during active list cleanup: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`);
-            // Continue even if cleanup fails, as the main goal is to start
+        if (existingState) {
+            logger.info(`[${actionId}] Found existing simulation state in KV. Rejoining simulation.`);
+            // Ensure it's marked active (in case it was erroneously removed)
+            try {
+                await simulationCacheService.setActiveSimulation(shipmentId, true);
+                logger.info(`[${actionId}] Ensured simulation is marked active.`);
+            } catch (activationError) {
+                logger.warn(`[${actionId}] Error ensuring existing simulation was active:`, activationError);
+                // Still return existing state, but warn about potential activation issue
+            }
+            // Return the existing state data
+            return { data: existingState, vehicleId: existingState.id }; // Include vehicleId
         }
-        
-        // 2. Delete existing state key
-        logger.debug(`[${actionId}] Cleaning up existing state key...`);
-        try {
-            await simulationCacheService.deleteSimulationState(shipmentId);
-            logger.info(`[${actionId}] Successfully deleted/ensured deletion of existing state key.`);
-        } catch (cleanupError) {
-             logger.warn(`[${actionId}] Non-critical error during state key cleanup: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`);
-             // Continue even if cleanup fails
-        }
-        
-        logger.info(`[${actionId}] KV cleanup attempt completed.`);
-        // --- END: KV CLEANUP ---
+        // --- END FIX ---
+
+        // --- FIX: REMOVED UNCONDITIONAL CLEANUP FROM HERE ---
+        // logger.info(`[${actionId}] Attempting KV cleanup before starting...`);
+        // ... cleanup calls removed ...
+        // --- END FIX ---
+
+        // --- If no existing state, proceed to create NEW simulation --- 
+        logger.info(`[${actionId}] No existing state found. Creating new simulation...`);
 
         // 1. Create the initial SimulatedVehicle state
         const simService = getSimulationFromShipmentServiceInstance();
@@ -317,28 +322,26 @@ export async function startSimulation(
         
         if (!initialVehicleState) {
             logger.error(`[${actionId}] Failed: SimulationFromShipmentService returned null.`);
-            return { success: false, error: "Failed to create initial vehicle state." };
+            return { error: "Failed to create initial vehicle state." };
         }
         logger.debug(`[${actionId}] Initial vehicle state created. Vehicle ID: ${initialVehicleState.id}`);
         
         // 2. Save the initial state to KV cache using object method
         logger.debug(`[${actionId}] Attempting to save initial state to KV...`);
         await simulationCacheService.setSimulationState(shipmentId, initialVehicleState); 
-        // Assuming setSimulationState throws on failure now
         logger.info(`[${actionId}] Successfully saved initial state to KV.`);
 
         // 3. Add the shipmentId to the list of active simulations using object method
         logger.debug(`[${actionId}] Attempting to register simulation as active.`);
         await simulationCacheService.setActiveSimulation(shipmentId, true);
-        // Assuming setActiveSimulation throws on failure now
         logger.info(`[${actionId}] Successfully registered simulation as active.`);
 
-        return { success: true, vehicleId: initialVehicleState.id };
+        // Return the newly created initial state data
+        return { data: initialVehicleState, vehicleId: initialVehicleState.id }; // Include vehicleId
 
     } catch (error) {
-        // Catch errors from KV operations or vehicle creation
-        logger.error(`[${actionId}] CRITICAL ERROR during start process:`, error);
-        // Attempt cleanup again in case of partial success before failure
+        // ... existing error handling ...
+        // Ensure cleanup is attempted on error during creation
         try {
             await simulationCacheService.setActiveSimulation(shipmentId, false);
             await simulationCacheService.deleteSimulationState(shipmentId);
@@ -347,7 +350,7 @@ export async function startSimulation(
              logger.error(`[${actionId}] Error during cleanup after initial error:`, cleanupError);
         }
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while starting the simulation.";
-        return { success: false, error: errorMessage };
+        return { error: errorMessage };
     }
 }
 
