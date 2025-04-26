@@ -296,7 +296,7 @@ export async function startSimulation(
         if (existingState) {
             logger.info(`[${actionId}] Found existing simulation state in KV. Rejoining simulation.`);
             // Ensure it's marked active (in case it was erroneously removed)
-            try {
+        try {
                 await simulationCacheService.setActiveSimulation(shipmentId, true);
                 logger.info(`[${actionId}] Ensured simulation is marked active.`);
             } catch (activationError) {

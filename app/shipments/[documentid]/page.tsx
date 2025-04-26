@@ -104,12 +104,12 @@ export default function Page({ params }: { params: { documentid: string } }) {
             }
 
             const geometry: Feature<LineString>['geometry'] = await res.json();
-
+            
             // Reconstruct the Feature object
             const routeFeature: Feature<LineString> = {
                 type: "Feature",
                 properties: {},
-                geometry: geometry
+                geometry: geometry 
             };
 
             if (routeFeature.geometry?.type === 'LineString' && routeFeature.geometry.coordinates.length > 0) {
@@ -152,11 +152,11 @@ export default function Page({ params }: { params: { documentid: string } }) {
                 } else {
                      const data: ApiShipmentDetail[] = await res.json();
                      logger.debug('[fetchShipments] Raw data received from API:', data);
-
+    
                      if (!Array.isArray(data)) {
                           throw new Error(`API did not return an array. Received: ${JSON.stringify(data)}`);
                      }
-
+    
                      logger.debug(`Fetched ${data.length} shipments for document ${documentid}`);
                      setShipments(data);
                      setFilteredShipments(data);
@@ -210,14 +210,14 @@ export default function Page({ params }: { params: { documentid: string } }) {
 
         fetchShipments();
     }, [documentid, getCoordinates, fetchRouteGeometry, createPositionFeature]);
-
+    
     // Fetch Map Data When Selected Shipment Changes
      useEffect(() => {
         if (!selectedShipment) {
             setCurrentRouteGeometry(null);
             setCurrentLastPosition(null);
             setMapError(null);
-            return;
+            return; 
         }
 
         const originCoords = getCoordinates(selectedShipment.originAddress);
@@ -228,7 +228,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
         } else {
             logger.warn("Selected shipment missing valid coordinates for route fetching.");
             setCurrentRouteGeometry(null);
-            setCurrentLastPosition(null);
+            setCurrentLastPosition(null); 
             setMapError("Missing coordinates for route.");
         }
 
@@ -327,8 +327,8 @@ export default function Page({ params }: { params: { documentid: string } }) {
     const handleViewTracking = async (shipmentId: string, documentId: string) => {
         logger.info(`Shipment Page: View Tracking clicked for shipment ${shipmentId} in doc ${documentId}`);
         setIsSimLoading(true);
-        setError(null);
-
+        setError(null); 
+        
         try {
             // 1. Fetch the simulation input data using the server action
             const simulationInputResult = await getSimulationInputForShipment(shipmentId);
@@ -336,7 +336,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             if ('error' in simulationInputResult) {
                 throw new Error(`Failed to get simulation input: ${simulationInputResult.error}`);
             }
-
+            
             logger.info('[handleViewTracking] Received SimulationInput:', simulationInputResult);
 
             // 2. Call the startSimulation server action with the fetched input
@@ -377,7 +377,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             setError(`Failed to start tracking: ${errorMessage}`);
             toast({ title: "Error Starting Tracking", description: errorMessage, variant: "destructive" });
         } finally {
-            setIsSimLoading(false);
+            setIsSimLoading(false); 
         }
     };
 
@@ -395,7 +395,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
            </div>
         );
     }
-
+    
     const mapboxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN;
     if (!mapboxAccessToken) {
       logger.error('Shipment Page: NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN is not defined!');
@@ -409,11 +409,11 @@ export default function Page({ params }: { params: { documentid: string } }) {
     const originCoords = selectedShipment ? getCoordinates(selectedShipment.originAddress) : undefined;
     const destinationCoords = selectedShipment ? getCoordinates(selectedShipment.destinationAddress) : undefined;
 
-    const showTrackingButton = selectedShipment &&
-                             selectedShipment.coreInfo.status !== 'DELIVERED' &&
+    const showTrackingButton = selectedShipment && 
+                             selectedShipment.coreInfo.status !== 'DELIVERED' && 
                              selectedShipment.coreInfo.status !== 'CANCELLED' &&
                              selectedShipment.coreInfo.status !== 'AWAITING_STATUS';
-
+                             
     if (!loading && shipments.length === 0) {
          return (
             <div className="flex flex-col justify-center items-center h-screen text-muted-foreground p-4">
@@ -428,7 +428,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
         <div className="container mx-auto p-4 h-full">
             <div className="grid grid-cols-1 md:grid-cols-[minmax(340px,_1fr)_2fr] gap-4 h-full">
                 {/* Left Column: Shipment List */}
-                <div className="space-y-4 overflow-y-auto h-full pl-2 pr-2">
+                <div className="space-y-4 overflow-y-auto h-full pl-2 pr-2"> 
                     <div className="flex justify-between items-center mb-1 md:mb-2">
                         <div>
                             <h1 className="text-lg md:text-xl font-bold">Shipments</h1>
@@ -489,7 +489,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                 </div>
 
                 {/* Right Column: Map Preview & Details */}
-                <div className="space-y-4 overflow-y-auto h-full pl-2">
+                <div className="space-y-4 overflow-y-auto h-full pl-2"> 
                     {selectedShipment ? (
                         <>
                     {/* Map Preview Section */}
@@ -508,7 +508,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                             return <div className="aspect-video bg-destructive/10 text-destructive flex items-center justify-center rounded"><AlertCircle className="mr-2 h-5 w-5"/> Error loading map data.</div>;
                                         } else if (mapDataLoading) {
                                             return <div className="aspect-video bg-muted/50 flex items-center justify-center rounded animate-pulse">Loading Map...</div>;
-                                        } else if (originCoords && destCoords) {
+                                        } else if (originCoords && destCoords) { 
                                             return (
                                                  <div className="relative w-full h-full">
                                                 <StaticRouteMap
@@ -516,19 +516,19 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                                     originCoordinates={originCoords}
                                                     destinationCoordinates={destCoords}
                                                     routeGeometry={currentRouteGeometry}
-                                                    lastKnownPosition={(() => {
+                                                    lastKnownPosition={(() => { 
                                                         logger.debug('[Render] Passing lastKnownPosition to StaticRouteMap:', currentLastPosition);
-                                                        return currentLastPosition;
+                                                        return currentLastPosition; 
                                                     })()}
                                                           className="w-full h-full rounded"
                                                       />
                                                       {/* Map Overlay Buttons Container */}
                                                      <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10">
                                                          {/* Refresh Button */}
-                                                          <Button
-                                                              variant="outline"
-                                                              size="icon"
-                                                              onClick={handleRefreshLocation}
+                                                          <Button 
+                                                              variant="outline" 
+                                                              size="icon" 
+                                                              onClick={handleRefreshLocation} 
                                                               disabled={!selectedShipment || isRefreshingLocation}
                                                               title="Refresh Last Known Location"
                                                               className="bg-card hover:bg-muted"
@@ -536,10 +536,10 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                                              {isRefreshingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                                           </Button>
                                                           {/* Other potential overlay buttons */}
-                                                     </div>
+                                                     </div> 
                                                  </div>
                                             );
-                                        } else {
+                                        } else { 
                                             return (
                                                 <div className="aspect-video flex items-center justify-center h-full bg-muted border border-border rounded-lg">
                                                     <p className="text-muted-foreground text-sm text-center px-4">
@@ -554,8 +554,8 @@ export default function Page({ params }: { params: { documentid: string } }) {
 
                             {/* Prominent View Tracking Button */}
                         {showTrackingButton && (
-                            <div className="mt-4 flex justify-center">
-                                <Button
+                            <div className="mt-4 flex justify-center"> 
+                                <Button 
                                         onClick={() => {
                                             logger.debug('[ShipmentPage Button onClick] Triggered!');
                                             if (selectedShipment?.coreInfo?.id) {
@@ -564,7 +564,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                             } else {
                                                 logger.warn('[ShipmentPage Button onClick] Cannot call handleViewTracking: selectedShipment or ID missing.');
                                             }
-                                        }}
+                                        }} 
                                     variant="secondary"
                                     size="sm"
                                     disabled={isSimLoading}

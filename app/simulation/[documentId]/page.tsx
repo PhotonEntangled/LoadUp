@@ -206,7 +206,7 @@ export default function SimulationDocumentPage() {
   const handleSelectShipment = async (shipment: ApiShipmentDetail) => { 
     const idToSelect = shipment?.coreInfo?.id ?? null;
     
-    if (!idToSelect) {
+        if (!idToSelect) {
         logger.error("[handleSelectShipment] Clicked shipment has no ID.");
         toast({
           title: "Selection Error",
@@ -220,7 +220,7 @@ export default function SimulationDocumentPage() {
     // const currentStoreSelectedId = useStore(store, (state) => state.selectedVehicleId); 
     
     // Set local state regardless to update UI highlight
-    setSelectedShipmentId(idToSelect);
+    setSelectedShipmentId(idToSelect); 
 
     if (idToSelect === currentStoreSelectedId) {
         logger.info(`[handleSelectShipment] Shipment ${idToSelect} is already selected in the store. Skipping simulation reload.`);

@@ -113,23 +113,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             logger.error(`${LOG_PREFIX}(${shortId}) Invalid coordinates in nextState for DB update. Skipping persistence.`, { position: nextState.currentPosition });
             // Decide if this is an error state or just skip DB update
         } else {
-            const latitude = nextState.currentPosition.geometry.coordinates[1];
-            const longitude = nextState.currentPosition.geometry.coordinates[0];
+        const latitude = nextState.currentPosition.geometry.coordinates[1];
+        const longitude = nextState.currentPosition.geometry.coordinates[0];
             const timestamp = new Date(nextState.lastUpdateTime);
 
             logger.debug(`${LOG_PREFIX}(${shortId}) Attempting DB update for ${shipmentId}`, { latitude, longitude, timestamp });
 
-            try {
-                await trackingService.updateShipmentLastKnownLocation({
-                    shipmentId: shipmentId,
-                    latitude: latitude,
-                    longitude: longitude,
+        try {
+            await trackingService.updateShipmentLastKnownLocation({
+                shipmentId: shipmentId,
+                latitude: latitude,
+                longitude: longitude,
                     timestamp: timestamp // Pass Date object
-                });
+            });
                 logger.info(`${LOG_PREFIX}(${shortId}) Successfully updated DB for ${shipmentId}`);
-            } catch (dbError) {
+        } catch (dbError) {
                 logger.error(`${LOG_PREFIX}(${shortId}) Database update failed for ${shipmentId}`, { error: dbError });
-                // Decide if we should return an error or just log
+            // Decide if we should return an error or just log
             }
         }
 

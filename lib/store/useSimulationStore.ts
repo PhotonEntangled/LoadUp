@@ -513,7 +513,7 @@ export const createSimulationStore = () => {
         set(state => ({ 
             errorState: { ...(state.errorState || {}), [actionKey]: 'Received invalid vehicle data from server.' } // Ensure errorState is object
         }));
-        return;
+          return;
       }
       
       const vehicleId = vehicleData.id;
