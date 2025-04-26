@@ -1,54 +1,51 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation'; // Use hook for client components
+import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
+import { useParams, useSearchParams, useRouter } from 'next/navigation'; 
 import { logger } from '@/utils/logger';
-// Correct type import based on ShipmentCard.tsx
 import type { ApiShipmentDetail } from '@/types/api'; 
-
-// Attempt to import existing ShipmentCard - Adjust path if needed
-// Changed to default import based on linter error
-// import ShipmentCard from '@/components/shipments/ShipmentCard'; // Removed this comment
-// import { StatusBadge } from '@/components/shipments/StatusBadge'; // <<< ADD CORRECT IMPORT // Removed this comment
 import ShipmentCard from '@/components/shipments/ShipmentCard';
 import { StatusBadge } from '@/components/shipments/StatusBadge';
-
-// Placeholder for actual components - uncomment/adjust later
-// import { SimulationMap, SimulationMapRef } from '@/components/map/SimulationMap'; // Removed this comment
-// import { SimulationControls } from '@/components/simulation/SimulationControls'; // Removed this comment
 import { SimulationMap, SimulationMapRef } from '@/components/map/SimulationMap'; 
 import { SimulationControls } from '@/components/simulation/SimulationControls'; 
 
-// --- Store & Actions ---
+// --- Store, Context, Actions, Types ---
 import { useSimulationStoreContext } from '@/lib/store/useSimulationStoreContext'; 
-import { SimulationStoreApi } from '@/lib/store/useSimulationStore'; 
+import { SimulationStoreContext } from '@/lib/context/SimulationStoreContext';
+import type { SimulationStoreApi } from '@/lib/store/useSimulationStore';
 import { getSimulationInputForShipment, startSimulation } from '@/lib/actions/simulationActions';
-// ADDED AGAIN: Import the missing type
 import type { SimulatedVehicle } from '@/types/vehicles';
+import type { SimulationInput } from '@/types/simulation';
 
-// Import cn utility
+// --- UI & Utils ---
 import { cn } from "@/lib/utils";
-
-// Import Accordion component
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, TestTube, MapPin, Calendar, Download, Edit, FileText } from "lucide-react"; // Added icons needed for content
-import Link from 'next/link'; // Import Link
-import { formatDate } from "@/lib/formatters"; // Import formatter
+import { Loader2, TestTube, MapPin, Calendar, Download, Edit, FileText } from "lucide-react";
+import Link from 'next/link';
+import { formatDate } from "@/lib/formatters";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
-} from "@/components/ui/tooltip"; // Import tooltip
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu" // Import dropdown
+} from "@/components/ui/dropdown-menu";
+
+// --- ADD TYPE GUARD ---
+// Type guard to check if the result is the error shape
+type LoadResultError = { error: string };
+function isLoadError(result: LoadResultError | void): result is LoadResultError {
+  return result !== undefined && typeof result === 'object' && 'error' in result;
+}
+// --- END TYPE GUARD ---
 
 export default function SimulationDocumentPage() {
   const params = useParams();
@@ -70,7 +67,17 @@ export default function SimulationDocumentPage() {
   // ADDED: State for the backend start action
   const [isStartingBackendSim, setIsStartingBackendSim] = useState(false);
 
-  // Access store actions
+  // --- FIX: Get store API instance via context and type it explicitly ---
+  const storeApi = useContext(SimulationStoreContext);
+  // Type assertion might be needed if TypeScript can't infer it correctly, 
+  // but the check below should generally suffice. 
+  // const storeApi = useContext(SimulationStoreContext) as SimulationStoreApi | null;
+  if (!storeApi) {
+    throw new Error("SimulationStoreContext not found. Make sure SimulationStoreProvider wraps the layout.");
+  }
+  // --- END FIX ---
+
+  // Access store actions and state via the hook (selectors)
   const loadSimulationFromInput = useSimulationStoreContext((state: SimulationStoreApi) => state.loadSimulationFromInput);
   const isSimulationRunning = useSimulationStoreContext((state: SimulationStoreApi) => state.isSimulationRunning);
   const selectedVehicleId = useSimulationStoreContext((state: SimulationStoreApi) => state.selectedVehicleId);
@@ -198,54 +205,74 @@ export default function SimulationDocumentPage() {
   // Handler for selecting a shipment and initiating simulation load
   const handleSelectShipment = async (shipment: ApiShipmentDetail) => { 
     const idToSelect = shipment?.coreInfo?.id ?? null;
-    if (!idToSelect || isSimLoading || isSimulationRunning) { // Prevent selection if already loading/running
-        if (!idToSelect) {
-             logger.error("[SimulationDocumentPage] Cannot select shipment, missing coreInfo.id");
-             setSimError("Cannot select shipment: Missing ID."); // Use sim error state
-        }
+    
+    if (!idToSelect) {
+        logger.error("[handleSelectShipment] Clicked shipment has no ID.");
+        toast({
+          title: "Selection Error",
+          description: "Could not identify the selected shipment.",
+          variant: "destructive",
+        });
         return;
     }
 
-    logger.info(`[SimulationDocumentPage] Shipment selected: ${idToSelect}. Initiating simulation load...`);
-    setSelectedShipmentId(idToSelect); 
-    setSimError(null); // Clear previous sim errors
-    setIsSimLoading(true); // Set sim loading state
+    // Use the storeApi instance to call getState()
+    const currentStoreSelectedId = storeApi.getState().selectedVehicleId; 
     
+    // Set local state regardless to update UI highlight
+    setSelectedShipmentId(idToSelect);
+
+    if (idToSelect === currentStoreSelectedId) {
+        logger.info(`[handleSelectShipment] Shipment ${idToSelect} is already selected in the store. Skipping simulation reload.`);
+        return; 
+    }
+
+    // If it's a *new* selection, proceed with loading/resetting simulation state
+    logger.info(`[handleSelectShipment] New shipment selected: ${idToSelect}. Loading simulation data...`);
+    setIsSimLoading(true);
+    setSimError(null);
+
     try {
-      // logger.debug(`[SimulationDocumentPage] Calling Server Action: getSimulationInputForShipment(${idToSelect})`); // Removed debug log
-      // Type annotation for the result helps, but narrowing is still key
-      const result: Awaited<ReturnType<typeof getSimulationInputForShipment>> = await getSimulationInputForShipment(idToSelect);
-      // logger.debug("[SimulationDocumentPage] Server Action result:", result); // Removed debug log
+      // Call server action to get structured input
+      const simInputResult = await getSimulationInputForShipment(idToSelect);
 
-      // --- Type Narrowing --- 
-      if ('error' in result) { // Check if the error property exists
-        throw new Error(result.error || "Server action returned an unspecified error.");
+      // Check for error before accessing data
+      if ('error' in simInputResult || !simInputResult) { 
+        throw new Error(simInputResult?.error || 'Failed to retrieve simulation input data.');
       }
+      // Now TypeScript knows simInputResult is of type SimulationInput
+      const simulationInputData: SimulationInput = simInputResult; 
       
-      // If we reach here, result MUST be the successful SimulationInput shape
-      // Although the explicit type definition for SimulationInput isn't here yet,
-      // we know it doesn't have an 'error' property, so this check works.
-      // We can now safely access result.data IF the success shape has a data property.
-      const simulationInput = result; // Assuming the successful result IS the SimulationInput
+      // Check if loadSimulationFromInput function exists before calling
+      if (typeof loadSimulationFromInput === 'function') {
+         // Call store action to load data
+         const loadResult = await loadSimulationFromInput(simulationInputData); 
+         
+         // --- FIX: Use the type guard --- 
+         if (isLoadError(loadResult)) {
+             // Now TypeScript *knows* loadResult is LoadResultError
+             throw new Error(loadResult.error);
+         }
+         // --- END FIX ---
 
-      // logger.debug("[SimulationDocumentPage] Calling store action: loadSimulationFromInput with:", simulationInput); // Removed debug log
-      await loadSimulationFromInput(simulationInput); 
-      // logger.info("[SimulationDocumentPage] Simulation loaded into frontend store."); // Removed debug log
-      
-      // --- Focus map after loading --- 
-      // logger.debug("[SimulationDocumentPage] Attempting to focus map on loaded vehicle:", simulationInput.shipmentId); // Removed debug log
-      // Corrected: flyToVehicle does not exist on mapRef. Map focuses via useEffect based on selectedVehicleId.
-      // TODO: Implement explicit map centering/focus via ref if needed by adding a method to SimulationMapRef.
-      // mapRef.current?.flyToVehicle(simulationInput.shipmentId);
+         logger.info(`[handleSelectShipment] Successfully loaded simulation state for ${idToSelect} into store.`);
+      } else {
+           logger.error('[handleSelectShipment] loadSimulationFromInput action is not available on the store!');
+           throw new Error("Internal error: Simulation loading function not available.");
+      }
 
-    } catch (err: any) {
-      logger.error(`[SimulationDocumentPage] Error handling shipment selection or loading:`, err);
-      const errorMessage = err.message || 'Failed to load simulation data.';
-      setSimError(errorMessage); // Use sim error state
-      toast({ title: "Simulation Load Error", description: errorMessage, variant: "destructive" }); // Add toast
+    } catch (error: any) {
+      logger.error(`[handleSelectShipment] Error loading simulation for ${idToSelect}:`, error);
+      setSimError(error.message || 'Failed to load simulation data.');
+      toast({
+        title: "Simulation Load Error",
+        description: error.message || 'Could not load simulation data for the selected shipment.',
+        variant: "destructive",
+      });
+      // Optionally clear store state on error? Depends on desired behavior.
+      // Consider calling a reset action here if needed.
     } finally {
-      setIsSimLoading(false); // Clear sim loading state
-      // logger.debug(`[SimulationDocumentPage] Finished selecting/loading sim. isSimLoading: ${false}`); // Removed debug log
+      setIsSimLoading(false);
     }
   };
 
