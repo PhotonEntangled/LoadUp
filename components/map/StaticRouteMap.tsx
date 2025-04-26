@@ -289,27 +289,35 @@ export const StaticRouteMap = React.memo(({
           {isMapLoaded && lastKnownPosition?.geometry?.coordinates && (
             (() => {
               const [lon, lat] = lastKnownPosition.geometry.coordinates;
+              // Extract bearing from properties, default to 0 if not present
+              const bearing = lastKnownPosition.properties?.bearing ?? 0; 
+              // Calculate rotation like in SimulationMap
+              const rotation = bearing - 90; 
+
               // --- Corrected LKL MARKER structure --- 
               return (
-                <Marker longitude={lon} latitude={lat} anchor="center">
-                  {/* Container DIV - REMOVED transform style and explicit size */}
+                <Marker 
+                    longitude={lon} 
+                    latitude={lat} 
+                    anchor="center" 
+                    offset={[-12, -12]}
+                >
+                  {/* Container DIV - No style needed */}
                   <div style={{
-                      transformOrigin: 'center center', // Ensure rotation is centered
+                      transformOrigin: 'center center',
                       transition: 'none',
-                      // width: '24px', // REMOVED - Let SVG/CSS define size
-                      // height: '24px' // REMOVED - Let SVG/CSS define size
                    }}>
-                    {/* Corrected SVG with internal rotation - Give it a CSS class for sizing */}
+                    {/* Corrected SVG with DYNAMIC internal rotation */}
                     <svg 
                         version="1.1" 
                         xmlns="http://www.w3.org/2000/svg" 
                         viewBox="0 0 48 48" 
-                        width="24" /* Set base size directly */
-                        height="24" /* Set base size directly */
+                        width="24" 
+                        height="24" 
                         style={{ display: 'block', overflow: 'visible' }}
                     >
-                        {/* Group for applying transforms */}
-                        <g transform="translate(38,9) rotate(-90 24 24)"> {/* Apply translate and internal rotation */}
+                        {/* Group for applying transforms - USE DYNAMIC ROTATION */}
+                        <g transform={`translate(38,9) rotate(${rotation} 24 24)`}> 
                             {/* Blue Body Path */}
                             <path d="M0 0 C0.66 0 1.32 0 2 0 C2 0.99 2 1.98 2 3 C2.94875 2.938125 3.8975 2.87625 4.875 2.8125 C5.90625 2.874375 6.9375 2.93625 8 3 C10.84799817 7.27199725 10.33018316 10.97798285 10.3125 16 C10.32861328 16.91523438 10.34472656 17.83046875 10.36132812 18.7734375 C10.36197266 19.65257813 10.36261719 20.53171875 10.36328125 21.4375 C10.36626221 22.24058594 10.36924316 23.04367188 10.37231445 23.87109375 C9.90941468 26.51796982 9.13462297 27.40861466 7 29 C4.3125 29.1875 4.3125 29.1875 2 29 C2 29.99 2 30.98 2 32 C1.34 32 0.68 32 0 32 C0 31.01 0 30.02 0 29 C-2.97 29 -5.94 29 -9 29 C-9 29.66 -9 30.32 -9 31 C-18.57 31 -28.14 31 -38 31 C-38 21.1 -38 11.2 -38 1 C-28.43 1 -18.86 1 -9 1 C-9 1.66 -9 2.32 -9 3 C-6.03 3 -3.06 3 0 3 C0 2.01 0 1.02 0 0 Z " fill="#5C6BC0" />
                             {/* Red Body Path */}
