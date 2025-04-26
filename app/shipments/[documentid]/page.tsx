@@ -550,7 +550,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                                         logger.debug('[Render] Passing lastKnownPosition to StaticRouteMap:', currentLastPosition);
                                                         return currentLastPosition; 
                                                     })()}
-                                                    className="w-full h-full rounded" // Make map fill the container
+                                                          className="w-full h-full rounded" // Make map fill the container
                                                       />
                                                       {/* --- MOVED: Map Overlay Buttons Container --- */} 
                                                      <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10"> {/* Changed right-2 to left-2 */} 

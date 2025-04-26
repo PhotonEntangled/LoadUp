@@ -92,7 +92,7 @@ export default function SimulationDocumentPage() {
       } else {
            logger.error('[SimulationDocumentPage Auto-Start Effect] startGlobalSimulation action is not available on the store!');
       }
-    } 
+    }
     // Removed isSimulationRunning dependency to prevent restarting immediately after stop.
     // Effect now triggers primarily on selection/status change.
   }, [selectedVehicleId, selectedVehicle?.status]); 

@@ -364,15 +364,15 @@ export const createSimulationStore = () => {
            stopSimulationServerAction(vehicleIdToStop)
              .then((result) => {
                if (result?.success) {
-                 logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}. Message: ${result.message}`);
-               } else {
+                     logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}. Message: ${result.message}`);
+                         } else {
                  // Handle potential error from server action
                  logger.error(`[Store] Backend stopSimulation failed for ${vehicleIdToStop}.`, { error: result?.error });
                  set({ error: `Backend stop failed: ${result?.error || 'Unknown error'}` });
-               }
+                 }
              })
              .catch((error) => {
-               logger.error(`[Store] CRITICAL error calling stopSimulation Server Action for ${vehicleIdToStop}:`, error);
+                 logger.error(`[Store] CRITICAL error calling stopSimulation Server Action for ${vehicleIdToStop}:`, error);
                set({ error: `Error communicating with backend to stop simulation: ${error.message}` });
              });
       } else {

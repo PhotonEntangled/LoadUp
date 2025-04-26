@@ -386,7 +386,7 @@ export async function stopSimulation(
             if (currentVehicleState) {
                 logger.info(`[stopSim-${shipmentId.substring(0,4)}] Found existing state in KV cache.`);
                 stateFoundInKv = true;
-            } else {
+        } else {
                 logger.warn(`[stopSim-${shipmentId.substring(0,4)}] No previous KV state found for simulation ${scenarioId}. Cannot save final position/status.`);
                 stateFoundInKv = false;
                 // Proceed to removal from active list
@@ -410,11 +410,11 @@ export async function stopSimulation(
         // --- Step 3: Update and Persist State (Only If Found in Step 1) --- 
         if (stateFoundInKv && currentVehicleState) {
             // Update the status to Idle and set the last update time
-            const updatedState: SimulatedVehicle = {
+                const updatedState: SimulatedVehicle = { 
                 ...currentVehicleState,
                 status: 'Idle', // Set status to Idle
                 lastUpdateTime: Date.now(), // Update timestamp
-            };
+                };
             // Prepare the minimal state info to return to the client
             finalStateToReturn = { status: updatedState.status, lastUpdateTime: updatedState.lastUpdateTime }; 
 
@@ -451,11 +451,11 @@ export async function stopSimulation(
             : `Simulation stop processed (removed from active list) for ${shipmentId}, but no previous state was found to update.`;
 
         logger.info(`[stopSim-${shipmentId.substring(0,4)}] Stop process completed.`);
-        return { 
+             return { 
             success: true, 
             message: successMessage, 
             updatedState: finalStateToReturn // Will be null if state wasn't found/saved
-        };
+             };
 
     } catch (error) {
         logger.error(`[stopSim-${shipmentId.substring(0,4)}] Unexpected error during stop simulation for ${shipmentId}:`, error);
