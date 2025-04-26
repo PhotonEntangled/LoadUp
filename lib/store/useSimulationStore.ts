@@ -4,7 +4,6 @@ import { logger } from '../../utils/logger'; // Adjusted path
 import { calculateNewPosition } from '../../utils/simulation/simulationUtils'; // Import the new utility
 import type { SimulationInput } from '@/types/simulation'; // <<< ADD: Import SimulationInput type
 import { getSimulationFromShipmentServiceInstance } from '@/services/shipment/SimulationFromShipmentService'; // <<< FIX: Import the getter function, not the class directly
-import { updateShipmentLastPosition } from '@/lib/actions/shipmentUpdateActions'; // <<< ADDED: Import server action
 import { stopSimulation as stopSimulationServerAction } from "@/lib/actions/simulationActions"; // Import the server action
 import { confirmShipmentDelivery } from '@/lib/actions/simulationActions'; // Import the server action
 
@@ -27,13 +26,11 @@ export interface SimulationState {
   isInitialized: boolean; // <<< ADDED: Flag to track client-side store readiness
   lastDbUpdateTime: Record<string, number>; // <<< ADDED: Track last DB update time per vehicle
   loadingState: Record<string, boolean>; // <<< ADDED: Track loading state for actions
-  errorState: string | null; // <<< ADDED: Track error state for actions
+  errorState: Record<string, string | null>; // <<< ADDED: Track error state for actions
 }
 
 // Define the actions available to modify the simulation state
 export interface SimulationActions {
-  /** Adds a new vehicle to the store or updates an existing one */
-  addVehicle: (vehicle: SimulatedVehicle) => void;
   /** Removes a vehicle from the store by its ID */
   removeVehicle: (vehicleId: string) => void;
   /** Updates specific fields of an existing vehicle */
@@ -46,10 +43,6 @@ export interface SimulationActions {
   stopGlobalSimulation: () => void;
   /** Sets the simulation speed multiplier */
   setSimulationSpeed: (speed: number) => void;
-  /** Sets or clears the simulation error message */
-  setError: (message: string | null) => void;
-  /** Sets the loading state flag */
-  setLoading: (isLoading: boolean) => void;
   /** Resets the store to its initial state */
   resetStore: () => void;
   tickSimulation: () => void; // Action to advance simulation by one step
@@ -58,14 +51,12 @@ export interface SimulationActions {
   /** Sets the vehicle status to Completed after delivery */
   confirmDelivery: (vehicleId: string) => Promise<void>;
   toggleFollowVehicle: () => void; // <<< ADDED: Action to toggle follow mode
-  /** Loads simulation state from a prepared SimulationInput object */ 
-  loadSimulationFromInput: (input: SimulationInput) => Promise<void>; // <<< FIX: Make async
-  /** Action triggered by UI to confirm pickup, targeting selected vehicle */
-  confirmPickupAction: () => void; // <<< ADDED
-  /** Action triggered by UI to confirm dropoff, targeting selected vehicle */
-  confirmDropoffAction: () => void; // <<< ADDED
   /** Directly sets/updates a vehicle state and selects it, usually from server data */
   setVehicleFromServer: (vehicleData: SimulatedVehicle) => void; // <<< NEW ACTION
+  /** Clears a specific error state */
+  clearActionError: (actionKey: string) => void;
+  /** Loads simulation state from a SimulationInput object */
+  loadSimulationFromInput: (input: SimulationInput) => Promise<void>; // <<< ADDED MISSING ACTION
 }
 
 // Define the combined type for the store API
@@ -84,7 +75,7 @@ export const initialSimulationState: SimulationState = {
   isInitialized: false, // <<< ADDED: Initialize as false
   lastDbUpdateTime: {}, // <<< ADDED: Initialize DB update tracker
   loadingState: {}, // <<< ADDED: Initialize loading state tracker
-  errorState: null, // <<< ADDED: Initialize error state to null
+  errorState: {}, // <<< ADDED: Initialize error state map
 };
 
 // Interval duration in milliseconds
@@ -97,23 +88,27 @@ export const createSimulationStore = () => {
     ...initialSimulationState, // <<< Use the exported initial state
 
     // Actions Implementation
-    addVehicle: (vehicle) => {
-      logger.debug(`Adding/Updating vehicle via addVehicle`, { vehicleId: vehicle.id });
-      set((state) => ({
-        vehicles: { ...state.vehicles, [vehicle.id]: vehicle },
-      }));
-    },
-
     removeVehicle: (vehicleId) => {
       logger.debug('Removing vehicle from store', { vehicleId });
       set((state) => {
         const { [vehicleId]: _, ...remainingVehicles } = state.vehicles;
+        const newLoadingState = { ...state.loadingState };
+        delete newLoadingState[`confirm_${vehicleId}`];
+        delete newLoadingState[`stop_${vehicleId}`];
+        delete newLoadingState[`setVehicle_${vehicleId}`];
+        const newErrorState = { ...state.errorState };
+        delete newErrorState[`confirm_${vehicleId}`];
+        delete newErrorState[`stop_${vehicleId}`];
+        delete newErrorState[`setVehicle_${vehicleId}`];
+
         return {
           vehicles: remainingVehicles,
           // Deselect if the removed vehicle was selected
           selectedVehicleId: state.selectedVehicleId === vehicleId ? null : state.selectedVehicleId,
           // <<< ADDED: Clear DB update time for removed vehicle
           lastDbUpdateTime: (({ [vehicleId]: removed, ...rest }) => rest)(state.lastDbUpdateTime),
+          loadingState: newLoadingState,
+          errorState: newErrorState,
         };
       });
     },
@@ -165,10 +160,12 @@ export const createSimulationStore = () => {
 
     confirmDelivery: async (vehicleId: string) => {
       const vehicle = get().vehicles[vehicleId];
+      const actionKey = `confirm_${vehicleId}`;
       logger.info(`[Store] confirmDelivery action called for vehicle: ${vehicleId}`);
 
       if (!vehicle || vehicle.status !== 'Pending Delivery Confirmation') {
         logger.warn(`[Store] confirmDelivery: Vehicle not found or not in correct state: ${vehicleId}`, { status: vehicle?.status });
+        set(state => ({ errorState: { ...(state.errorState || {}), [actionKey]: 'Vehicle not in Pending Delivery Confirmation state.' }})); // Ensure errorState is object
         return;
       }
 
@@ -184,8 +181,8 @@ export const createSimulationStore = () => {
             lastUpdateTime: Date.now(),
           },
         },
-        loadingState: { ...state.loadingState, [`confirm_${vehicleId}`]: true },
-        errorState: null,
+        loadingState: { ...(state.loadingState || {}), [actionKey]: true },
+        errorState: { ...(state.errorState || {}), [actionKey]: null }, // Clear previous error
       }));
       logger.debug(`[Store] Optimistically updated vehicle ${vehicleId} status to Completed.`);
 
@@ -205,7 +202,7 @@ export const createSimulationStore = () => {
 
         logger.info(`[Store] Server Action confirmShipmentDelivery successful for shipment ${shipmentId}.`);
         set((state: SimulationState) => ({
-          loadingState: { ...state.loadingState, [`confirm_${vehicleId}`]: false },
+          loadingState: { ...(state.loadingState || {}), [actionKey]: false },
         }));
 
       } catch (error) {
@@ -219,15 +216,15 @@ export const createSimulationStore = () => {
               status: originalStatus,
             },
           },
-          errorState: `Failed to confirm delivery: ${errorMessage}`,
-          loadingState: { ...state.loadingState, [`confirm_${vehicleId}`]: false },
+          errorState: { ...(state.errorState || {}), [actionKey]: `Failed to confirm delivery: ${errorMessage}` },
+          loadingState: { ...(state.loadingState || {}), [actionKey]: false },
         }));
       }
     },
 
     tickSimulation: () => {
       logger.debug('[Tick] ------ START tickSimulation ------'); // <<< ADDED: Entry Log
-      const { vehicles, simulationSpeedMultiplier, isSimulationRunning, updateVehicleState, setError, lastDbUpdateTime } = get();
+      const { vehicles, simulationSpeedMultiplier, isSimulationRunning, updateVehicleState, lastDbUpdateTime } = get();
       
       logger.debug(`[Tick] current isSimulationRunning state: ${isSimulationRunning}`);
       if (!isSimulationRunning) return;
@@ -266,6 +263,7 @@ export const createSimulationStore = () => {
               newPositionData = null;
               criticalErrorOccurred = true;
               vehiclesToUpdate[vehicle.id] = { status: 'Error', lastUpdateTime: timeNow };
+              // No need to set global error here, handled after loop
               return;
             }
 
@@ -342,7 +340,9 @@ export const createSimulationStore = () => {
       if (criticalErrorOccurred) {
           logger.error('Stopping simulation due to critical error during tick calculation.');
           get().stopGlobalSimulation();
-          setError('Simulation stopped due to a critical error during position calculation.');
+          set(state => ({ 
+              errorState: { ...(state.errorState || {}), global: 'Simulation stopped due to a critical error during position calculation.' } 
+          }));
       }
 
       // Check if all active vehicles have completed or errored
@@ -375,8 +375,8 @@ export const createSimulationStore = () => {
     },
 
     stopGlobalSimulation: () => {
-      const { isSimulationRunning, simulationIntervalId, selectedVehicleId, updateVehicleState } = get(); // Get selectedVehicleId AND updateVehicleState action
-      logger.info('[Store] stopGlobalSimulation action called.', { currentState: isSimulationRunning, intervalId: simulationIntervalId, selectedId: selectedVehicleId });
+      const { isSimulationRunning, simulationIntervalId, selectedVehicleId } = get(); // Get selectedVehicleId AND updateVehicleState action
+      logger.info('[Store] stopGlobalSimulation action called.', { currentState: isSimulationRunning, selectedId: selectedVehicleId });
       
       // --- Stop local interval FIRST --- 
       if (isSimulationRunning) {
@@ -401,20 +401,28 @@ export const createSimulationStore = () => {
       // --- Trigger Backend Cleanup --- 
       if (selectedVehicleId) {
            const vehicleIdToStop = selectedVehicleId; // Capture ID for async context
+           const actionKey = `stop_${vehicleIdToStop}`;
            logger.info(`[Store] Triggering backend stopSimulation Server Action for shipment ID: ${vehicleIdToStop}`);
+           set(state => ({ 
+               loadingState: { ...(state.loadingState || {}), [actionKey]: true },
+               errorState: { ...(state.errorState || {}), [actionKey]: null },
+            }));
            stopSimulationServerAction(vehicleIdToStop)
              .then((result) => {
                if (result?.success) {
-                     logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}. Message: ${result.message}`);
+                     logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}.`);
                          } else {
                  // Handle potential error from server action
                  logger.error(`[Store] Backend stopSimulation failed for ${vehicleIdToStop}.`, { error: result?.error });
-                 set({ error: `Backend stop failed: ${result?.error || 'Unknown error'}` });
+                 set(state => ({ errorState: { ...(state.errorState || {}), [actionKey]: `Backend stop failed: ${result?.error || 'Unknown error'}` }}));
                  }
              })
              .catch((error) => {
                  logger.error(`[Store] CRITICAL error calling stopSimulation Server Action for ${vehicleIdToStop}:`, error);
-               set({ error: `Error communicating with backend to stop simulation: ${error.message}` });
+                 set(state => ({ errorState: { ...(state.errorState || {}), [actionKey]: `Error communicating with backend: ${error.message}` }}));
+             })
+             .finally(() => {
+                 set(state => ({ loadingState: { ...(state.loadingState || {}), [actionKey]: false }}));
              });
       } else {
           logger.warn('[Store] Cannot trigger backend stopSimulation: No vehicle is selected.');
@@ -426,16 +434,6 @@ export const createSimulationStore = () => {
       // Adjust validation for new max speed
       const validSpeed = Math.max(0.1, Math.min(speed, 500)); // Updated bounds
       set({ simulationSpeedMultiplier: validSpeed });
-    },
-
-    setError: (message) => {
-      logger.error(`Simulation store error set`, { message });
-      set({ error: message });
-    },
-
-    setLoading: (isLoading) => {
-      logger.debug('Setting simulation store loading state', { isLoading });
-      set({ isLoading });
     },
 
     toggleFollowVehicle: () => {
@@ -451,10 +449,9 @@ export const createSimulationStore = () => {
       const { simulationIntervalId } = get();
       if (simulationIntervalId) {
         clearInterval(simulationIntervalId);
-        logger.debug('Cleared simulation interval during reset');
       }
-      // Reset state, ensuring lastDbUpdateTime is also cleared
-      set({ ...initialSimulationState, simulationIntervalId: null });
+      // FIX: Correctly reset state using initialSimulationState
+      set(initialSimulationState);
     },
 
     loadSimulationFromInput: async (input: SimulationInput) => {
@@ -500,59 +497,47 @@ export const createSimulationStore = () => {
             errorMessage: error?.message, 
             errorStack: error?.stack 
         });
-        // Use setError action to handle the error state update
-        get().setError(`SimulationFromShipmentService failed: ${error.message || 'Unknown error'}`);
-        set({ isLoading: false }); // Ensure loading is set to false on error
+        // Replace setError call with errorState update using a specific key
+        set(state => ({ 
+            errorState: { ...(state.errorState || {}), loadSimulation: `SimulationFromShipmentService failed: ${error.message || 'Unknown error'}` },
+            isLoading: false // Ensure loading is set to false on error
+        })); 
       }
-    },
-
-    confirmPickupAction: () => {
-      const { selectedVehicleId, vehicles, confirmPickup } = get();
-      if (!selectedVehicleId) {
-          logger.warn('[confirmPickupAction] No vehicle selected.');
-          return;
-      }
-      const selectedVehicle = vehicles[selectedVehicleId];
-      if (selectedVehicle && selectedVehicle.status === 'AWAITING_STATUS') {
-          logger.info(`[confirmPickupAction] Pickup confirmation skipped for vehicle ${selectedVehicleId} due to AWAITING_STATUS.`);
-          get().setError('Cannot start simulation: Vehicle is awaiting initial status.');
-          return;
-      }
-      confirmPickup(selectedVehicleId);
-    },
-
-    confirmDropoffAction: () => {
-      const { selectedVehicleId, confirmDelivery } = get();
-      if (!selectedVehicleId) {
-          logger.warn('[confirmDropoffAction] No vehicle selected.');
-          return;
-      }
-        confirmDelivery(selectedVehicleId);
     },
 
     // <<< NEW ACTION IMPLEMENTATION >>>
     setVehicleFromServer: (vehicleData) => {
+      const actionKey = `setVehicle_${vehicleData?.id || 'unknown'}`;
       if (!vehicleData || !vehicleData.id) {
         logger.error('[setVehicleFromServer] Received invalid vehicle data. Aborting.', { vehicleData });
-        set({ isLoading: false, error: 'Received invalid vehicle data from server.' });
+        set(state => ({ 
+            errorState: { ...(state.errorState || {}), [actionKey]: 'Received invalid vehicle data from server.' } // Ensure errorState is object
+        }));
         return;
       }
       
       const vehicleId = vehicleData.id;
-      logger.info('[setVehicleFromServer] Setting vehicle state from server data.', { vehicleId: vehicleId, shipmentId: vehicleData.shipmentId });
 
       set((state) => ({
         vehicles: {
           ...state.vehicles,
-          [vehicleId]: vehicleData // Add or overwrite the vehicle
+          [vehicleId]: vehicleData
         },
-        selectedVehicleId: vehicleId, // Automatically select the vehicle
-        isLoading: false, // Ensure loading is false
-        error: null // Clear any previous error
+        selectedVehicleId: vehicleId,
+        errorState: { ...(state.errorState || {}), [actionKey]: null, global: null } // Ensure errorState is object & clear errors
       }));
-      logger.info('[setVehicleFromServer] Successfully set vehicle state and selected ID.', { vehicleId });
     },
     // <<< END NEW ACTION IMPLEMENTATION >>>
+
+    clearActionError: (actionKey: string) => {
+      set(state => {
+        const newErrorState = { ...(state.errorState || {}) }; // Ensure errorState is object
+        delete newErrorState[actionKey];
+        // Optionally clear global error too
+        // delete newErrorState.global; 
+        return { errorState: newErrorState };
+      });
+    },
   }));
 };
 

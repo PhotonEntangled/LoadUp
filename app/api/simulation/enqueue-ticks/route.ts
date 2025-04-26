@@ -60,6 +60,16 @@ export async function GET(request: Request) {
   let skippedCount = 0;
   let errorCount = 0;
 
+  // --- ADDED: Get base URL for constructing absolute path ---
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!baseUrl && !process.env.VERCEL_QUEUE_TICK_ENDPOINT) { // Only critical if BOTH are missing
+    logger.error(`${LOG_PREFIX} CRITICAL: Neither VERCEL_QUEUE_TICK_ENDPOINT nor NEXT_PUBLIC_APP_URL environment variable is set. Cannot construct absolute URL for tick worker fetch call.`);
+    // Consider returning an error response here if this happens at runtime,
+    // as no ticks can be enqueued.
+    // return NextResponse.json({ message: "Configuration error: Missing tick worker URL" }, { status: 500 });
+  }
+  // --- END: Get base URL ---
+
   for (const shipmentId of activeSimulationIds) {
     const shortId = shipmentId.substring(0, 4);
     try {
@@ -77,9 +87,20 @@ export async function GET(request: Request) {
       // Only enqueue tick if the status is En Route
       if (currentState.status === 'En Route') {
         logger.info(`${LOG_PREFIX}(${shortId}) Status is 'En Route'. Enqueuing tick job...`);
+
+        // --- MODIFIED: Construct tick worker URL ---
+        const tickWorkerUrl = process.env.VERCEL_QUEUE_TICK_ENDPOINT || (baseUrl ? `${baseUrl}/api/simulation/tick-worker` : null);
+
+        if (!tickWorkerUrl) {
+          logger.error(`${LOG_PREFIX}(${shortId}) Cannot enqueue tick job: Tick worker URL could not be determined (missing VERCEL_QUEUE_TICK_ENDPOINT and NEXT_PUBLIC_APP_URL). Skipping.`);
+          errorCount++; // Count as an error for this specific shipment
+          continue; // Skip this shipmentId
+        }
+        // --- END: Construct tick worker URL ---
+
         // TODO: Replace fetch with actual Vercel Queue client if available/preferred
         // Simulating enqueue via fetch POST to queue endpoint
-        const enqueuePromise = fetch(process.env.VERCEL_QUEUE_TICK_ENDPOINT || '/api/simulation/tick-worker', { // Use env var for endpoint
+        const enqueuePromise = fetch(tickWorkerUrl, { // Use the constructed URL
            method: 'POST',
            headers: {
               'Content-Type': 'application/json',

@@ -40,24 +40,23 @@ export default function Page({ params }: { params: { documentid: string } }) {
     const { documentid } = params;
     const router = useRouter();
 
-    // --- State Management (Real Data) ---
-    const [shipments, setShipments] = useState<ApiShipmentDetail[]>([]); // Initialize empty
-    const [selectedShipment, setSelectedShipment] = useState<ApiShipmentDetail | null>(null); // Initialize null
-    const [filteredShipments, setFilteredShipments] = useState<ApiShipmentDetail[]>([]); // Initialize empty
+    // --- State Management ---
+    const [shipments, setShipments] = useState<ApiShipmentDetail[]>([]);
+    const [selectedShipment, setSelectedShipment] = useState<ApiShipmentDetail | null>(null);
+    const [filteredShipments, setFilteredShipments] = useState<ApiShipmentDetail[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(true); // Start true for real fetch
-    const [error, setError] = useState<string | null>(null);
-    const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
-    const [isSimLoading, setIsSimLoading] = useState<boolean>(false); // Loading state for simulation prep
-    const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false); // State for refresh button
+    const [loading, setLoading] = useState<boolean>(true); // General page loading
+    const [error, setError] = useState<string | null>(null); // General page error
+    const [isSimLoading, setIsSimLoading] = useState<boolean>(false); // Loading state for simulation start button
+    const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false); // State for refresh LKL button
 
-    // CORRECTED STORE ACCESS: Use direct context
+    // Store Access
     const storeApi = useContext(SimulationStoreContext);
 
-    // State for map-specific geometry (fetched based on selectedShipment)
-    const [currentRouteGeometry, setCurrentRouteGeometry] = useState<Feature<LineString> | null>(null); // Initialize null
-    const [currentLastPosition, setCurrentLastPosition] = useState<Feature<Point> | null>(null); // Initialize null
-    const [mapDataLoading, setMapDataLoading] = useState<boolean>(false); // State for loading map geo data
+    // State for map-specific data
+    const [currentRouteGeometry, setCurrentRouteGeometry] = useState<Feature<LineString> | null>(null);
+    const [currentLastPosition, setCurrentLastPosition] = useState<Feature<Point> | null>(null);
+    const [mapDataLoading, setMapDataLoading] = useState<boolean>(false); // State for loading map geometry/LKL
     const [mapError, setMapError] = useState<string | null>(null); // Specific error for map data fetch
 
     // Helper to safely extract coordinates
@@ -66,7 +65,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             return [addressData.longitude, addressData.latitude];
         }
         return undefined;
-    }, []); // Empty dependency array as it's a pure function of its args
+    }, []);
 
     // Helper to convert lat/lon/timestamp to GeoJSON Point Feature
     const createPositionFeature = useCallback((lat: number | null, lon: number | null, timestamp: string | null): Feature<Point> | null => {
@@ -82,9 +81,9 @@ export default function Page({ params }: { params: { documentid: string } }) {
         }
         logger.debug('[createPositionFeature] Returning null (invalid lat/lon).');
         return null;
-    }, []); // Wrap in useCallback with empty dependency array
+    }, []);
 
-    // --- Function to Fetch Route Geometry ---
+    // Function to Fetch Route Geometry
     const fetchRouteGeometry = useCallback(async (originCoords: [number, number], destCoords: [number, number]) => {
         logger.info(`[ShipmentPage] Fetching route geometry for ${originCoords} -> ${destCoords}`);
         setMapDataLoading(true);
@@ -104,13 +103,13 @@ export default function Page({ params }: { params: { documentid: string } }) {
                 throw new Error(errorMsg);
             }
 
-            const geometry: Feature<LineString>['geometry'] = await res.json(); // API returns just the geometry object
-            
-            // Reconstruct the Feature object for the state
+            const geometry: Feature<LineString>['geometry'] = await res.json();
+
+            // Reconstruct the Feature object
             const routeFeature: Feature<LineString> = {
                 type: "Feature",
                 properties: {},
-                geometry: geometry 
+                geometry: geometry
             };
 
             if (routeFeature.geometry?.type === 'LineString' && routeFeature.geometry.coordinates.length > 0) {
@@ -127,39 +126,37 @@ export default function Page({ params }: { params: { documentid: string } }) {
         } finally {
             setMapDataLoading(false);
         }
-    }, []); // No dependencies needed as it uses args
+    }, []);
 
-    // --- Data Fetching (Re-enabled for PHASE 2) ---
+    // Initial Data Fetching
     useEffect(() => {
         const fetchShipments = async () => {
             setLoading(true);
             setError(null);
-            setSelectedShipment(null); // Clear previous selection
-            setCurrentRouteGeometry(null); // Clear previous map data
-            setCurrentLastPosition(null);  // Clear previous map data
+            setSelectedShipment(null);
+            setCurrentRouteGeometry(null);
+            setCurrentLastPosition(null);
             logger.debug(`Fetching shipments for document ID: ${documentid}`);
             try {
                 const res = await fetch(`/api/shipments?documentId=${documentid}`);
                 if (!res.ok) {
                     if (res.status === 404) {
                          logger.warn(`No shipments found for documentId: ${documentid}`);
-                         // Handle not found specifically - maybe set an error message
-                         // Or allow rendering with "No shipments found" state
                          setShipments([]);
                          setFilteredShipments([]);
                          setSelectedShipment(null);
-                         // Optionally set a specific error state: setError("No shipments found for this document.");
+                         // Optionally set an error: setError("No shipments found for this document.");
                     } else {
                         throw new Error(`Failed to fetch shipments: ${res.status} ${res.statusText}`);
                     }
                 } else {
                      const data: ApiShipmentDetail[] = await res.json();
                      logger.debug('[fetchShipments] Raw data received from API:', data);
-    
+
                      if (!Array.isArray(data)) {
                           throw new Error(`API did not return an array. Received: ${JSON.stringify(data)}`);
                      }
-    
+
                      logger.debug(`Fetched ${data.length} shipments for document ${documentid}`);
                      setShipments(data);
                      setFilteredShipments(data);
@@ -167,7 +164,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                          const initialSelected = data[0];
                          setSelectedShipment(initialSelected);
 
-                         // --- PROCESS INITIAL LAST KNOWN LOCATION ---
+                         // Process initial last known location
                          logger.debug('[fetchShipments] Processing initial LKL for:', {
                              id: initialSelected?.coreInfo?.id,
                              lat: initialSelected?.coreInfo?.lastKnownLatitude,
@@ -185,7 +182,6 @@ export default function Page({ params }: { params: { documentid: string } }) {
                          } else {
                             logger.info(`[ShipmentPage] No initial last known position found in fetched data for shipment ID: ${initialSelected.coreInfo.id}. Lat: ${initialSelected.coreInfo.lastKnownLatitude}, Lon: ${initialSelected.coreInfo.lastKnownLongitude}`);
                          }
-                         // --- END PROCESS INITIAL LAST KNOWN LOCATION ---
 
                          // Trigger initial map data fetch if coordinates are valid
                          const initialOriginCoords = getCoordinates(initialSelected.originAddress);
@@ -204,7 +200,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             } catch (err) {
                 logger.error("Error fetching shipment data:", err);
                 setError(err instanceof Error ? err.message : "An unknown error occurred");
-                setShipments([]); // Clear shipments on error
+                setShipments([]);
                 setFilteredShipments([]);
                 setSelectedShipment(null);
             } finally {
@@ -213,16 +209,15 @@ export default function Page({ params }: { params: { documentid: string } }) {
         };
 
         fetchShipments();
-    }, [documentid, getCoordinates, fetchRouteGeometry, createPositionFeature]); // Dependencies
-    
-    // --- Fetch Map Data When Selected Shipment Changes ---
+    }, [documentid, getCoordinates, fetchRouteGeometry, createPositionFeature]);
+
+    // Fetch Map Data When Selected Shipment Changes
      useEffect(() => {
-        // Clear old route and error when selection is null
         if (!selectedShipment) {
             setCurrentRouteGeometry(null);
             setCurrentLastPosition(null);
             setMapError(null);
-            return; 
+            return;
         }
 
         const originCoords = getCoordinates(selectedShipment.originAddress);
@@ -231,14 +226,13 @@ export default function Page({ params }: { params: { documentid: string } }) {
         if (originCoords && destCoords) {
             fetchRouteGeometry(originCoords, destCoords);
         } else {
-            // Clear map data if new selection lacks coords
             logger.warn("Selected shipment missing valid coordinates for route fetching.");
             setCurrentRouteGeometry(null);
-            setCurrentLastPosition(null); 
-            setMapError("Missing coordinates for route."); // Set map-specific error
+            setCurrentLastPosition(null);
+            setMapError("Missing coordinates for route.");
         }
 
-        // --- PROCESS LAST KNOWN LOCATION ON SELECTION CHANGE ---
+        // Process last known location on selection change
         if (selectedShipment) {
             logger.debug('[Selection Effect] Processing LKL for selected:', {
                 id: selectedShipment?.coreInfo?.id,
@@ -261,11 +255,10 @@ export default function Page({ params }: { params: { documentid: string } }) {
         } else {
              setCurrentLastPosition(null); // Clear if no shipment selected
         }
-        // --- END PROCESS LAST KNOWN LOCATION ON SELECTION CHANGE ---
 
-    }, [selectedShipment, getCoordinates, fetchRouteGeometry, createPositionFeature]); // Dependencies
+    }, [selectedShipment, getCoordinates, fetchRouteGeometry, createPositionFeature]);
 
-    // --- Search/Filtering (Keep as is) ---
+    // Search/Filtering
     useEffect(() => {
         if (!searchTerm.trim()) {
             setFilteredShipments(shipments);
@@ -298,18 +291,10 @@ export default function Page({ params }: { params: { documentid: string } }) {
         toast({ title: "Info", description: "Download functionality not yet implemented.", variant: "default" });
     };
     const handleEdit = (shipment: ApiShipmentDetail) => {
-        console.log(`Editing shipment ${shipment.coreInfo.id}`);
+        logger.debug(`Editing shipment ${shipment.coreInfo.id}`);
         toast({ title: "Info", description: "Edit functionality not yet implemented.", variant: "default" });
     };
 
-    const toggleCardExpansion = (shipmentId: string) => {
-        setExpandedCards((prev) => ({
-            ...prev,
-            [shipmentId]: !prev[shipmentId],
-        }));
-    };
-
-    // --- RE-IMPLEMENTED REFRESH LOCATION HANDLER ---
     const handleRefreshLocation = useCallback(async () => {
         if (!selectedShipment) {
             toast({ title: "Info", description: "No shipment selected to refresh.", variant: "default" });
@@ -337,14 +322,13 @@ export default function Page({ params }: { params: { documentid: string } }) {
         } finally {
             setIsRefreshingLocation(false);
         }
-    }, [selectedShipment]); // Dependency: selectedShipment
-    // --- END RE-IMPLEMENTED REFRESH LOCATION HANDLER ---
+    }, [selectedShipment]);
 
     const handleViewTracking = async (shipmentId: string, documentId: string) => {
         logger.info(`Shipment Page: View Tracking clicked for shipment ${shipmentId} in doc ${documentId}`);
         setIsSimLoading(true);
-        setError(null); 
-        
+        setError(null);
+
         try {
             // 1. Fetch the simulation input data using the server action
             const simulationInputResult = await getSimulationInputForShipment(shipmentId);
@@ -352,7 +336,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             if ('error' in simulationInputResult) {
                 throw new Error(`Failed to get simulation input: ${simulationInputResult.error}`);
             }
-            
+
             logger.info('[handleViewTracking] Received SimulationInput:', simulationInputResult);
 
             // 2. Call the startSimulation server action with the fetched input
@@ -362,66 +346,56 @@ export default function Page({ params }: { params: { documentid: string } }) {
                 throw new Error(`Failed to start simulation: ${startResult.error}`);
             }
 
-            // --- FIX: Use the data returned by startSimulation --- 
             if (!startResult.data || !startResult.vehicleId) {
-                // This case should ideally not happen if startResult.error was not thrown, but good to check
                 throw new Error('Simulation started but returned no vehicle data or ID.');
             }
             const vehicleDataFromServer = startResult.data;
             logger.info('[handleViewTracking] Simulation start successful. Received vehicle data from server.', { vehicleId: startResult.vehicleId });
-            // --- END FIX --- 
 
-            // --- FIX: Call the NEW store action --- 
-            // Access the new action from the store context
-            if (!storeApi) { 
+            // 3. Update the simulation store with the vehicle data from the server
+            if (!storeApi) {
                 throw new Error("Simulation store context is not available.");
             }
             const setVehicleAction = storeApi.getState().setVehicleFromServer;
 
-            if (typeof setVehicleAction !== 'function') { 
+            if (typeof setVehicleAction !== 'function') {
                  logger.error('[handleViewTracking] setVehicleFromServer action is not available via context!', { storeState: storeApi.getState() });
                  throw new Error('Simulation state update action failed.');
             }
-            
-            // Call the new action with the data received from the server
+
+            // Call the action with the data received from the server
             setVehicleAction(vehicleDataFromServer);
             logger.info(`Shipment Page: Set vehicle state in client store using server data for ${shipmentId}.`);
-            // --- END FIX --- 
 
-            // 4. Navigate to the simulation page for the specific document
+            // 4. Navigate to the simulation page
             logger.info(`Shipment Page: Navigating to simulation page...`);
-            // Pass the vehicleId (same as shipmentId in current setup, but use vehicleId for clarity)
             router.push(`/simulation/${documentId}?selectedShipmentId=${startResult.vehicleId}`);
 
         } catch (err) {
             logger.error('Shipment Page: Error preparing or starting simulation:', err);
             const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
             setError(`Failed to start tracking: ${errorMessage}`);
-            toast({ title: "Error Starting Tracking", description: errorMessage, variant: "destructive" }); // Show toast on error
+            toast({ title: "Error Starting Tracking", description: errorMessage, variant: "destructive" });
         } finally {
-            setIsSimLoading(false); 
+            setIsSimLoading(false);
         }
     };
 
     // --- Render Logic ---
 
-    // Render loading state
     if (loading) {
         return <div className="flex justify-center items-center h-screen"><p>Loading shipment data...</p></div>;
     }
 
-    // Render error state
     if (error) {
         return (
            <div className="flex flex-col justify-center items-center h-screen text-red-500 p-4">
                <h2 className="text-lg font-semibold mb-2">Error Loading Shipments</h2>
                <p className="text-center">{error}</p>
-               {/* Optionally add a retry button here */}
            </div>
         );
     }
-    
-    // Check for Mapbox token after loading/error checks
+
     const mapboxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN;
     if (!mapboxAccessToken) {
       logger.error('Shipment Page: NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN is not defined!');
@@ -432,17 +406,14 @@ export default function Page({ params }: { params: { documentid: string } }) {
       );
     }
 
-    // Get coords from the currently selected REAL shipment
     const originCoords = selectedShipment ? getCoordinates(selectedShipment.originAddress) : undefined;
     const destinationCoords = selectedShipment ? getCoordinates(selectedShipment.destinationAddress) : undefined;
 
-    // Determine if tracking button should be shown based on REAL data
-    const showTrackingButton = selectedShipment && 
-                             selectedShipment.coreInfo.status !== 'DELIVERED' && 
+    const showTrackingButton = selectedShipment &&
+                             selectedShipment.coreInfo.status !== 'DELIVERED' &&
                              selectedShipment.coreInfo.status !== 'CANCELLED' &&
-                             selectedShipment.coreInfo.status !== 'AWAITING_STATUS'; // <<< ADDED: Don't show button if awaiting status
-                             
-    // Handle case where no shipments were found for the document
+                             selectedShipment.coreInfo.status !== 'AWAITING_STATUS';
+
     if (!loading && shipments.length === 0) {
          return (
             <div className="flex flex-col justify-center items-center h-screen text-muted-foreground p-4">
@@ -454,26 +425,19 @@ export default function Page({ params }: { params: { documentid: string } }) {
     }
 
     return (
-        // Revert container: Let it size naturally, remove flex/height
-        <div className="container mx-auto p-4 h-full"> {/* Add h-full to allow grid to expand */} 
-            {/* Main Grid Layout */}
-            {/* Remove explicit height/overflow, let main layout scroll handle it */}
-            {/* Adjusted grid again for better balance: Restore 1fr for left col */}
-            <div className="grid grid-cols-1 md:grid-cols-[minmax(340px,_1fr)_2fr] gap-4 h-full"> {/* Use h-full to fill container */} 
+        <div className="container mx-auto p-4 h-full">
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(340px,_1fr)_2fr] gap-4 h-full">
                 {/* Left Column: Shipment List */}
-                {/* Keep h-full and overflow, REMOVED md:col-span-1 as it's implied by grid definition */}
-                <div className="space-y-4 overflow-y-auto h-full pl-2 pr-2"> 
-                    {/* Search Input and Header Info */}
-                    {/* (Assuming header/search should be within the scrollable column) */}
-                    <div className="flex justify-between items-center mb-1 md:mb-2"> {/* Reduced margin */} 
+                <div className="space-y-4 overflow-y-auto h-full pl-2 pr-2">
+                    <div className="flex justify-between items-center mb-1 md:mb-2">
                         <div>
-                            <h1 className="text-lg md:text-xl font-bold">Shipments</h1> {/* Adjusted size */} 
-                            <p className="text-xs text-muted-foreground"> {/* Adjusted size */} 
+                            <h1 className="text-lg md:text-xl font-bold">Shipments</h1>
+                            <p className="text-xs text-muted-foreground">
                                 Doc ID: {documentid} • {shipments.length} found
                             </p>
                         </div>
                     </div>
-                    <div className="relative mb-4"> {/* Added margin bottom */} 
+                    <div className="relative mb-4">
                         <Input
                             type="text"
                             placeholder="Search shipments..."
@@ -495,7 +459,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                         )}
                     </div>
 
-                    {/* RESTORED: Shipment Card List - WRAPPED IN ACCORDION */}
+                    {/* Shipment Card List - Wrapped in Accordion */}
                      <Accordion type="single" collapsible className="w-full space-y-2">
                     {filteredShipments.length > 0 ? (
                         filteredShipments.map((shipment) => (
@@ -509,7 +473,6 @@ export default function Page({ params }: { params: { documentid: string } }) {
                              />
                          ))
                      ) : (
-                        // Message when search yields no results but shipments exist
                         <div className="flex flex-col items-center justify-center p-6 border border-border rounded-lg bg-card text-center mt-4">
                             <Search className="h-8 w-8 text-muted-foreground mb-3" />
                             <h3 className="text-base font-medium mb-1">No shipments found</h3>
@@ -526,15 +489,12 @@ export default function Page({ params }: { params: { documentid: string } }) {
                 </div>
 
                 {/* Right Column: Map Preview & Details */}
-                {/* Keep h-full and overflow, REMOVED md:col-span-2 as it's implied */}
-                <div className="space-y-4 overflow-y-auto h-full pl-2"> 
-                    {/* Conditional rendering based on selected shipment */}
+                <div className="space-y-4 overflow-y-auto h-full pl-2">
                     {selectedShipment ? (
                         <>
                     {/* Map Preview Section */}
                     <div className="bg-card p-4 rounded-lg shadow w-full">
-                        {/* Map Container - ADD HEIGHT HERE */}
-                        <div className="mt-4 w-full rounded-lg overflow-hidden h-[400px]"> {/* Added h-[400px] */}
+                        <div className="mt-4 w-full rounded-lg overflow-hidden h-[400px]">
                                     {(() => {
                                         const originCoords = getCoordinates(selectedShipment.originAddress);
                                         const destCoords = getCoordinates(selectedShipment.destinationAddress);
@@ -548,39 +508,38 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                             return <div className="aspect-video bg-destructive/10 text-destructive flex items-center justify-center rounded"><AlertCircle className="mr-2 h-5 w-5"/> Error loading map data.</div>;
                                         } else if (mapDataLoading) {
                                             return <div className="aspect-video bg-muted/50 flex items-center justify-center rounded animate-pulse">Loading Map...</div>;
-                                        } else if (originCoords && destCoords) { 
+                                        } else if (originCoords && destCoords) {
                                             return (
-                                                 <div className="relative w-full h-full"> {/* Ensure relative positioning for overlay */}
+                                                 <div className="relative w-full h-full">
                                                 <StaticRouteMap
                                                     mapboxToken={mapboxAccessToken}
                                                     originCoordinates={originCoords}
                                                     destinationCoordinates={destCoords}
                                                     routeGeometry={currentRouteGeometry}
-                                                    lastKnownPosition={(() => { 
+                                                    lastKnownPosition={(() => {
                                                         logger.debug('[Render] Passing lastKnownPosition to StaticRouteMap:', currentLastPosition);
-                                                        return currentLastPosition; 
+                                                        return currentLastPosition;
                                                     })()}
-                                                          className="w-full h-full rounded" // Make map fill the container
+                                                          className="w-full h-full rounded"
                                                       />
-                                                      {/* --- MOVED: Map Overlay Buttons Container --- */} 
-                                                     <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10"> {/* Changed right-2 to left-2 */} 
+                                                      {/* Map Overlay Buttons Container */}
+                                                     <div className="absolute top-2 left-2 flex flex-col space-y-1 z-10">
                                                          {/* Refresh Button */}
-                                                          <Button 
-                                                              variant="outline" 
-                                                              size="icon" 
-                                                              onClick={handleRefreshLocation} 
+                                                          <Button
+                                                              variant="outline"
+                                                              size="icon"
+                                                              onClick={handleRefreshLocation}
                                                               disabled={!selectedShipment || isRefreshingLocation}
                                                               title="Refresh Last Known Location"
                                                               className="bg-card hover:bg-muted"
                                                           >
                                                              {isRefreshingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                                           </Button>
-                                                          {/* Other potential overlay buttons could go here */}
-                                                     </div> 
-                                                     {/* --- END MOVED: Map Overlay Buttons Container --- */}
+                                                          {/* Other potential overlay buttons */}
+                                                     </div>
                                                  </div>
                                             );
-                                        } else { 
+                                        } else {
                                             return (
                                                 <div className="aspect-video flex items-center justify-center h-full bg-muted border border-border rounded-lg">
                                                     <p className="text-muted-foreground text-sm text-center px-4">
@@ -593,22 +552,19 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                 </div>
                         </div>
 
-                            {/* Prominent View Tracking Button -- Positioned below map */}
+                            {/* Prominent View Tracking Button */}
                         {showTrackingButton && (
-                            <div className="mt-4 flex justify-center"> 
-                                <Button 
-                                        // Restore original onClick:
+                            <div className="mt-4 flex justify-center">
+                                <Button
                                         onClick={() => {
-                                            // Keep previous logging here for now:
-                                            logger.info('[ShipmentPage Button onClick] Triggered!'); 
-                                            console.log('[ShipmentPage Button onClick] Triggered!');
+                                            logger.debug('[ShipmentPage Button onClick] Triggered!');
                                             if (selectedShipment?.coreInfo?.id) {
                                                 logger.info(`[ShipmentPage Button onClick] Calling handleViewTracking for: ${selectedShipment.coreInfo.id}`);
                                                 handleViewTracking(selectedShipment.coreInfo.id, documentid);
                                             } else {
                                                 logger.warn('[ShipmentPage Button onClick] Cannot call handleViewTracking: selectedShipment or ID missing.');
                                             }
-                                        }} 
+                                        }}
                                     variant="secondary"
                                     size="sm"
                                     disabled={isSimLoading}
@@ -628,7 +584,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                         </>
                         ) : (
                             <div className="bg-card p-6 rounded-lg shadow flex items-center justify-center">
-                                <p className="text-muted-foreground">Select a shipment to view details.</p>
+                                <p className="text-muted-foreground\">Select a shipment to view details.</p>
                         </div>
                     )}
                 </div>

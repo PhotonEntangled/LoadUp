@@ -32,7 +32,7 @@
 
 
     "app/simulation/[documentId]/page.tsx": {
-      "description": "Client component page displaying the simulation view for a specific document. Fetches shipment list via API, manages selection state, initiates simulation load via server action, and renders the map and controls.",
+      "description": "Client component page displaying the interactive simulation view for shipments within a specific document. Fetches shipment list, manages selection state, loads/rejoins simulation via server actions, and renders the SimulationMap and SimulationControls.",
       "keyImports": ["react", "next/navigation", "@/utils/logger", "@/types/api", "@/components/shipments/ShipmentCard", "@/components/map/SimulationMap", "@/components/simulation/SimulationControls", "@/lib/store/useSimulationStoreContext", "@/lib/actions/simulationActions", "@/components/ui/accordion"],
       "relatedFiles": ["app/api/simulation/shipments/[documentId]/route.ts", "lib/actions/simulationActions.ts", "lib/store/useSimulationStore.ts", "components/map/SimulationMap.tsx", "components/simulation/SimulationControls.tsx", "components/shipments/ShipmentCard.tsx"]
     },
@@ -41,15 +41,15 @@
         "keyImports": ["next/server", "@/lib/database/drizzle", "@/lib/database/schema", "@/types/api", "@/utils/logger", "drizzle-orm"],
         "relatedFiles": ["lib/database/schema.ts", "lib/database/drizzle.ts", "types/api.ts", "app/simulation/[documentId]/page.tsx", "lib/actions/simulationActions.ts"]
     },
-     "app/api/simulation/tick/route.ts": {
-        "description": "API route (POST) acting as the worker for simulation ticks. Triggered by Vercel Queues. Fetches state from KV, calculates next step using Turf.js, updates KV, persists location to DB.",
-        "keyImports": ["next/server", "@/utils/logger", "@/services/kv/simulationCacheService", "@/services/VehicleTrackingService", "@/types/vehicles", "@turf/turf", "geojson"],
-        "relatedFiles": ["services/kv/simulationCacheService.ts", "services/VehicleTrackingService.ts", "types/vehicles.ts"]
+     "app/api/simulation/tick-worker/route.ts": {
+        "description": "API route (POST) acting as the worker for simulation ticks. Triggered by Vercel Queues (from enqueue-ticks). Fetches state from KV, calculates next step using utils/simulationUtils, updates KV, persists last known location to DB via VehicleTrackingService.",
+        "keyImports": ["next/server", "@/utils/logger", "@/services/kv/simulationCacheService", "@/services/VehicleTrackingService", "@/types/vehicles", "@/utils/simulation/simulationUtils"],
+        "relatedFiles": ["services/kv/simulationCacheService.ts", "services/VehicleTrackingService.ts", "types/vehicles.ts", "app/api/simulation/enqueue-ticks/route.ts", "utils/simulation/simulationUtils.ts"]
     },
      "app/api/simulation/enqueue-ticks/route.ts": {
-        "description": "API route (GET) triggered by Cron job. Fetches active simulation IDs from KV, checks status, enqueues tick jobs to Vercel Queue via fetch POST to queue endpoint for 'En Route' simulations, cleans up inactive IDs.",
+        "description": "API route (GET) previously triggered by Cron job. Fetches active simulation IDs from KV, checks status, enqueues tick jobs to Vercel Queue via fetch POST to queue endpoint for 'En Route' simulations, cleans up inactive IDs. Requires EXTERNAL TRIGGER.",
         "keyImports": ["next/server", "@/utils/logger", "@/services/kv/simulationCacheService", "@/types/vehicles"],
-        "relatedFiles": ["services/kv/simulationCacheService.ts", "app/api/simulation/tick/route.ts"]
+        "relatedFiles": ["services/kv/simulationCacheService.ts", "app/api/simulation/tick-worker/route.ts"]
     },
      "app/api/maps/directions/route.ts": {
         "description": "API route proxying requests to the Mapbox Directions API to avoid exposing the token client-side. Used by fetchRouteGeometry.",
@@ -57,9 +57,9 @@
         "relatedFiles": ["app/shipments/[documentid]/page.tsx", "services/map/MapDirectionsService.ts"]
      },
     "lib/actions/simulationActions.ts": {
-      "description": "Defines Next.js Server Actions related to simulation: `getSimulationInputForShipment` (fetches DB data, calculates routes via MapDirectionsService, prepares SimulationInput) and `startSimulation` (initiates simulation, saves initial state to KV, marks simulation as active).",
-      "keyImports": ["server-only", "@/lib/database/drizzle", "@/lib/database/schema", "@/types/simulation", "@/types/api", "@/services/map/MapDirectionsService", "@/utils/logger", "@/services/shipment/SimulationFromShipmentService", "@/services/kv/simulationCacheService"],
-      "relatedFiles": ["app/simulation/[documentId]/page.tsx", "app/shipments/[documentid]/page.tsx", "services/map/MapDirectionsService.ts", "types/simulation.ts", "services/shipment/SimulationFromShipmentService.ts", "services/kv/simulationCacheService.ts"]
+      "description": "Defines Next.js Server Actions related to simulation lifecycle: `getSimulationInputForShipment` (fetches DB data, prepares simulation input), `startSimulation` (initiates/rejoins simulation via KV cache, returns vehicle state), `stopSimulation` (cleans up KV state), `confirmShipmentDelivery` (updates final DB status).",
+      "keyImports": ["server-only", "@/lib/database/drizzle", "@/lib/database/schema", "@/types/simulation", "@/types/api", "@/services/map/MapDirectionsService", "@/utils/logger", "@/services/shipment/SimulationFromShipmentService", "@/services/kv/simulationCacheService", "@/services/VehicleTrackingService"],
+      "relatedFiles": ["app/simulation/[documentId]/page.tsx", "app/shipments/[documentid]/page.tsx", "services/map/MapDirectionsService.ts", "types/simulation.ts", "services/shipment/SimulationFromShipmentService.ts", "services/kv/simulationCacheService.ts", "lib/store/useSimulationStore.ts"]
     },
     "types/vehicles.ts": {
         "description": "Defines core TypeScript interfaces for vehicle simulation state, including VehicleStatus enum and the main SimulatedVehicle interface. Defines the shape of data within the simulation store.",
@@ -67,8 +67,8 @@
         "relatedFiles": ["lib/store/useSimulationStore.ts", "services/shipment/SimulationFromShipmentService.ts", "components/map/SimulationMap.tsx", "utils/simulation/simulationUtils.ts", "utils/simulation/etaUtils.ts"]
     },
     "types/simulation.ts": {
-        "description": "Defines the SimulationInput interface, specifying the data contract required by the server action (getSimulationInputForShipment) and the simulation service (createVehicleFromShipment).",
-        "keyImports": ["geojson", "@/lib/database/schema"],
+        "description": "Defines the SimulationInput interface, specifying the data contract required by the server action (getSimulationInputForShipment) and the simulation service (createVehicleFromShipment). Includes fields for initial state setting.",
+        "keyImports": ["geojson", "@/lib/database/schema", "@/types/vehicles"],
         "relatedFiles": ["lib/actions/simulationActions.ts", "services/shipment/SimulationFromShipmentService.ts"]
     },
     "types/api.ts": {
@@ -82,7 +82,7 @@
         "relatedFiles": ["services/excel/ExcelParserService.ts", "services/excel/shipmentBuilder.ts", "services/database/shipmentInserter.ts"]
     },
     "services/shipment/SimulationFromShipmentService.ts": {
-        "description": "Service responsible for converting SimulationInput data into a SimulatedVehicle object. Handles initial state calculation (position, bearing based on status). Uses a singleton pattern.",
+        "description": "Service responsible for converting SimulationInput data into a SimulatedVehicle object. Handles initial state calculation (position, bearing based on status, defaults for AWAITING_STATUS). Uses a singleton pattern.",
         "keyImports": ["@/types/vehicles", "@/types/simulation", "@/utils/logger", "@turf/turf", "geojson", "uuid", "@/lib/database/schema"],
         "relatedFiles": ["lib/store/useSimulationStore.ts", "types/vehicles.ts", "types/simulation.ts", "lib/actions/simulationActions.ts"]
     },
@@ -92,13 +92,13 @@
         "relatedFiles": ["lib/actions/simulationActions.ts", "app/api/maps/directions/route.ts"]
     },
     "services/VehicleTrackingService.ts": { 
-      "description": "Service responsible for persisting vehicle tracking state (e.g., last known location) to the database via the updateShipmentLastKnownLocation method. Intended to be called by backend simulation loops or real-time updates.",
+      "description": "Service responsible for persisting vehicle tracking state (e.g., last known location, final status) to the database via updateShipmentLastKnownLocation and updateShipmentStatusToDelivered methods. Called by backend simulation/confirmation logic.",
       "keyImports": ["@/lib/database/drizzle", "drizzle-orm", "@/lib/database/schema", "@/utils/logger"],
-      "relatedFiles": ["lib/database/schema.ts", "lib/database/drizzle.ts", "app/api/simulation/tick/route.ts"] 
+      "relatedFiles": ["lib/database/schema.ts", "lib/database/drizzle.ts", "app/api/simulation/tick-worker/route.ts", "lib/actions/simulationActions.ts"] 
     },
     "lib/store/useSimulationStore.ts": {
-      "description": "Zustand store managing the state for vehicle simulations. Includes vehicle data, simulation status (running, speed), selected vehicle, UI flags (isFollowing), error/loading states, and actions to control the simulation loop and state (start, stop, tick, confirm pickup/delivery, loadSimulationFromInput).",
-      "keyImports": ["zustand", "@/types/vehicles", "@/utils/logger", "@/utils/simulation/simulationUtils", "@/types/simulation", "@/services/shipment/SimulationFromShipmentService"],
+      "description": "Zustand store managing the client-side state for vehicle simulations. Includes vehicle data, simulation status (running, speed), selected vehicle, UI flags (isFollowing), and actions to interact with simulation server actions and control local state (e.g., tickSimulation triggers backend worker). Added setVehicleFromServer action for direct state updates.",
+      "keyImports": ["zustand", "@/types/vehicles", "@/utils/logger", "@/utils/simulation/simulationUtils", "@/types/simulation", "@/services/shipment/SimulationFromShipmentService", "@/lib/actions/simulationActions"],
       "relatedFiles": ["components/map/SimulationMap.tsx", "components/simulation/SimulationControls.tsx", "utils/simulation/simulationUtils.ts", "types/vehicles.ts", "lib/context/SimulationStoreContext.tsx", "lib/store/useSimulationStoreContext.ts", "app/simulation/[documentId]/page.tsx", "lib/actions/simulationActions.ts"]
     },
     "lib/context/SimulationStoreContext.tsx": {
@@ -112,14 +112,14 @@
       "relatedFiles": ["lib/context/SimulationStoreContext.tsx", "components/map/SimulationMap.tsx", "components/simulation/SimulationControls.tsx", "app/simulation/[documentId]/page.tsx"]
     },
     "components/map/SimulationMap.tsx": {
-      "description": "Renders the main interactive map for vehicle simulation using react-map-gl. Displays simulated vehicle markers (styled by status, rotated), origin/destination markers, and route lines (with progress gradient). Connects to useSimulationStoreContext for state and handles map interactions (zoom, pan, follow mode, marker clicks). Exports SimulationMapRef for external control.",
-      "keyImports": ["react", "mapbox-gl", "react-map-gl/mapbox", "@/lib/store/useSimulationStoreContext", "@/lib/context/SimulationStoreContext", "@/types/vehicles", "@/utils/logger", "geojson", "lucide-react", "@/lib/utils"],
+      "description": "Renders the main interactive map for vehicle simulation using react-map-gl. Displays simulated vehicle markers (styled by status, rotated), origin/destination markers, and route lines (with progress gradient). Connects to useSimulationStoreContext for state and handles map interactions (zoom, pan, follow mode, marker clicks). Uses forwarded ref for external control.",
+      "keyImports": ["react", "mapbox-gl", "react-map-gl/maplibre", "@/lib/store/useSimulationStoreContext", "@/lib/context/SimulationStoreContext", "@/types/vehicles", "@/utils/logger", "geojson", "lucide-react", "@/lib/utils"],
       "relatedFiles": ["app/simulation/[documentId]/page.tsx", "lib/store/useSimulationStore.ts", "types/vehicles.ts", "components/simulation/SimulationControls.tsx"]
     },
      "components/map/StaticRouteMap.tsx": {
-        "description": "Renders a non-interactive map displaying a static route, origin/destination markers, and optionally the last known vehicle position. Used for map previews (e.g., on /shipments/[id]).",
-        "keyImports": ["react", "mapbox-gl", "react-map-gl/mapbox", "@/utils/logger", "geojson", "lucide-react"],
-        "relatedFiles": ["app/shipments/[documentid]/page.tsx"]
+        "description": "Renders a non-interactive map displaying a static route, origin/destination markers, and optionally the last known vehicle position. Used for map previews (e.g., on /shipments/[id]). Includes refresh button for LKL.",
+        "keyImports": ["react", "mapbox-gl", "react-map-gl/mapbox", "@/utils/logger", "geojson", "lucide-react", "@/components/ui/button", "lucide-react"],
+        "relatedFiles": ["app/shipments/[documentid]/page.tsx", "lib/actions/shipmentActions.ts"]
      },
     "components/simulation/SimulationControls.tsx": {
       "description": "Provides UI controls for the simulation: Start/Stop/Confirm buttons, speed slider, reset button, follow toggle, ETA display. Connects to useSimulationStoreContext to read state and dispatch actions. Disables controls based on vehicle status and simulation state.",
@@ -173,7 +173,7 @@
     "utils/simulation/simulationUtils.ts": {
       "description": "Utility functions supporting the simulation logic, specifically calculateNewPosition which uses Turf.js to determine a vehicle's next position and bearing along a route.",
       "keyImports": ["@/types/vehicles", "@turf/turf", "@/utils/logger"],
-      "relatedFiles": ["lib/store/useSimulationStore.ts"]
+      "relatedFiles": ["lib/store/useSimulationStore.ts", "app/api/simulation/tick-worker/route.ts"]
     },
     "utils/simulation/etaUtils.ts": {
         "description": "Utility function (calculateEta) to estimate arrival time based on vehicle state (route distance, traveled distance) and simulation speed.",
@@ -195,9 +195,9 @@
     "lib/database/schema.ts": {},
 
     "services/kv/simulationCacheService.ts": {
-        "description": "Provides functions (getSimulationState, setSimulationState) to interact with Vercel KV for caching transient simulation vehicle state.",
+        "description": "Provides functions to interact with Vercel KV for caching transient simulation vehicle state (get/setSimulationState, setActiveSimulation, getActiveSimulations).",
         "keyImports": ["@vercel/kv", "@/types/vehicles", "@/utils/logger"],
-        "relatedFiles": ["@/types/vehicles", "services/kv/simulationCacheService.test.ts"]
+        "relatedFiles": ["@/types/vehicles", "services/kv/simulationCacheService.test.ts", "lib/actions/simulationActions.ts", "app/api/simulation/tick-worker/route.ts", "app/api/simulation/enqueue-ticks/route.ts"]
     },
     "services/kv/simulationCacheService.test.ts": {
         "description": "Unit tests for simulationCacheService using Jest, mocking @vercel/kv.",
@@ -213,6 +213,10 @@
         "description": "Custom React hook to debounce a value, updating only after a specified delay.",
         "keyImports": ["react"],
         "relatedFiles": []
+    },
+    "lib/actions/shipmentActions.ts": {
+      "description": "Defines Next.js Server Actions related to non-simulation shipment updates, specifically getShipmentLastKnownLocation.",
+      "relatedFiles": ["app/shipments/[documentid]/page.tsx"]
     }
   }
 }

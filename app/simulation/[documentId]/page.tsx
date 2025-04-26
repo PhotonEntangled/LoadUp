@@ -38,6 +38,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useStore } from 'zustand';
 
 // --- ADD TYPE GUARD ---
 // Type guard to check if the result is the error shape
@@ -67,24 +68,23 @@ export default function SimulationDocumentPage() {
   // ADDED: State for the backend start action
   const [isStartingBackendSim, setIsStartingBackendSim] = useState(false);
 
-  // --- FIX: Get store API instance via context and type it explicitly ---
-  const storeApi = useContext(SimulationStoreContext);
-  // Type assertion might be needed if TypeScript can't infer it correctly, 
-  // but the check below should generally suffice. 
-  // const storeApi = useContext(SimulationStoreContext) as SimulationStoreApi | null;
-  if (!storeApi) {
+  const store = useContext(SimulationStoreContext); // <<< Get the raw store context
+  if (!store) {
     throw new Error("SimulationStoreContext not found. Make sure SimulationStoreProvider wraps the layout.");
   }
-  // --- END FIX ---
 
-  // Access store actions and state via the hook (selectors)
-  const loadSimulationFromInput = useSimulationStoreContext((state: SimulationStoreApi) => state.loadSimulationFromInput);
-  const isSimulationRunning = useSimulationStoreContext((state: SimulationStoreApi) => state.isSimulationRunning);
-  const selectedVehicleId = useSimulationStoreContext((state: SimulationStoreApi) => state.selectedVehicleId);
-  const vehicles = useSimulationStoreContext((state: SimulationStoreApi) => state.vehicles);
+  // --- Use useStore with context and selectors --- 
+  const loadSimulationFromInput = useStore(store, (state) => state.loadSimulationFromInput);
+  const isSimulationRunning = useStore(store, (state) => state.isSimulationRunning);
+  const selectedVehicleId = useStore(store, (state) => state.selectedVehicleId);
+  const vehicles = useStore(store, (state) => state.vehicles);
+  const startGlobalSimulation = useStore(store, (state) => state.startGlobalSimulation);
+  // --- END: Use useStore with context and selectors --- 
+
+  // --- FIX: Get selected ID for comparison OUTSIDE the handler --- 
+  const currentStoreSelectedId = useStore(store, (state) => state.selectedVehicleId);
+
   const selectedVehicle: SimulatedVehicle | undefined = selectedVehicleId ? vehicles[selectedVehicleId] : undefined;
-  // Get the local start action
-  const startGlobalSimulation = useSimulationStoreContext((state: SimulationStoreApi) => state.startGlobalSimulation);
 
   // <<< RE-ADDED & MODIFIED: useEffect hook for auto-starting LOCAL simulation animation >>>
   useEffect(() => {
@@ -216,8 +216,8 @@ export default function SimulationDocumentPage() {
         return;
     }
 
-    // Use the storeApi instance to call getState()
-    const currentStoreSelectedId = storeApi.getState().selectedVehicleId; 
+    // --- FIX: Use the value obtained outside the handler --- 
+    // const currentStoreSelectedId = useStore(store, (state) => state.selectedVehicleId); 
     
     // Set local state regardless to update UI highlight
     setSelectedShipmentId(idToSelect);

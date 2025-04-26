@@ -6,7 +6,7 @@ import { useSimulationStoreContext } from "@/lib/store/useSimulationStoreContext
 import { SimulationStoreApi } from "@/lib/store/useSimulationStore" // ADDED type import
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import { Play, Pause, RotateCcw, PackageCheck } from "lucide-react"
+import { Play, Pause, RotateCcw, PackageCheck, Check, Loader2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { logger } from "@/utils/logger"
@@ -34,13 +34,13 @@ export function SimulationControls({
   const isFollowingVehicle = useSimulationStoreContext((state: SimulationStoreApi) => state.isFollowingVehicle);
   
   // --- Access ACTIONS using context hook selectors --- 
-  const confirmPickupAction = useSimulationStoreContext((state: SimulationStoreApi) => state.confirmPickupAction);
-  const startGlobalSimulation = useSimulationStoreContext((state: SimulationStoreApi) => state.startGlobalSimulation);
-  const stopGlobalSimulation = useSimulationStoreContext((state: SimulationStoreApi) => state.stopGlobalSimulation);
-  const confirmDropoffAction = useSimulationStoreContext((state: SimulationStoreApi) => state.confirmDropoffAction);
-  const setSimulationSpeed = useSimulationStoreContext((state: SimulationStoreApi) => state.setSimulationSpeed);
-  const resetStore = useSimulationStoreContext((state: SimulationStoreApi) => state.resetStore);
-  const toggleFollowVehicle = useSimulationStoreContext((state: SimulationStoreApi) => state.toggleFollowVehicle);
+  const setSimulationSpeed = useSimulationStoreContext((state) => state.setSimulationSpeed);
+  const resetStore = useSimulationStoreContext((state) => state.resetStore);
+  const confirmPickup = useSimulationStoreContext((state) => state.confirmPickup);
+  const startGlobalSimulation = useSimulationStoreContext((state) => state.startGlobalSimulation);
+  const stopGlobalSimulation = useSimulationStoreContext((state) => state.stopGlobalSimulation);
+  const confirmDelivery = useSimulationStoreContext((state) => state.confirmDelivery);
+  const toggleFollowVehicle = useSimulationStoreContext((state) => state.toggleFollowVehicle);
 
   // Local state for slider
   const [speedValue, setSpeedValue] = useState(() => simulationSpeedMultiplier); 
@@ -84,30 +84,26 @@ export function SimulationControls({
     setSpeedValue(simulationSpeedMultiplier)
   }, [simulationSpeedMultiplier])
 
-  // Handle simulation toggle / confirm pickup
-  const handleToggleSimulation = () => {
-    if (isSimulationRunning) {
-      stopGlobalSimulation();
-    } else if (selectedVehicle?.status === 'Idle') {
-      confirmPickupAction(); // This should eventually trigger startGlobalSimulation via the service/update
-    } else if (selectedVehicle?.status === 'En Route' || selectedVehicle?.status === 'Delayed') { // Allow restarting if stopped mid-trip
-      startGlobalSimulation();
+  // --- Handler logic combining pickup confirmation and starting simulation ---
+  const handleConfirmAndStart = () => {
+    if (storeSelectedVehicleId && selectedVehicle?.status === 'Idle') {
+      logger.info(`[Controls] handleConfirmAndStart: Confirming pickup for ${storeSelectedVehicleId}`);
+      confirmPickup(storeSelectedVehicleId); // Directly call confirmPickup
+      // Note: confirmPickup internally calls startGlobalSimulation if status changes to En Route
     } else {
-      logger.warn('[Controls] Toggle simulation called but vehicle status is not Idle, En Route, or Delayed.', { status: selectedVehicle?.status });
+       logger.warn("[Controls] handleConfirmAndStart called but no vehicle selected or status not Idle.");
     }
-  }
+  };
 
-  // Handle Confirm Delivery
-  const handleConfirmDelivery = () => {
-    // Now use action obtained from context selector
-    if (typeof confirmDropoffAction !== 'function') { 
-        logger.error("[SimulationControls] Critical Error: confirmDropoffAction is not available via context!");
-        return;
-    }
-
-    if (selectedVehicle && selectedVehicle.status === 'Pending Delivery Confirmation') {
-      logger.info("[SimulationControls] Confirming delivery via button.");
-      confirmDropoffAction();
+  // --- Handler for confirm delivery ---
+  const handleConfirmDelivery = async () => {
+    if (storeSelectedVehicleId && selectedVehicle?.status === 'Pending Delivery Confirmation') {
+        logger.info(`[Controls] handleConfirmDelivery: Confirming delivery for ${storeSelectedVehicleId}`);
+        // Directly call the confirmDelivery action (which is async)
+        await confirmDelivery(storeSelectedVehicleId); 
+         // Optionally show toast feedback based on errorState here
+    } else {
+       logger.warn("[Controls] handleConfirmDelivery called but no vehicle selected or status not Pending Delivery Confirmation.");
     }
   };
 
@@ -155,14 +151,14 @@ export function SimulationControls({
     !selectedVehicle || 
     selectedVehicle.status !== 'Idle' || // Base check
     isVehicleAwaitingStatus || // Explicitly disable if AWAITING_STATUS
-    typeof confirmPickupAction !== 'function' || 
+    typeof confirmPickup !== 'function' || 
     typeof startGlobalSimulation !== 'function';
   const stopButtonDisabled = !isSimulationRunning || typeof stopGlobalSimulation !== 'function';
   const confirmDeliveryButtonVisible = selectedVehicle?.status === 'Pending Delivery Confirmation';
   const confirmDeliveryButtonDisabled = 
     !confirmDeliveryButtonVisible || // Implicitly handled by visibility, but explicit check is safer
     isVehicleAwaitingStatus || // Disable if AWAITING_STATUS
-    typeof confirmDropoffAction !== 'function';
+    typeof confirmDelivery !== 'function';
   const resetButtonDisabled = typeof resetStore !== 'function';
   // Disable speed/follow if no vehicle, if awaiting status, or if action not available
   const speedSliderDisabled = 
@@ -186,16 +182,16 @@ export function SimulationControls({
           {/* Show Confirm Pickup & Start OR Stop button */}
           {!isSimulationRunning && (
             <Button 
-              onClick={handleToggleSimulation} 
+              onClick={handleConfirmAndStart} 
               disabled={confirmPickupButtonDisabled} 
               size="sm" // Smaller button
             >
-              <Play className="mr-1.5 h-4 w-4" /> Confirm & Start
+              <Play className="mr-1.5 h-4 w-4" /> Confirm Pickup & Start
             </Button>
           )}
           {isSimulationRunning && (
             <Button 
-              onClick={handleToggleSimulation} 
+              onClick={stopGlobalSimulation} 
               disabled={stopButtonDisabled}
               variant="destructive"
               size="sm" // Smaller button
