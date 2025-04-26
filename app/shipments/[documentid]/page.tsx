@@ -362,26 +362,36 @@ export default function Page({ params }: { params: { documentid: string } }) {
                 throw new Error(`Failed to start simulation: ${startResult.error}`);
             }
 
-            logger.info('[handleViewTracking] Simulation started successfully on the server.');
+            // --- FIX: Use the data returned by startSimulation --- 
+            if (!startResult.data || !startResult.vehicleId) {
+                // This case should ideally not happen if startResult.error was not thrown, but good to check
+                throw new Error('Simulation started but returned no vehicle data or ID.');
+            }
+            const vehicleDataFromServer = startResult.data;
+            logger.info('[handleViewTracking] Simulation start successful. Received vehicle data from server.', { vehicleId: startResult.vehicleId });
+            // --- END FIX --- 
 
-            // 3. Load data into the client-side store (Optional - if still needed immediately)
-            // CORRECTED STORE ACCESS:
-            if (!storeApi) { // Check if context value is available
+            // --- FIX: Call the NEW store action --- 
+            // Access the new action from the store context
+            if (!storeApi) { 
                 throw new Error("Simulation store context is not available.");
             }
-            const loadAction = storeApi.getState().loadSimulationFromInput; 
+            const setVehicleAction = storeApi.getState().setVehicleFromServer;
 
-            if (typeof loadAction !== 'function') { 
-                 logger.error('[handleViewTracking] loadSimulationFromInput action is not available via context!', { storeState: storeApi.getState() });
-                 throw new Error('Simulation loading action failed.');
+            if (typeof setVehicleAction !== 'function') { 
+                 logger.error('[handleViewTracking] setVehicleFromServer action is not available via context!', { storeState: storeApi.getState() });
+                 throw new Error('Simulation state update action failed.');
             }
-
-            await loadAction(simulationInputResult); 
-            logger.info(`Shipment Page: Simulation data loaded into client store for ${shipmentId}.`);
+            
+            // Call the new action with the data received from the server
+            setVehicleAction(vehicleDataFromServer);
+            logger.info(`Shipment Page: Set vehicle state in client store using server data for ${shipmentId}.`);
+            // --- END FIX --- 
 
             // 4. Navigate to the simulation page for the specific document
             logger.info(`Shipment Page: Navigating to simulation page...`);
-            router.push(`/simulation/${documentId}?selectedShipmentId=${shipmentId}`);
+            // Pass the vehicleId (same as shipmentId in current setup, but use vehicleId for clarity)
+            router.push(`/simulation/${documentId}?selectedShipmentId=${startResult.vehicleId}`);
 
         } catch (err) {
             logger.error('Shipment Page: Error preparing or starting simulation:', err);

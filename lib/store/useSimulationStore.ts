@@ -64,6 +64,8 @@ export interface SimulationActions {
   confirmPickupAction: () => void; // <<< ADDED
   /** Action triggered by UI to confirm dropoff, targeting selected vehicle */
   confirmDropoffAction: () => void; // <<< ADDED
+  /** Directly sets/updates a vehicle state and selects it, usually from server data */
+  setVehicleFromServer: (vehicleData: SimulatedVehicle) => void; // <<< NEW ACTION
 }
 
 // Define the combined type for the store API
@@ -527,6 +529,30 @@ export const createSimulationStore = () => {
       }
         confirmDelivery(selectedVehicleId);
     },
+
+    // <<< NEW ACTION IMPLEMENTATION >>>
+    setVehicleFromServer: (vehicleData) => {
+      if (!vehicleData || !vehicleData.id) {
+        logger.error('[setVehicleFromServer] Received invalid vehicle data. Aborting.', { vehicleData });
+        set({ isLoading: false, error: 'Received invalid vehicle data from server.' });
+        return;
+      }
+      
+      const vehicleId = vehicleData.id;
+      logger.info('[setVehicleFromServer] Setting vehicle state from server data.', { vehicleId: vehicleId, shipmentId: vehicleData.shipmentId });
+
+      set((state) => ({
+        vehicles: {
+          ...state.vehicles,
+          [vehicleId]: vehicleData // Add or overwrite the vehicle
+        },
+        selectedVehicleId: vehicleId, // Automatically select the vehicle
+        isLoading: false, // Ensure loading is false
+        error: null // Clear any previous error
+      }));
+      logger.info('[setVehicleFromServer] Successfully set vehicle state and selected ID.', { vehicleId });
+    },
+    // <<< END NEW ACTION IMPLEMENTATION >>>
   }));
 };
 
