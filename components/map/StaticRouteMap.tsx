@@ -289,7 +289,7 @@ export const StaticRouteMap = React.memo(({
           {isMapLoaded && lastKnownPosition?.geometry?.coordinates && (
             (() => {
               const [lon, lat] = lastKnownPosition.geometry.coordinates;
-              // --- REPLACE LKL MARKER with structure from SimulationMap --- 
+              // --- Corrected LKL MARKER structure --- 
               return (
                 <Marker longitude={lon} latitude={lat} anchor="center">
                   {/* Sizing and ROTATION div - Match OBSERVED SimulationMap size */}
@@ -298,7 +298,7 @@ export const StaticRouteMap = React.memo(({
                       height: '40px', // Match OBSERVED SimulationMap size
                       transform: 'rotate(-90deg)', // Apply rotation
                       transformOrigin: 'center center', // Ensure rotation is centered
-                      transition: 'none' 
+                      transition: 'none' // Added semicolon if missing, ensure correct object syntax
                    }}>
                     {/* Use the exact SVG structure */} 
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
@@ -312,7 +312,7 @@ export const StaticRouteMap = React.memo(({
                   </div>
                 </Marker>
               );
-              // --- END REPLACE LKL MARKER --- 
+              // --- END Corrected LKL MARKER --- 
             })()
           )}
 
