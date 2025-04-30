@@ -13,10 +13,12 @@ import { shipmentStatusEnum } from '@/lib/database/schema';
 
 // --- UI & Utils ---
 import { cn } from "@/lib/utils";
-import { Accordion, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Loader2 } from "lucide-react";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Loader2, MapPin, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatDate } from "@/lib/formatters";
 
 // Define a type for the static details needed by the map
 // Based on TrackingMap potential needs (Task 9.R.4)
@@ -232,6 +234,11 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
           const isSelected = shipmentId === selectedShipmentId;
           const isDisabled = !isTrackable || isLoadingSelection; 
 
+          // Get address details for content
+          const originAddress = shipment.locationDetails?.pickups?.[0]?.address;
+          const destinationAddress = shipment.locationDetails?.dropoffs?.[0]?.address;
+          const deliveryDate = shipment.coreInfo.plannedDeliveryDate;
+
           return (
             <AccordionItem 
               value={shipmentId} 
@@ -283,6 +290,46 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
                      )}
                   </div>
                </AccordionTrigger>
+               <AccordionContent className="p-3 pt-2 text-sm border-t">
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3"> 
+                    <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5 flex items-center gap-1"><MapPin className="h-3 w-3" /> Pickup</p>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-xs truncate">
+                                    {originAddress?.city && originAddress?.stateProvince
+                                    ? `${originAddress.city}, ${originAddress.stateProvince}`
+                                    : originAddress?.fullAddress || "N/A"}
+                                </p>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" align="start"><p>{originAddress?.fullAddress || 'N/A'}</p></TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                    <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5 flex items-center gap-1"><MapPin className="h-3 w-3" /> Destination</p>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-xs truncate">
+                                    {destinationAddress?.city && destinationAddress?.stateProvince
+                                    ? `${destinationAddress.city}, ${destinationAddress.stateProvince}`
+                                    : destinationAddress?.fullAddress || "N/A"}
+                                </p>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" align="start"><p>{destinationAddress?.fullAddress || 'N/A'}</p></TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                    <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5 flex items-center gap-1"><Calendar className="h-3 w-3" /> Delivery Date</p>
+                        <p className="text-xs"> 
+                          {deliveryDate ? formatDate(deliveryDate) : 'N/A'} 
+                        </p>
+                    </div>
+                 </div>
+               </AccordionContent>
             </AccordionItem>
           );
         })}
@@ -367,8 +414,8 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
   // --- Main Layout ---
   return (
     <div className="grid h-screen grid-cols-1 lg:grid-cols-[minmax(350px,_1fr)_3fr] xl:grid-cols-[minmax(400px,_1fr)_4fr]">
-      {/* Left Column: Shipment List - REMOVED explicit background */}
-      <div className="flex flex-col h-full overflow-y-auto border-r border-gray-200 dark:border-gray-800">
+      {/* Left Column: Shipment List - REMOVED border-r */}
+      <div className="flex flex-col h-full overflow-y-auto pr-2">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
           <h1 className="text-lg font-semibold">Shipments for Document</h1>
           <p className="text-xs text-muted-foreground truncate" title={documentId}>{documentId}</p> 

@@ -204,7 +204,12 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
   // Callback for general map mouse move (to reset cursor)
   const handleMapMouseMove = useCallback((e: mapboxgl.MapMouseEvent) => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    // Neurotic Check: Ensure map and layer exist before querying
+    if (!map || !map.getLayer('live-vehicle-layer')) {
+        // If layer doesn't exist yet, ensure cursor is default
+        if(map) map.getCanvas().style.cursor = ''; 
+        return;
+    }
     const features = map.queryRenderedFeatures(e.point, { layers: ['live-vehicle-layer'] });
     // Reset cursor if mouse is NOT over the vehicle layer
     map.getCanvas().style.cursor = (features && features.length > 0) ? 'pointer' : '';
