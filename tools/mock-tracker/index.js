@@ -1,7 +1,8 @@
 // tools/mock-tracker/index.cjs
+const path = require('path'); // Import path module
 
-// Load environment variables from .env file
-require('dotenv').config();
+// Load environment variables from .env file IN THIS DIRECTORY
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const admin = require('firebase-admin');
 
