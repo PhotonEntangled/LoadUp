@@ -12,7 +12,6 @@ import Map, {
   Source,
   Layer,
   Popup,
-  MapRef
 } from 'react-map-gl/mapbox';
 import { useLiveTrackingStore } from '../../lib/store/useLiveTrackingStore'; // Using relative path
 import { LiveVehicleUpdate } from '../../types/tracking'; // Using relative path
@@ -23,6 +22,8 @@ import { Home, Flag, MapPin, Loader2 } from 'lucide-react';
 import { cn } from "../../lib/utils"; // Using relative path
 import { formatTimestamp, formatSpeed } from '../../utils/formatters'; // Assume these exist
 import ReactDOMServer from 'react-dom/server'; // For rendering icons to string
+import { GeoJSONSource } from 'mapbox-gl';
+import { LngLatBounds } from 'mapbox-gl';
 
 // Define potential methods to expose via the ref
 export interface TrackingMapRef {
@@ -78,7 +79,7 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
   plannedRouteGeometry,
 }, ref) => {
   // Refs
-  const mapRefInternal = useRef<MapRef | null>(null); // Use MapRef type from react-map-gl
+  const mapRefInternal = useRef<any>(null); // Use any for now to avoid typing issues
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
   const mountedRef = useRef<boolean>(true);
   const originMarkerRef = useRef<mapboxgl.Marker | null>(null); // Ref for origin marker
@@ -87,9 +88,9 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
   // Map State
   const [viewState, setViewState] = useState<Partial<ViewState>>(DEFAULT_CENTER);
   const [mapError, setMapError] = useState<string | null>(null); // Local map init errors
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null); // State for popup
   const [isStale, setIsStale] = useState(false); // Add state for staleness
+  const [isMapLoaded, setIsMapLoaded] = useState(false); // Track if the map is loaded
 
   // Live Tracking Store State
   const {
@@ -228,33 +229,30 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
     logger.info('[TrackingMap] Map Loaded');
     const loadedMap = event.target;
     mapInstanceRef.current = loadedMap;
-    setIsMapLoaded(true); // Set map loaded state
+    
+    // Set map loaded state to true
+    setIsMapLoaded(true);
 
     // Add truck icon image
-    const img = new Image(48, 48);
-    img.onload = () => {
-      if (mapInstanceRef.current && !mapInstanceRef.current.hasImage('truck-icon')) {
-          mapInstanceRef.current.addImage('truck-icon', img, { sdf: false }); // sdf: false if icon has color
-          logger.debug('[TrackingMap] Truck icon image added.');
-          // Ensure source/layer depending on this icon are added *after* this
-          addVehicleSourceAndLayer(mapInstanceRef.current); // Call layer setup here
-      } else {
-          logger.debug('[TrackingMap] Truck icon already exists or map unloaded.');
-          if(mapInstanceRef.current && !mapInstanceRef.current.getSource('live-vehicle-source')){
-              addVehicleSourceAndLayer(mapInstanceRef.current); // Attempt layer setup if icon exists but layer doesn't
+    if (!loadedMap.hasImage('truck-icon')) {
+      loadedMap.loadImage(
+        '/images/truck-marker.png', // Ensure this path is correct
+        (error, image) => {
+          if (error) {
+             logger.error('[TrackingMap] Error loading truck icon:', error);
+             return;
           }
-      }
-    };
-    img.onerror = (e) => logger.error('[TrackingMap] Failed to load truck icon SVG:', e);
-    // Simple Blue Truck SVG - Placeholder
-    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M44 18V34H40V38H34V42H14V38H8V34H4V18L10 6H38L44 18Z" fill="#3B82F6" stroke="#1E3A8A" stroke-width="2" stroke-linejoin="round"/>
-        <path d="M14 12H34V18H14V12Z" fill="#BFDBFE" stroke="#1E3A8A" stroke-width="2" stroke-linejoin="round"/>
-        <path d="M12 24H36" stroke="#1E3A8A" stroke-width="2" stroke-linecap="round"/>
-        <path d="M10 30H38" stroke="#1E3A8A" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    `);
+          if (image && !loadedMap.hasImage('truck-icon')) {
+             loadedMap.addImage('truck-icon', image, { sdf: false }); // sdf: false for PNG
+             logger.debug('[TrackingMap] Truck icon added to map style.');
+             // Force a re-render or update the source AFTER icon is loaded if needed
+             // This might involve updating state or re-triggering the effect that adds the layer
+          } else if (!image) {
+              logger.error('[TrackingMap] Truck icon image data is null or undefined after loading.');
+          }
+        }
+      );
+    }
 
     // Initial source/layer setup for planned route (if needed immediately)
     addRouteSourceAndLayer(loadedMap);
@@ -262,7 +260,7 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
     // Initial setup for origin/destination markers (if needed immediately)
     updateOriginDestinationMarkers(loadedMap, originCoords, destinationCoords);
 
-  }, [originCoords, destinationCoords]); // Add prop dependencies
+  }, [originCoords, destinationCoords]);
 
   // Function to add vehicle source and layer (called after icon loaded)
   const addVehicleSourceAndLayer = useCallback((map: mapboxgl.Map) => {
@@ -538,9 +536,80 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
       >
         <NavigationControl position="top-right" />
 
-        {/* Vehicle Source and Layer are added via effects */} 
-        {/* Planned Route Source and Layer are added via effects */} 
-        {/* Origin/Destination Markers are added via effects */} 
+        {/* Vehicle Source and Layer are added via effects */}
+        {isMapLoaded && (
+           <Source
+             id="live-vehicle-source"
+             type="geojson"
+             data={{
+               type: 'FeatureCollection',
+               features: latestLiveUpdate ? [{
+                 type: 'Feature',
+                 geometry: {
+                   type: 'Point',
+                   coordinates: [latestLiveUpdate.longitude, latestLiveUpdate.latitude]
+                 },
+                 properties: {
+                   shipmentId: latestLiveUpdate.shipmentId,
+                   heading: latestLiveUpdate.heading ?? 0,
+                   timestamp: latestLiveUpdate.timestamp
+                 }
+               }] : []
+             }}
+           >
+             <Layer
+               id="live-vehicle-layer"
+               type="symbol"
+               source="live-vehicle-source" // Link to source id
+               layout={{
+                 'icon-image': 'truck-icon', // Reference the added image
+                 'icon-size': 0.75,
+                 'icon-rotate': ['get', 'heading'], // Get rotation from feature properties
+                 'icon-rotation-alignment': 'map',
+                 'icon-allow-overlap': true,
+                 'icon-ignore-placement': true
+               }}
+             />
+           </Source>
+        )}
+
+        {/* Planned Route Source and Layer */} 
+        {isMapLoaded && plannedRouteGeometry && (
+          <Source
+            id="planned-route-source"
+            type="geojson"
+            data={{ type: 'Feature', geometry: plannedRouteGeometry, properties: {} }}
+          >
+             <Layer
+                id="planned-route-layer"
+                type="line"
+                source="planned-route-source" // Link to source id
+                layout={{
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                }}
+                paint={{
+                    'line-color': '#888', // Grey
+                    'line-width': 4,
+                    'line-dasharray': [2, 2] // Dashed line
+                }}
+            />
+          </Source>
+        )}
+
+        {/* Origin Marker */} 
+        {isMapLoaded && originCoords && (
+           <Marker longitude={originCoords[0]} latitude={originCoords[1]} anchor="center">
+             <Home size={32} color="#16a34a" />
+           </Marker>
+        )}
+        
+        {/* Destination Marker */} 
+        {isMapLoaded && destinationCoords && (
+           <Marker longitude={destinationCoords[0]} latitude={destinationCoords[1]} anchor="center">
+             <Flag size={32} color="#dc2626" />
+           </Marker>
+        )}
 
         {/* Popup Display */} 
         {popupInfo && (
