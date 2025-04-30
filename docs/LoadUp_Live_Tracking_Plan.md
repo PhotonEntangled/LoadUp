@@ -619,17 +619,49 @@ graph LR
             *   `NEXT_PUBLIC_MAPBOX_TOKEN` is a public token with appropriate scope/URL restrictions.
         *   [X] **Verification:** Credential handling deemed secure for development environment.
 
-**3.9. Phase 9.9: Testing (DETAILED)**
-    *   **Goal:** Rigorously verify the functionality, reliability, error handling, and security of the implemented live tracking system using the mock data sender.
-    *   **Prerequisites:** All previous Phase 9 sub-tasks (9.1-9.8) must be completed. Mock Data Sender (Phase 9.2) must be functional and configurable. Firebase project, Firestore rules (Phase 9.8), and frontend components (store, service, map, page - Phases 9.3-9.6) must be implemented.
-    *   **Task 9.9.1: Mock Sender Scenario Testing.**
-        *   **Action:** Configure and run the Mock Data Sender (Task 9.2) to simulate various tracking scenarios:\n            *   **Scenario A (Happy Path):** Start sender for a valid `shipmentId`. Verify data appears in Firestore correctly.\n            *   **Scenario B (Stop/Start):** Start sender, let it run, stop it. Verify Firestore updates cease. Restart sender, verify updates resume.\n            *   **Scenario C (Variable Interval):** If mock sender supports it, test with different update intervals (e.g., 5s, 15s, 30s) to observe UI responsiveness and stale data handling.\n            *   **Scenario D (Route Completion):** Simulate movement along the entire predefined route. Verify final position is published.\n            *   **Scenario E (Invalid Data - Manual):** Manually modify Firestore document (if rules temporarily allow or via Admin SDK) with invalid data (e.g., missing lat/lon, incorrect timestamp type). Verify data validation logs warnings/discards updates (Task 9.7.6) and UI doesn't break.\n        *   **Verification:** Mock sender operates as expected. Firestore data reflects published updates accurately.
-    *   **Task 9.9.2: End-to-End Workflow Testing (Manual).**
-        *   **Action:** Perform manual testing following the user workflow:\n            1.  Navigate to `/shipments/[documentid]` page for a shipment present in the DB.\n            2.  Click the "View Live Tracking" button (Task 9.6.5).\n            3.  Verify navigation to `/tracking/[shipmentId]` page.\n            4.  Verify static shipment details load correctly (Task 9.6.2). Check for loading/error states.\n            5.  Start the Mock Data Sender targeting the *same* `shipmentId`.\n            6.  Verify the `TrackingMap` transitions from loading/idle state to displaying the live marker (Task 9.6.3, 9.5.7).\n            7.  Verify the marker appears at the correct initial location and moves smoothly according to mock sender updates (Task 9.5.3, 9.5.4).\n            8.  Verify the planned route is displayed correctly (Task 9.5.5).\n            9.  Test map interactions: marker popup content, follow mode toggle, zoom/pan behavior (Task 9.5.6).\n            10. Stop the Mock Data Sender. Verify stale data indication appears after the threshold (Task 9.7.1).\n            11. Navigate away from the `/tracking` page. Verify via console logs or Firestore listener metrics (if available) that the subscription is properly closed (Task 9.7.5).\n        *   **Neurotic Check:** Repeat workflow testing across different browsers (Chrome, Firefox, Edge) and potentially simulate slower network conditions using browser dev tools.\n        *   **Verification:** The entire user workflow functions as expected. Map displays correct data, updates smoothly, and handles state transitions correctly. Unsubscription on navigation confirmed.
-    *   **Task 9.9.3: Error Handling & Edge Case Testing (Manual Simulation).**
-        *   **Action (Subscription Error):** Temporarily modify Firestore security rules to deny reads for the admin user. Attempt to load the `/tracking` page. Verify the subscription error state is displayed correctly, including the error message and retry button (Task 9.7.2). Restore rules and verify retry works.\n        *   **Action (Missing Document Error):** Attempt to navigate to `/tracking/[invalidShipmentId]`. Verify the static data fetch likely fails first (Task 9.7.4), or if static data *is* found but no Firestore document exists, verify the specific "Tracking data not found" error is displayed via the subscription error path (Task 9.7.3).\n        *   **Action (Static Fetch Error):** Temporarily modify the `getStaticTrackingDetails` Server Action to throw an error. Attempt to load the `/tracking` page. Verify the page-level error is shown, the map does not load, and the retry button works (Task 9.7.4).\n        *   **Action (Network Disconnection):** While tracking is active, disconnect the browser's network connection (via dev tools). Verify stale data indication appears. Reconnect network. Verify updates resume (Firestore SDK handles reconnection automatically, but verify UI recovers). \n        *   **Verification:** All specified error conditions are handled gracefully with appropriate UI feedback and recovery mechanisms (retry buttons).\n    *   **Task 9.9.4: Security Rule Testing.**
-        *   **Action:** Use the Firebase Emulator Suite (specifically Firestore emulator) or the Rules Simulator in the Firebase Console.\n        *   **Action:** Simulate read requests to `/active_vehicles/{shipmentId}`:\n            *   As an unauthenticated user (should fail).\n            *   As an authenticated non-admin user (should fail based on rules in Task 9.8.1).\n            *   As an authenticated admin user (should succeed).\n        *   **Action:** Simulate write requests to `/active_vehicles/{shipmentId}` using client SDK context:\n            *   As any user (should fail, due to `allow write: if false;` rule in Task 9.8.2).\n        *   **(Future):** When driver write rules are added, test writes with valid/invalid driver auth contexts and valid/invalid data against validation rules (Task 9.8.3).\n        *   **Verification:** Security rules correctly enforce the intended read/write permissions based on authentication state and roles.\n    *   **Task 9.9.5: Code Review and Final Plan Update.**
-        *   **Action:** Conduct a final code review of all components, services, stores, types, and tests related to Phase 9.\n        *   **Action:** Update this plan document (`docs/LoadUp_Live_Tracking_Plan.md`) to reflect any deviations, final decisions, or lessons learned during implementation and testing.\n        *   **Action:** Ensure all temporary security rule allowances (like broad mock sender writes, if any were accidentally left) are removed and replaced with production-ready rules.\n        *   **Action:** Merge the finalized Phase 9 feature branch into the main development branch.\n        *   **Verification:** Code reviewed and approved. Plan document is accurate. Branch merged.
+**3.9. Phase 9.R: Refactor Tracking Page to Document Level (NEW)**
+    *   **Goal:** Restructure the live tracking page and related components to operate at the document level, allowing users to select a trackable shipment from a list within the document context, mirroring the `/simulation/[documentId]` page pattern.
+    *   **Rationale:** The initial implementation (`/tracking/[shipmentId]`) did not align with the intended UX or the established simulation page pattern. This refactoring corrects the architecture before testing.
+    *   [ ] **Task 9.R.1: Rename Tracking Page Route.** 
+        *   [ ] **Action:** Rename directory `/app/tracking/[shipmentId]` to `/app/tracking/[documentId]`. (**Requires Manual User Action**)
+        *   [ ] **Action:** Update any internal references or links if necessary (though most links will be added/fixed in Task 9.R.5).
+        *   [ ] **Verification:** Directory structure is updated.
+    *   [X] **Task 9.R.2: Refactor `TrackingPageView` Component.** (Completed - Code edits done, file location requires manual fix)
+        *   [X] **Action:** Modify `app/tracking/[documentId]/_components/TrackingPageView.tsx` (renamed file) to accept `documentId` prop instead of `shipmentId`. (Done)
+        *   [X] **Action:** Implement `useEffect` to fetch the shipment list for the `documentId` (using `getShipmentsForDocumentContaining` or similar). (Done)
+        *   [X] **Action:** Manage local state for `selectedShipmentId` based on user interaction with the shipment list. (Done)
+        *   [X] **Action:** Modify selection handler (`handleSelectShipment`) to trigger store subscription *only* for newly selected, trackable shipments (Idle, En Route status). Pass necessary static details (origin/dest coords, etc.) from the selected `ApiShipmentDetail` to the `TrackingMap` component via props. (Done - Route Fetching Added)
+        *   [X] **Action:** Implement logic to disable selection/buttons for non-trackable shipments in the list. (Done)
+        *   [X] **Verification:** Component fetches list based on document ID, handles selection, passes correct props to map, disables non-trackable items.
+    *   [X] **Task 9.R.3: Refactor `useLiveTrackingStore` Store.** (Completed)
+        *   [X] **Action:** Remove `staticShipmentDetails` state from the store. (Done)
+        *   [X] **Action:** Update `subscribe` action to potentially only require `shipmentId` (verify if any static details are truly needed *in the store* vs. passed directly to map). (Done)
+        *   [X] **Action:** Ensure `unsubscribe` is reliably called by `TrackingPageView` before a new `subscribe` call for a different shipment. (Done)
+        *   [X] **Action:** Add/refine state to manage `trackedShipmentId` (the one actively subscribed to) distinctly from the UI's `selectedShipmentId` (local state in `TrackingPageView`). (Done)
+        *   [X] **Verification:** Store state is simplified, subscription actions align with selection-driven logic.
+    *   [X] **Task 9.R.4: Update `TrackingMap` Component.** (Completed)
+        *   [X] **Action:** Modify `TrackingMap` props to receive necessary static details (origin/dest coords, planned route) from the parent `TrackingPageView` based on the current selection. (Done)
+        *   [X] **Action:** Ensure map correctly uses these props to display origin/destination markers and the planned route. (Done)
+        *   [X] **Action:** Verify connection to `useLiveTrackingStore` for `latestLiveUpdate` remains correct. (Done)
+        *   [X] **Verification:** Map displays correct static elements based on selection and live marker based on store updates.
+    *   [X] **Task 9.R.5: Update Navigation UI.** (Completed)
+        *   [X] **Action:** In the `DocumentCard` component (or wherever document cards are rendered, likely `app/documents/page.tsx`), add a "Live Tracking" button next to the "View Shipments" and "Simulate" buttons, linking to `/tracking/[documentId]`. (Completed)
+        *   [X] **Action:** On the `/shipments/[documentid]/page.tsx` page, split the existing "View Live Tracking / Simulation" button into two separate buttons: "Simulate" (triggering the existing simulation logic) and "Track Live" (linking directly to `/tracking/[documentId]?selectedShipmentId=...`). (Completed)
+        *   [X] **Verification:** New buttons are present and link/trigger actions correctly. (Completed)
+    *   [X] **Task 9.R.6: Cleanup Test/Placeholder Pages.** (Completed)
+        *   [X] **Action:** Identify and delete the `/app/tracking/test-*` directories and their contents. (Completed)
+        *   [X] **Action:** Delete the placeholder `/app/tracking/page.tsx` as it serves no current purpose. (Completed)
+        *   [X] **Action:** Delete the `/app/tracking-stabilized` directory and its contents. (Completed via User Manual Action)
+        *   [X] **Verification:** Unnecessary test directories and placeholder page are removed. (Completed)
+    *   **Note:** Tasks previously completed in Phases 9.5, 9.6, and 9.7 that directly modified the `/tracking/[shipmentId]` components (`TrackingMap`, `TrackingPageView`, `TrackingControls`, store interactions) will need review and potential rework within the context of tasks 9.R.2, 9.R.3, and 9.R.4. Mark relevant previous verification steps as **[REWORK/RE-VERIFY after 9.R]**. 
+
+**4. Phase 9.9: Testing (DETAILED)**
+    *   **Goal:** Verify the end-to-end functionality, error handling, and user experience of the live tracking feature **(Post-Refactoring)**.
+    *   **Prerequisite:** Phase 9.R Refactoring must be complete.
+    *   **Note:** A Vercel build failure occurred after pushing Phase 9.7/9.8 changes due to `prefer-const` ESLint errors in `lib/actions/trackingActions.ts`. These errors have been fixed. A re-push is required.
+    *   [ ] **Task 9.9.1: Prepare Test Environment.**
+        *   [ ] **Action:** Ensure Vercel deployment (triggered by push after fixing build errors) is successful.
+        *   [ ] **Action:** Verify Firebase project (`loadup-logistics-dev`) is accessible.
 
 ## 🚨 4. Risk Assessment & Mitigation (Neurotic Deep Dive)
 
@@ -689,7 +721,8 @@ graph LR
 *   **Neurotic Decision:** Focus on adapting the client-side subscription management and state update patterns from `location-tRacer` to our Firestore/Zustand stack, as detailed in the implementation phases.
 
 **4. Phase 9.9: Testing (DETAILED)**
-    *   **Goal:** Verify the end-to-end functionality, error handling, and user experience of the live tracking feature.
+    *   **Goal:** Verify the end-to-end functionality, error handling, and user experience of the live tracking feature **(Post-Refactoring)**.
+    *   **Prerequisite:** Phase 9.R Refactoring must be complete.
     *   **Note:** A Vercel build failure occurred after pushing Phase 9.7/9.8 changes due to `prefer-const` ESLint errors in `lib/actions/trackingActions.ts`. These errors have been fixed. A re-push is required.
     *   [ ] **Task 9.9.1: Prepare Test Environment.**
         *   [ ] **Action:** Ensure Vercel deployment (triggered by push after fixing build errors) is successful.

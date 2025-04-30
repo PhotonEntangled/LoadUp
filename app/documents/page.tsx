@@ -248,69 +248,55 @@ export default function DocumentsPage() {
         ) : documentsToDisplay.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {documentsToDisplay.map((doc) => (
-              <div key={doc.id} className="bg-card dark:bg-card rounded-lg border border-border dark:border-border shadow-sm overflow-hidden flex flex-col">
-                <div className="p-4 pb-2 relative">
-                  <div className="flex justify-between items-start">
-                    <StatusBadge status={doc.shipmentSummaryStatus} />
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:bg-destructive/10 h-7 w-7"
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label="Delete document"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the document
-                            <span className="font-semibold">&quot;{doc.filename || doc.id}&quot;</span> and its associated data.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteDocument(doc.id, doc.filename)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                  <div className="flex items-start gap-2 mt-2">
-                    <FileText className="h-4 w-4 text-gray-500 dark:text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <h3 className="font-semibold text-sm truncate mb-1 pt-1 pr-8" title={doc.filename || 'No Filename'}>
-                      {doc.filename || `Document ${doc.id}`}
-                    </h3>
-                  </div>
-                </div>
-                <div className="p-4 pt-1 text-xs text-muted-foreground flex justify-between items-center">
-                  <span>Parsed: {formatDate(doc.dateParsed)}</span>
-                  <span>{doc.shipments} Shipment(s)</span>
-                </div>
-                <div className="p-2 border-t border-border bg-muted/50 flex justify-end items-center gap-2">
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/shipments/${doc.id}`} aria-label={`View shipments for ${doc.filename || doc.id}`}>
-                      View Shipments
-                    </Link>
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
-                    onClick={() => handleSimulateClick(doc.id)}
-                    aria-label={`Simulate shipments for ${doc.filename || doc.id}`}
-                  >
+              <Card key={doc.id} className="flex flex-col">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium truncate max-w-[200px]" title={doc.filename ?? 'Untitled Document'}>
+                    {doc.filename ?? 'Untitled Document'}
+                  </CardTitle>
+                  <StatusBadge status={doc.shipmentSummaryStatus} />
+                </CardHeader>
+                <CardContent className="text-xs text-muted-foreground pt-2 pb-4">
+                  <p>ID: {doc.id}</p>
+                  <p>Date Parsed: {formatDate(doc.dateParsed)}</p>
+                  <p>Shipments: {doc.shipments}</p>
+                </CardContent>
+                <CardFooter className="flex flex-wrap justify-start items-center pt-4 gap-2">
+                  <Link href={`/shipments/${doc.id}`} passHref legacyBehavior>
+                    <Button asChild variant="outline" size="sm"><a href={`/shipments/${doc.id}`}>Shipments</a></Button>
+                  </Link>
+                  <Button variant="outline" size="sm" onClick={() => handleSimulateClick(doc.id)}>
                     Simulate
                   </Button>
-                </div>
-              </div>
+                  <Link href={`/tracking/${doc.id}`} passHref legacyBehavior>
+                    <Button asChild variant="outline" size="sm"><a href={`/tracking/${doc.id}`}>Track Live</a></Button>
+                  </Link>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 h-8 w-8 ml-auto">
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete Document</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the document
+                          record <span className="font-semibold">{doc.filename ?? doc.id}</span> and all associated shipment data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDeleteDocument(doc.id, doc.filename)} 
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </CardFooter>
+              </Card>
             ))}
           </div>
         ) : (

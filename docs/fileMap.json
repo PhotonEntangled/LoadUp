@@ -221,9 +221,9 @@
 
   
     "types/tracking.ts": {
-        "description": "Defines core interfaces for live tracking: LiveVehicleUpdate (data from source) and StaticTrackingDetails (data fetched on page load).",
+        "description": "Defines core interfaces for live tracking: LiveVehicleUpdate (data from source) and StaticTrackingDetails (data fetched on page load - DEPRECATED?).",
         "keyImports": ["geojson"],
-        "relatedFiles": ["services/tracking/LiveTrackingService.ts", "lib/store/useLiveTrackingStore.ts", "tools/mock-tracker/index.js", "components/map/TrackingMap.tsx", "app/tracking/[shipmentId]/page.tsx"]
+        "relatedFiles": ["services/tracking/LiveTrackingService.ts", "lib/store/useLiveTrackingStore.ts", "tools/mock-tracker/index.js", "components/map/TrackingMap.tsx", "app/tracking/[documentId]/page.tsx"]
     },
     "services/tracking/LiveTrackingService.ts": {
         "description": "Defines the interface/contract for services handling real-time vehicle location subscriptions (e.g., Firestore implementation).",
@@ -238,7 +238,7 @@
     "lib/store/useLiveTrackingStore.ts": {
         "description": "Zustand store managing client-side state for live vehicle tracking. Handles subscription lifecycle, latest updates, static details, errors, and map interaction state (isFollowingVehicle).",
         "keyImports": ["zustand", "@/types/tracking", "@/services/tracking/FirestoreLiveTrackingService", "mapbox-gl"],
-        "relatedFiles": ["types/tracking.ts", "services/tracking/LiveTrackingService.ts", "services/tracking/FirestoreLiveTrackingService.ts", "components/map/TrackingMap.tsx", "app/tracking/[shipmentId]/page.tsx", "components/map/TrackingControls.tsx"]
+        "relatedFiles": ["types/tracking.ts", "services/tracking/LiveTrackingService.ts", "services/tracking/FirestoreLiveTrackingService.ts", "components/map/TrackingMap.tsx", "app/tracking/[documentId]/page.tsx", "components/map/TrackingControls.tsx"]
     },
     "lib/firebase/clientApp.ts": {
         "description": "Initializes the Firebase client-side application instance using environment variables (NEXT_PUBLIC_...). Ensures singleton pattern.",
@@ -246,14 +246,14 @@
         "relatedFiles": ["services/tracking/FirestoreLiveTrackingService.ts", ".env.local"]
     },
     "components/map/TrackingMap.tsx": {
-        "description": "Renders the interactive map for LIVE vehicle tracking using react-map-gl. Displays vehicle marker from GeoJSON source, handles popups, follow mode, zoom-to-fit (via ref), origin/destination markers, and planned route layer. Connects to useLiveTrackingStore.",
-        "keyImports": ["react", "mapbox-gl", "react-map-gl/mapbox", "@/lib/store/useLiveTrackingStore", "@/types/tracking", "@/utils/logger", "geojson", "lucide-react", "@/utils/formatters"],
-        "relatedFiles": ["lib/store/useLiveTrackingStore.ts", "app/tracking/[shipmentId]/page.tsx", "components/map/TrackingControls.tsx", "utils/formatters.ts"]
+        "description": "Renders the interactive map for LIVE vehicle tracking using react-map-gl. Displays vehicle marker from GeoJSON source (via store), handles popups, follow mode, zoom-to-fit, origin/destination markers (via props), and planned route layer (via props). Connects to useLiveTrackingStore for live updates.",
+        "keyImports": ["react", "mapbox-gl", "react-map-gl/mapbox", "@/lib/store/useLiveTrackingStore", "@/types/tracking", "@/utils/logger", "geojson", "lucide-react", "@/utils/formatters", "react-dom/server"],
+        "relatedFiles": ["lib/store/useLiveTrackingStore.ts", "app/tracking/[documentId]/_components/TrackingPageView.tsx", "components/map/TrackingControls.tsx", "utils/formatters.ts"]
     },
      "components/map/TrackingControls.tsx": {
         "description": "Provides UI controls (buttons) for the TrackingMap, specifically Zoom-to-Fit and Follow Vehicle toggle. Interacts with map via ref and store actions.",
         "keyImports": ["react", "lucide-react", "@/components/ui/button", "@/lib/store/useLiveTrackingStore", "./TrackingMap", "@/utils/logger", "@/lib/utils"],
-        "relatedFiles": ["components/map/TrackingMap.tsx", "app/tracking/[shipmentId]/page.tsx", "lib/store/useLiveTrackingStore.ts"]
+        "relatedFiles": ["components/map/TrackingMap.tsx", "app/tracking/[documentId]/_components/TrackingPageView.tsx", "lib/store/useLiveTrackingStore.ts"]
     },
     "utils/formatters.ts": {
         "description": "Utility functions for formatting data for display, e.g., timestamps and speeds.",
@@ -273,19 +273,20 @@
         "relatedFiles": ["tools/mock-tracker/.env", "tools/mock-tracker/loadup-logistics-dev-firebase-adminsdk.json"]
     },
     "lib/actions/trackingActions.ts": {
-        "description": "Defines Server Actions for live tracking page: getShipmentsForDocumentContaining (fetches related shipments, maps to full ApiShipmentDetail) and getStaticTrackingDetails (fetches data for StaticTrackingDetails).",
-        "keyImports": ["server-only", "@/lib/database/drizzle", "@/lib/database/schema", "@/types/api", "@/types/tracking", "@/utils/logger", "drizzle-orm"],
-        "relatedFiles": ["app/tracking/[shipmentId]/_components/TrackingPageView.tsx", "types/api.ts", "types/tracking.ts", "lib/database/schema.ts"]
+        "description": "Defines Server Actions for live tracking page: getShipmentsForDocumentContaining (fetches related shipments), getStaticTrackingDetails (fetches specific static data - DEPRECATED?), and getRouteGeometryAction (fetches route from Mapbox).",
+        "keyImports": ["server-only", "@/lib/database/drizzle", "@/lib/database/schema", "@/types/api", "@/types/tracking", "@/utils/logger", "drizzle-orm", "@/services/map/MapDirectionsService", "geojson"],
+        "relatedFiles": ["app/tracking/[documentId]/_components/TrackingPageView.tsx", "types/api.ts", "types/tracking.ts", "lib/database/schema.ts", "services/map/MapDirectionsService.ts"]
     },
-    "app/tracking/[shipmentId]/page.tsx": {
-        "description": "Minimal page component for the /tracking/[shipmentId] route. Extracts param and renders TrackingPageView.",
+    "app/tracking/page.tsx": { "status": "deleted", "note": "Placeholder page removed." },
+    "app/tracking/[documentId]/page.tsx": {
+        "description": "Minimal page component for the live tracking route (document level). Extracts documentId param and renders TrackingPageView.",
         "keyImports": ["react"],
-        "relatedFiles": ["app/tracking/[shipmentId]/_components/TrackingPageView.tsx"]
+        "relatedFiles": ["app/tracking/[documentId]/_components/TrackingPageView.tsx"]
     },
-    "app/tracking/[shipmentId]/_components/TrackingPageView.tsx": {
-        "description": "Main client component for the live tracking page. Handles fetching shipment list and static details via Server Actions, manages selection, integrates TrackingMap and TrackingControls, and orchestrates live data subscription via useLiveTrackingStore.",
-        "keyImports": ["react", "@/utils/logger", "@/types/api", "@/types/tracking", "@/components/shipments/ShipmentCard", "@/components/map/TrackingMap", "@/components/map/TrackingControls", "@/lib/store/useLiveTrackingStore", "@/lib/actions/trackingActions", "@/components/ui/accordion", "lucide-react"],
-        "relatedFiles": ["app/tracking/[shipmentId]/page.tsx", "lib/actions/trackingActions.ts", "lib/store/useLiveTrackingStore.ts", "components/map/TrackingMap.tsx", "components/map/TrackingControls.tsx", "components/shipments/ShipmentCard.tsx"]
+    "app/tracking/[documentId]/_components/TrackingPageView.tsx": {
+        "description": "Main client component for the document-level live tracking page. Fetches shipment list, handles selection of trackable shipments, calls subscribe action, fetches route geometry, and renders TrackingMap/TrackingControls. Passes static map details via props.",
+        "keyImports": ["react", "@/utils/logger", "@/types/api", "@/components/shipments/ShipmentCard", "@/components/map/TrackingMap", "@/components/map/TrackingControls", "@/lib/store/useLiveTrackingStore", "@/lib/actions/trackingActions", "@/lib/database/schema", "lucide-react", "@/components/ui/accordion", "@/components/ui/button"],
+        "relatedFiles": ["app/tracking/[documentId]/page.tsx", "lib/actions/trackingActions.ts", "lib/store/useLiveTrackingStore.ts", "components/map/TrackingMap.tsx", "components/map/TrackingControls.tsx", "components/shipments/ShipmentCard.tsx", "types/tracking.ts"]
     },
     "lib/actions/auth.ts": {
         "description": "Defines Next.js Server Actions for handling user sign-in (with credentials) and sign-up (currently disabled). Interacts with NextAuth.js signIn function.",
@@ -306,6 +307,22 @@
         "description": "Standard Next.js route handler that exports the GET and POST handlers from NextAuth.js initialized with authOptions.",
         "keyImports": ["next-auth", "@/app/api/auth/[...nextauth]/options"],
         "relatedFiles": ["lib/auth.ts", "app/api/auth/[...nextauth]/options.ts"]
+    },
+    "app/tracking/test-combined": { "status": "deleted" },
+    "app/tracking/test-new-map": { "status": "deleted" },
+    "app/tracking/test-vehicle-list": { "status": "deleted" },
+    "app/tracking/[shipmentId]/_components/TrackingPageView.tsx": { "status": "moved", "note": "Functionality moved to app/tracking/[documentId]/_components/TrackingPageView.tsx - REQUIRES MANUAL FILE MOVE" },
+    "app/tracking/[shipmentId]/page.tsx": { "status": "moved", "note": "Functionality moved to app/tracking/[documentId]/page.tsx - REQUIRES MANUAL FILE MOVE" },
+    "app/tracking-stabilized": { "status": "deleted", "note": "Deprecated experimental tracking page deleted." },
+    "app/documents/page.tsx": {
+        "description": "Displays a list of documents, fetching metadata via API. Renders document cards directly within the map function. Includes search, filter, upload (dialog), and delete functionality. Contains link to /shipments/[documentid] and NEWLY ADDED link to /tracking/[documentId] and Simulate button.",
+        "keyImports": ["react", "@/components/ui/badge", "@/components/ui/button", "@/components/ui/card", "@/components/ui/input", "lucide-react", "@/components/ui/select", "next/link", "@/components/ui/dialog", "@/components/logistics/LogisticsDocumentUploader", "@/types/shipment", "@/hooks/use-toast", "@/hooks/use-debounce", "@/components/shared/StatusBadge", "@/components/ui/alert-dialog", "next/navigation", "@/utils/logger"],
+        "relatedFiles": ["api/documents", "@/components/logistics/LogisticsDocumentUploader", "@/components/shared/StatusBadge", "@/types/api", "app/shipments/[documentid]/page.tsx", "app/tracking/[documentId]/page.tsx", "app/simulation/[documentId]/page.tsx"]
+    },
+    "app/shipments/[documentid]/page.tsx": {
+        "description": "Displays a list of shipments for a document (left) and details for the selected shipment (right). Includes map preview (StaticRouteMap), filtering, and detail tabs (using ShipmentDetailView). Contains individual 'Simulate' (calls handleViewTracking) and 'Track Live' (links to /tracking/[documentId]?selectedShipmentId=...) buttons.",
+        "keyImports": ["react", "lucide-react", "@/components/ui/button", "@/components/ui/input", "@/components/shipments/ShipmentCard", "@/components/shipments/ShipmentDetailView", "@/types/api", "next/navigation", "@/utils/logger", "@/components/map/StaticRouteMap", "geojson", "@/lib/actions/simulationActions", "@/lib/context/SimulationStoreContext", "@/lib/store/useSimulationStore", "@/hooks/use-toast", "@/components/ui/accordion", "@/lib/actions/shipmentActions", "next/link"],
+        "relatedFiles": ["api/shipments", "api/maps/directions", "@/components/shipments/ShipmentCard", "@/components/shipments/ShipmentDetailView", "@/components/map/StaticRouteMap", "@/lib/actions/simulationActions", "@/lib/context/SimulationStoreContext", "@/lib/store/useSimulationStore", "@/lib/actions/shipmentActions", "app/simulation/[documentId]/page.tsx", "app/tracking/[documentId]/page.tsx", "types/api.ts"]
     }
   }
 }

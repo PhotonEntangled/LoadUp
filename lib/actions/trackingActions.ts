@@ -33,6 +33,7 @@ import type { StaticTrackingDetails } from '@/types/tracking';
 import { logger } from "@/utils/logger";
 import { eq, and, desc, inArray, sql, SQL } from "drizzle-orm";
 import { type LineString } from 'geojson';
+import { MapDirectionsService } from "@/services/map/MapDirectionsService";
 
 // --- Helper Function: Map DB Address to ApiAddressDetail --- 
 const mapDbAddressToApi = (addr: typeof addresses.$inferSelect | undefined | null): ApiAddressDetail | null => {
@@ -514,5 +515,37 @@ export async function getStaticTrackingDetails(
             errorStack: error.stack,
         });
         return null; // Return null on error
+    }
+}
+
+/**
+ * Server Action to fetch route geometry from Mapbox Directions API.
+ *
+ * @param origin - Origin coordinates [longitude, latitude]
+ * @param destination - Destination coordinates [longitude, latitude]
+ * @returns A Promise resolving to the LineString geometry or null on error.
+ */
+export async function getRouteGeometryAction(
+    origin: [number, number],
+    destination: [number, number]
+): Promise<LineString | null> {
+    logger.info(`[Server Action] getRouteGeometryAction called for origin: ${origin}, destination: ${destination}`);
+    try {
+        // Use singleton instance
+        const directionsService = MapDirectionsService.getInstance(); 
+        if (!directionsService) {
+            logger.error('[Server Action getRouteGeometryAction] MapDirectionsService failed to initialize.');
+            return null;
+        }
+        const routeData = await directionsService.fetchRoute(origin, destination);
+        if (routeData?.routes?.[0]?.geometry) {
+            logger.info(`[Server Action] Successfully fetched route geometry.`);
+            return routeData.routes[0].geometry as LineString;
+        }
+        logger.warn('[Server Action getRouteGeometryAction] No route geometry found in Mapbox response.');
+        return null;
+    } catch (error) {
+        logger.error('[Server Action getRouteGeometryAction] Error fetching route:', error);
+        return null;
     }
 }

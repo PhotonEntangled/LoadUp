@@ -18,10 +18,11 @@ import { useLiveTrackingStore } from '../../lib/store/useLiveTrackingStore'; // 
 import { LiveVehicleUpdate } from '../../types/tracking'; // Using relative path
 import { logger } from '../../utils/logger'; // Using relative path
 import { Feature, Point as GeoJsonPoint, LineString } from 'geojson'; // Renamed to avoid conflict with React Point
-import { Home, Flag } from 'lucide-react';
+import { Home, Flag, MapPin, Loader2 } from 'lucide-react';
 // TODO: Decide if VehicleStatus enum is needed here or if we rely on subscriptionStatus
 import { cn } from "../../lib/utils"; // Using relative path
 import { formatTimestamp, formatSpeed } from '../../utils/formatters'; // Assume these exist
+import ReactDOMServer from 'react-dom/server'; // For rendering icons to string
 
 // Define potential methods to expose via the ref
 export interface TrackingMapRef {
@@ -38,6 +39,10 @@ export interface TrackingMapProps {
   width?: string | number;
   maxZoom?: number;
   mapboxToken: string; // Make token mandatory
+  // ADDED Props for static details (Task 9.R.4)
+  originCoords: [number, number] | null;
+  destinationCoords: [number, number] | null;
+  plannedRouteGeometry: GeoJSON.LineString | null;
   // No explicit onError needed, will rely on store's error state
 }
 
@@ -51,7 +56,6 @@ interface PopupInfo {
   speed?: number | null;
   heading?: number | null;
   accuracy?: number | null;
-  driverName?: string | null;
   shipmentId?: string | null;
 }
 
@@ -66,6 +70,10 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
   width = '100%',
   maxZoom = 18,
   mapboxToken,
+  // Destructure new props
+  originCoords,
+  destinationCoords,
+  plannedRouteGeometry,
 }, ref) => {
   // Refs
   const mapRefInternal = useRef<MapRef | null>(null); // Use MapRef type from react-map-gl
@@ -81,28 +89,22 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
   const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null); // State for popup
   const [isStale, setIsStale] = useState(false); // Add state for staleness
 
-  // Live Tracking Store State (Selectors will be added in Task 9.5.2)
-  // const { latestLiveUpdate, subscriptionStatus, ... } = useLiveTrackingStore(...);
-  // Connect to the store and select necessary state (Task 9.5.2)
+  // Live Tracking Store State
   const {
     trackedShipmentId,
     latestLiveUpdate,
-    staticShipmentDetails,
     subscriptionStatus,
     subscriptionError,
     isFollowingVehicle,
     setFollowingVehicle,
-    subscribe
   } = useLiveTrackingStore(
     useCallback(state => ({
       trackedShipmentId: state.trackedShipmentId,
       latestLiveUpdate: state.latestLiveUpdate,
-      staticShipmentDetails: state.staticShipmentDetails,
       subscriptionStatus: state.subscriptionStatus,
       subscriptionError: state.subscriptionError,
       isFollowingVehicle: state.isFollowingVehicle,
       setFollowingVehicle: state.setFollowingVehicle,
-      subscribe: state.subscribe
     }), [])
   );
 
@@ -115,8 +117,8 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
     },
     zoomToFit: () => {
       const map = mapInstanceRef.current;
-      const currentState = useLiveTrackingStore.getState();
-      const { staticShipmentDetails, latestLiveUpdate, setFollowingVehicle } = currentState;
+      // Get latest update directly from store state
+      const currentUpdate = useLiveTrackingStore.getState().latestLiveUpdate;
 
       if (!map) {
         logger.warn('[TrackingMap.zoomToFit] Map instance not available.');
@@ -124,14 +126,16 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
       }
 
       const points: mapboxgl.LngLatLike[] = [];
-      if (latestLiveUpdate && typeof latestLiveUpdate.longitude === 'number' && typeof latestLiveUpdate.latitude === 'number') {
-        points.push([latestLiveUpdate.longitude, latestLiveUpdate.latitude]);
+      // Use currentUpdate from store
+      if (currentUpdate && typeof currentUpdate.longitude === 'number' && typeof currentUpdate.latitude === 'number') {
+        points.push([currentUpdate.longitude, currentUpdate.latitude]);
       }
-      if (staticShipmentDetails?.originCoords) {
-        points.push([staticShipmentDetails.originCoords.lon, staticShipmentDetails.originCoords.lat]);
+      // Use props for origin/dest
+      if (originCoords) {
+        points.push(originCoords);
       }
-      if (staticShipmentDetails?.destinationCoords) {
-        points.push([staticShipmentDetails.destinationCoords.lon, staticShipmentDetails.destinationCoords.lat]);
+      if (destinationCoords) {
+        points.push(destinationCoords);
       }
 
       if (points.length === 0) {
@@ -157,20 +161,18 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
       }
       
       // Disable follow mode after zooming to fit
-      if (currentState.isFollowingVehicle) {
+      if (useLiveTrackingStore.getState().isFollowingVehicle) {
         setFollowingVehicle(false);
       }
     }
-  }), [setFollowingVehicle]);
+  }), [setFollowingVehicle, originCoords, destinationCoords]); // Add props to dependency array
 
   // --- Callback Definitions ---
 
   // Moved handleLayerClick definition here
   const handleLayerClick = useCallback((e: mapboxgl.MapLayerMouseEvent) => {
     // Neurotic Check: Use getState() inside handler to avoid stale closures
-    const currentState = useLiveTrackingStore.getState();
-    const currentUpdate = currentState.latestLiveUpdate;
-    const currentStatic = currentState.staticShipmentDetails;
+    const currentUpdate = useLiveTrackingStore.getState().latestLiveUpdate;
 
     if (!e.features || e.features.length === 0 || !currentUpdate) {
       logger.warn("[TrackingMap] Click detected, but no features or latest update available.");
@@ -191,7 +193,6 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
       speed: currentUpdate.speed,
       heading: currentUpdate.heading,
       accuracy: currentUpdate.accuracy,
-      driverName: currentStatic?.driverName,
       shipmentId: currentUpdate.shipmentId
     });
     logger.debug("[TrackingMap] Popup opened for shipment:", currentUpdate.shipmentId);
@@ -207,11 +208,6 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
     map.getCanvas().style.cursor = (features && features.length > 0) ? 'pointer' : '';
   }, []);
 
-  // Callback specifically when mouse enters/moves over the vehicle layer (to set cursor)
-  // Note: While 'mousemove' on layer is often used, combining logic in general mousemove
-  // is simpler here to handle both setting and resetting the cursor.
-  // We primarily use handleMapMouseMove now.
-
   // Callback to disable follow mode on user interaction
   const disableFollowMode = useCallback(() => {
     // Use getState to ensure we check the *latest* state before potentially setting it
@@ -225,442 +221,361 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
     logger.info('[TrackingMap] Map Loaded');
     const loadedMap = event.target;
     mapInstanceRef.current = loadedMap;
+    setIsMapLoaded(true); // Set map loaded state
 
-    // Task 9.5.4: Add SVG icon to map style resources
-    // Create an Image element to load the SVG path data
-    // Note: Using path data directly is more complex with map.addImage.
-    // A simpler way is often to load an actual image URL or use SDF icons.
-    // Workaround: Create a canvas, draw SVG path, get ImageData.
-    // Simpler Workaround for now: Using a pre-defined icon name assumes it's in the style
-    // or loaded elsewhere. Let's define the SVG data and use map.addImage.
-
-    const svgString = `
+    // Add truck icon image
+    const img = new Image(48, 48);
+    img.onload = () => {
+      if (mapInstanceRef.current && !mapInstanceRef.current.hasImage('truck-icon')) {
+          mapInstanceRef.current.addImage('truck-icon', img, { sdf: false }); // sdf: false if icon has color
+          logger.debug('[TrackingMap] Truck icon image added.');
+          // Ensure source/layer depending on this icon are added *after* this
+          addVehicleSourceAndLayer(mapInstanceRef.current); // Call layer setup here
+      } else {
+          logger.debug('[TrackingMap] Truck icon already exists or map unloaded.');
+          if(mapInstanceRef.current && !mapInstanceRef.current.getSource('live-vehicle-source')){
+              addVehicleSourceAndLayer(mapInstanceRef.current); // Attempt layer setup if icon exists but layer doesn't
+          }
+      }
+    };
+    img.onerror = (e) => logger.error('[TrackingMap] Failed to load truck icon SVG:', e);
+    // Simple Blue Truck SVG - Placeholder
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M44 18V34H40V38H34V42H14V38H8V34H4V18L10 6H38L44 18Z" fill="#3B82F6" stroke="#1E3A8A" stroke-width="2" stroke-linejoin="round"/>
         <path d="M14 12H34V18H14V12Z" fill="#BFDBFE" stroke="#1E3A8A" stroke-width="2" stroke-linejoin="round"/>
         <path d="M12 24H36" stroke="#1E3A8A" stroke-width="2" stroke-linecap="round"/>
         <path d="M10 30H38" stroke="#1E3A8A" stroke-width="2" stroke-linecap="round"/>
       </svg>
-    `;
+    `);
 
-    // Convert SVG string to ImageBitmap or HTMLImageElement for map.addImage
-    // This requires browser environment and can be tricky.
-    // Alternative: If possible, add the icon directly to the Mapbox style or use an existing icon.
-    // For now, let's assume an icon named 'truck-icon' can be resolved or added manually later.
-    // If using map.addImage, it MUST be done carefully to handle async loading.
-    logger.warn("[TrackingMap] map.addImage for SVG string not implemented directly. Assuming 'truck-icon' exists in style or added manually.");
-    // Example of how it *might* be done (requires careful handling):
-    /*
-    const img = new Image(48, 48);
-    img.onload = () => {
-      if (map.hasImage('truck-icon')) map.removeImage('truck-icon');
-      map.addImage('truck-icon', img, { sdf: false }); // Set sdf: true if icon designed for color tinting
-      logger.info("[TrackingMap] Truck icon added to map resources.");
-    };
-    img.onerror = (err) => {
-        logger.error("[TrackingMap] Error loading SVG for map icon:", err);
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgString);
-    */
+    // Initial source/layer setup for planned route (if needed immediately)
+    addRouteSourceAndLayer(loadedMap);
 
-    setIsMapLoaded(true);
+    // Initial setup for origin/destination markers (if needed immediately)
+    updateOriginDestinationMarkers(loadedMap, originCoords, destinationCoords);
+
+  }, [originCoords, destinationCoords]); // Add prop dependencies
+
+  // Function to add vehicle source and layer (called after icon loaded)
+  const addVehicleSourceAndLayer = useCallback((map: mapboxgl.Map) => {
+      if (!map || !map.isStyleLoaded()) {
+          logger.warn('[TrackingMap.addVehicleSourceAndLayer] Map not ready.');
+          return;
+      }
+      // Add source for live vehicle
+      if (!map.getSource('live-vehicle-source')) {
+          logger.debug('[TrackingMap] Adding live-vehicle-source');
+          map.addSource('live-vehicle-source', {
+              type: 'geojson',
+              data: { type: 'FeatureCollection', features: [] } // Start empty
+          });
+      }
+
+      // Add layer for live vehicle icon
+      if (!map.getLayer('live-vehicle-layer')) {
+          logger.debug('[TrackingMap] Adding live-vehicle-layer');
+          map.addLayer({
+              id: 'live-vehicle-layer',
+              type: 'symbol',
+              source: 'live-vehicle-source',
+              layout: {
+                  'icon-image': 'truck-icon', // Reference the added image
+                  'icon-size': 0.75,
+                  'icon-rotate': ['get', 'heading'], // Get rotation from feature properties
+                  'icon-rotation-alignment': 'map',
+                  'icon-allow-overlap': true,
+                  'icon-ignore-placement': true
+              }
+          });
     
-    // Add listeners AFTER map is loaded
-    if (loadedMap) {
-      loadedMap.on('click', 'live-vehicle-layer', handleLayerClick);
-      loadedMap.on('mousemove', handleMapMouseMove);
-      
-      // Listen for user interactions to disable follow mode
-      loadedMap.on('dragstart', disableFollowMode);
-      loadedMap.on('zoomstart', disableFollowMode);
+          // Add click listener to the layer
+          map.on('click', 'live-vehicle-layer', handleLayerClick);
+          // Add mouse move listener for cursor change
+          map.on('mousemove', 'live-vehicle-layer', handleMapMouseMove);
+          // Reset cursor when leaving the layer
+          map.on('mouseleave', 'live-vehicle-layer', handleMapMouseMove); 
+      }
+  }, [handleLayerClick, handleMapMouseMove]);
 
-    } else {
-        logger.error("[TrackingMap] Map instance not available during onLoad to attach listeners.");
+  // Function to add planned route source and layer
+  const addRouteSourceAndLayer = useCallback((map: mapboxgl.Map) => {
+    if (!map || !map.isStyleLoaded()) {
+      logger.warn('[TrackingMap.addRouteSourceAndLayer] Map not ready.');
+      return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleLayerClick, handleMapMouseMove, disableFollowMode]); // Added disableFollowMode to deps
-
-  const handleMapError = useCallback((event: ErrorEvent) => {
-    logger.error('[TrackingMap] MapLibre Error:', event.error);
-    setMapError(event.error?.message || 'An unknown map error occurred');
-    // Note: We don't call an onError prop, UI should react to store's subscriptionError
+    // Add source for the planned route
+    if (!map.getSource('planned-route-source')) {
+        logger.debug('[TrackingMap] Adding planned-route-source');
+        map.addSource('planned-route-source', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] } 
+        });
+    }
+    // Add layer for the planned route
+    if (!map.getLayer('planned-route-layer')) {
+        logger.debug('[TrackingMap] Adding planned-route-layer');
+        map.addLayer({
+            id: 'planned-route-layer',
+            type: 'line',
+            source: 'planned-route-source',
+            layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            paint: {
+                'line-color': '#888', // Grey
+                'line-width': 4,
+                'line-dasharray': [2, 2] // Dashed line
+            }
+        });
+    }
   }, []);
 
-  const handleMove = useCallback((event: ViewStateChangeEvent) => {
-    setViewState(event.viewState);
-    // Close popup on map move for simplicity? Or let it stay anchored?
-    // Decision: Keep it simple for now, popup stays until explicitly closed.
+  // Function to update origin/destination markers
+  const updateOriginDestinationMarkers = useCallback((map: mapboxgl.Map, origin: [number, number] | null, destination: [number, number] | null) => {
+      if (!map) return;
+
+      // Remove previous markers if they exist
+      originMarkerRef.current?.remove();
+      destinationMarkerRef.current?.remove();
+      originMarkerRef.current = null;
+      destinationMarkerRef.current = null;
+
+      const createMarkerElement = (IconComponent: React.ElementType, color: string) => {
+          const el = document.createElement('div');
+          el.innerHTML = ReactDOMServer.renderToString(<IconComponent size={32} color={color} />); 
+          el.style.display = 'flex';
+          el.style.alignItems = 'center';
+          el.style.justifyContent = 'center';
+          return el;
+      };
+
+      // Add new origin marker
+      if (origin) {
+          logger.debug('[TrackingMap] Adding origin marker at:', origin);
+          const originEl = createMarkerElement(Home, '#16a34a'); // Green Home icon
+          originMarkerRef.current = new mapboxgl.Marker(originEl)
+              .setLngLat(origin)
+              .addTo(map);
+      }
+
+      // Add new destination marker
+      if (destination) {
+          logger.debug('[TrackingMap] Adding destination marker at:', destination);
+          const destEl = createMarkerElement(Flag, '#dc2626'); // Red Flag icon
+          destinationMarkerRef.current = new mapboxgl.Marker(destEl)
+              .setLngLat(destination)
+              .addTo(map);
+      }
   }, []);
 
-  // --- Effects ---
+  // --- Lifecycle Effects ---
+
+  // Effect to handle component mount/unmount
   useEffect(() => {
     mountedRef.current = true;
-    const map = mapInstanceRef.current; // Capture instance for cleanup
-    
-    // Cleanup function for listeners added in handleMapLoad
+    logger.debug('[TrackingMap] Mounted');
     return () => {
       mountedRef.current = false;
-      if (map) {
-        map.off('click', 'live-vehicle-layer', handleLayerClick);
-        map.off('mousemove', handleMapMouseMove);
-        // Remove user interaction listeners
-        map.off('dragstart', disableFollowMode);
-        map.off('zoomstart', disableFollowMode);
-         // Reset cursor explicitly on unmount
-        try {
-          if (map.getCanvas()) map.getCanvas().style.cursor = '';
-        } catch (e) { /* Ignore potential errors getting canvas */ }
-      }
-      logger.debug('TrackingMap unmounted, listeners removed.');
+      logger.debug('[TrackingMap] Unmounting');
+      // Cleanup map instance on unmount
+      mapInstanceRef.current?.remove();
+      mapInstanceRef.current = null;
+      // Clean up markers explicitly
+      originMarkerRef.current?.remove();
+      destinationMarkerRef.current?.remove();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Keep deps empty to run only on mount/unmount - callbacks use refs or getState
+  }, []);
 
-  // Effect for handling local map init errors
-  useEffect(() => {
-    if (mapError) {
-      // Display error to user? For now, just log.
-      console.error(`Map Initialization Error: ${mapError}`);
-    }
-  }, [mapError]);
-
-  // Effect to update GeoJSON source data when live update changes (Task 9.5.4)
+  // Effect to update vehicle source data when latestLiveUpdate changes
   useEffect(() => {
     const map = mapInstanceRef.current;
-    const STALE_THRESHOLD_MS = 30000; // 30 seconds
+    const source = map?.getSource('live-vehicle-source') as mapboxgl.GeoJSONSource;
 
-    if (!map || !map.isStyleLoaded() || !isMapLoaded) {
-      return; // Map not ready
+    if (!map || !source || !map.isStyleLoaded() || !latestLiveUpdate) {
+      // Clear source if no update
+      if(source && !latestLiveUpdate) {
+          source.setData({ type: 'FeatureCollection', features: [] });
+    }
+      return;
     }
 
-    // Calculate staleness
-    let currentIsStale = false;
-    if (latestLiveUpdate && typeof latestLiveUpdate.timestamp === 'number') {
-      const timeDiff = Date.now() - latestLiveUpdate.timestamp;
-      currentIsStale = timeDiff > STALE_THRESHOLD_MS;
-    }
-    setIsStale(currentIsStale); // Update state
-
-    // Update marker source and layer properties
-    if (!latestLiveUpdate || typeof latestLiveUpdate.longitude !== 'number' || typeof latestLiveUpdate.latitude !== 'number') {
-      // If no valid update, ensure opacity is normal (or hide layer if preferred)
-      if (map.getLayer('live-vehicle-layer')) {
-         map.setPaintProperty('live-vehicle-layer', 'icon-opacity', 1);
-         // Optionally hide if no data: map.setLayoutProperty('live-vehicle-layer', 'visibility', 'none');
-      }
-      return; // No valid update to display
+    // Ensure source and layer are ready (icon might load slightly after map load)
+    if (!map.getLayer('live-vehicle-layer') || !map.hasImage('truck-icon')) {
+        logger.debug('[TrackingMap] Vehicle layer or icon not ready yet, deferring setData.');
+        return; 
     }
 
-    const source = map.getSource('live-vehicle-source') as mapboxgl.GeoJSONSource;
-    const geoJsonData: Feature<GeoJsonPoint> = {
+    const vehicleFeature: Feature<GeoJsonPoint> = {
       type: 'Feature',
       geometry: {
         type: 'Point',
         coordinates: [latestLiveUpdate.longitude, latestLiveUpdate.latitude]
       },
       properties: {
-        // Add any properties needed for popups or styling, e.g., rotation
-        // rotation: latestLiveUpdate.heading ?? 0 // Store raw heading
+        shipmentId: latestLiveUpdate.shipmentId,
+        heading: latestLiveUpdate.heading ?? 0, // Provide default heading
+        timestamp: latestLiveUpdate.timestamp
+        // Add other properties if needed for popups or styling
       }
     };
 
-    if (source) {
-      source.setData(geoJsonData);
-      logger.debug('[TrackingMap] Updated live-vehicle-source data');
-    } else {
-      // Source might not be added yet if map just loaded, handle gracefully
-      logger.warn('[TrackingMap] live-vehicle-source not found when trying to setData');
+    logger.debug('[TrackingMap] Setting vehicle source data:', vehicleFeature);
+    source.setData({ type: 'FeatureCollection', features: [vehicleFeature] });
+
+    // Handle follow mode
+    if (isFollowingVehicle) {
+      logger.debug('[TrackingMap] Following vehicle, panning to:', vehicleFeature.geometry.coordinates);
+      map.panTo(vehicleFeature.geometry.coordinates as mapboxgl.LngLatLike, { duration: 500 }); // Smooth pan
     }
 
-    // Update layer rotation and opacity directly
-    const newRotation = (latestLiveUpdate.heading ?? 0) - 90; // Apply 90-degree anti-clockwise offset
-    if (map.getLayer('live-vehicle-layer')) {
-      map.setLayoutProperty('live-vehicle-layer', 'icon-rotate', newRotation);
-      map.setPaintProperty('live-vehicle-layer', 'icon-opacity', currentIsStale ? 0.5 : 1);
-    } else {
-        logger.warn('[TrackingMap] live-vehicle-layer not found when trying to set layout property');
-    }
+  }, [latestLiveUpdate, isFollowingVehicle, isMapLoaded]); // Depend on isMapLoaded
 
-  }, [latestLiveUpdate, isMapLoaded]); // Depend on latestLiveUpdate and isMapLoaded - isStale derived internally
-
-  // Effect for Follow Vehicle Mode
+  // Effect to update planned route when prop changes
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (
-      map && 
-      isMapLoaded && 
-      isFollowingVehicle && 
-      latestLiveUpdate && 
-      typeof latestLiveUpdate.longitude === 'number' && 
-      typeof latestLiveUpdate.latitude === 'number'
-    ) {
-      logger.debug('[TrackingMap] Follow mode active, flying to vehicle location.');
-      map.flyTo({
-        center: [latestLiveUpdate.longitude, latestLiveUpdate.latitude],
-        zoom: map.getZoom(), // Maintain current zoom level
-        speed: 1.2, // Adjust speed as needed for smooth follow
-        curve: 1,
-        essential: true // Make sure animation completes
-      });
+    const source = map?.getSource('planned-route-source') as mapboxgl.GeoJSONSource;
+    if (map && source && map.isStyleLoaded()) {
+      logger.debug('[TrackingMap] Updating planned route geometry:', plannedRouteGeometry);
+      // Update source data based on whether geometry exists
+      const newData = plannedRouteGeometry
+        ? { type: 'Feature', geometry: plannedRouteGeometry, properties: {} }
+        : { type: 'FeatureCollection', features: [] }; // Use empty FeatureCollection if null
+      source.setData(newData as any); // Use type assertion if needed by mapbox types
     }
-  }, [latestLiveUpdate, isFollowingVehicle, isMapLoaded]); // Dependencies trigger re-centering
+  }, [plannedRouteGeometry, isMapLoaded]); // Depend on prop and map load state
 
-  // Effect to manage planned route source and layer (Task 9.5.5)
+  // Effect to update origin/destination markers when props change
   useEffect(() => {
     const map = mapInstanceRef.current;
-    const routeGeometry = staticShipmentDetails?.plannedRouteGeometry; // Assuming this structure
-
-    if (!map || !map.isStyleLoaded() || !isMapLoaded) {
-      return; // Map not ready
-    }
-
-    const sourceId = 'planned-route-source';
-    const layerId = 'planned-route-layer';
-
-    const cleanup = () => {
-        try {
-          if (map.getLayer(layerId)) map.removeLayer(layerId);
-          if (map.getSource(sourceId)) map.removeSource(sourceId);
-          logger.debug('[TrackingMap] Cleaned up planned route layer/source');
-        } catch (e) {
-          logger.error('[TrackingMap] Error during planned route cleanup:', e);
-        }
-    };
-
-    if (routeGeometry && routeGeometry.type === 'LineString' && routeGeometry.coordinates.length > 1) {
-        const routeFeature: Feature<GeoJsonPoint | LineString> = {
-            type: 'Feature',
-            properties: {},
-            geometry: routeGeometry
-        };
-        try {
-            const source = map.getSource(sourceId) as mapboxgl.GeoJSONSource;
-            if (!source) {
-                map.addSource(sourceId, { type: 'geojson', data: routeFeature });
-                logger.debug('[TrackingMap] Added planned-route-source');
-            } else {
-                source.setData(routeFeature);
-                logger.debug('[TrackingMap] Updated planned-route-source data');
+      if (map && isMapLoaded) {
+          logger.debug('[TrackingMap] Updating origin/destination markers based on props.');
+          updateOriginDestinationMarkers(map, originCoords, destinationCoords);
+      }
+      // Cleanup function to remove markers if props become null or component unmounts
+      return () => {
+          if(mapInstanceRef.current){
+            originMarkerRef.current?.remove();
+            destinationMarkerRef.current?.remove();
             }
-
-            if (!map.getLayer(layerId)) {
-                map.addLayer({
-                    id: layerId,
-                    type: 'line',
-                    source: sourceId,
-                    layout: {
-                        'line-join': 'round',
-                        'line-cap': 'round'
-                    },
-                    paint: {
-                        'line-color': '#888', // Grey color
-                        'line-width': 3,
-                        'line-dasharray': [2, 2], // Dashed line
-                        'line-opacity': 0.6
-                    }
-                });
-                logger.debug('[TrackingMap] Added planned-route-layer');
-            }
-        } catch (e) {
-             logger.error('[TrackingMap] Error adding/updating planned route:', e);
-        }
-    } else {
-      // If geometry is invalid or removed, ensure layer/source are cleaned up
-      cleanup();
-    }
-
-    return cleanup; // Return cleanup function
-
-  }, [staticShipmentDetails?.plannedRouteGeometry, isMapLoaded]); // Depend on geometry and map load state
-
-  // Effect to manage Origin/Destination Markers (Task 9.5.6)
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const originCoords = staticShipmentDetails?.originCoords;
-    const destinationCoords = staticShipmentDetails?.destinationCoords;
-
-    if (!map || !map.isStyleLoaded() || !isMapLoaded) {
-      return; // Map not ready
-    }
-
-    const cleanupMarkers = () => {
-      try {
-        if (originMarkerRef.current) {
-          originMarkerRef.current.remove();
-          originMarkerRef.current = null;
-        }
-        if (destinationMarkerRef.current) {
-          destinationMarkerRef.current.remove();
-          destinationMarkerRef.current = null;
-        }
-        logger.debug('[TrackingMap] Cleaned up origin/destination markers');
-      } catch (e) {
-        logger.error('[TrackingMap] Error during marker cleanup:', e);
       }
+  }, [originCoords, destinationCoords, isMapLoaded, updateOriginDestinationMarkers]); // Depend on props, load state, and callback
+
+  // Effect to check for staleness (same as in TrackingPageView)
+  useEffect(() => {
+    const STALE_THRESHOLD_MS = 30000; // 30 seconds
+    let staleCheckTimer: NodeJS.Timeout | null = null;
+
+    const checkStaleness = () => {
+        let currentIsStale = false;
+        const currentUpdate = useLiveTrackingStore.getState().latestLiveUpdate; // Check latest store state
+        if (currentUpdate && typeof currentUpdate.timestamp === 'number') {
+            const timeDiff = Date.now() - currentUpdate.timestamp;
+            currentIsStale = timeDiff > STALE_THRESHOLD_MS;
+      } else {
+            currentIsStale = false; // Not stale if no update exists
+        }
+        if (mountedRef.current) { // Check if component is still mounted
+            setIsStale(currentIsStale);
+        }
     };
 
-    // Clean up existing markers before potentially adding new ones
-    cleanupMarkers();
+    checkStaleness(); // Initial check
 
-    try {
-      // Add Origin Marker
-      if (originCoords && typeof originCoords.lat === 'number' && typeof originCoords.lon === 'number') {
-        const originMarker = new mapboxgl.Marker({ color: '#16a34a' }) // Green
-          .setLngLat([originCoords.lon, originCoords.lat])
-          .addTo(map);
-        originMarkerRef.current = originMarker;
-        logger.debug('[TrackingMap] Added origin marker');
-      } else {
-          logger.warn('[TrackingMap] Invalid or missing originCoords, cannot add marker.');
-      }
+    // Periodically check even if no new updates arrive
+    staleCheckTimer = setInterval(checkStaleness, 5000); // Check every 5 seconds
 
-      // Add Destination Marker
-      if (destinationCoords && typeof destinationCoords.lat === 'number' && typeof destinationCoords.lon === 'number') {
-        const destinationMarker = new mapboxgl.Marker({ color: '#dc2626' }) // Red
-          .setLngLat([destinationCoords.lon, destinationCoords.lat])
-          .addTo(map);
-        destinationMarkerRef.current = destinationMarker;
-        logger.debug('[TrackingMap] Added destination marker');
-      } else {
-          logger.warn('[TrackingMap] Invalid or missing destinationCoords, cannot add marker.');
-      }
-    } catch (e) {
-      logger.error('[TrackingMap] Error adding origin/destination markers:', e);
-      // Attempt cleanup again in case of partial success before error
-      cleanupMarkers();
+    return () => {
+      if (staleCheckTimer) {
+        clearInterval(staleCheckTimer);
     }
+    };
+  }, [latestLiveUpdate]); // Re-run if latestLiveUpdate changes
 
-    // Return the main cleanup function to be called on unmount or dependency change
-    return cleanupMarkers;
+  // Effect to handle subscription errors visually
+  useEffect(() => {
+    if (subscriptionStatus === 'error') {
+      // Maybe show an overlay or border?
+      logger.error(`[TrackingMap] Subscription error detected: ${subscriptionError}`);
+      // Display handled by TrackingPageView now
+    }
+  }, [subscriptionStatus, subscriptionError]);
 
-  }, [staticShipmentDetails?.originCoords, staticShipmentDetails?.destinationCoords, isMapLoaded]); // Depend on coords and map load
-
-  // --- Render ---
-  if (!mapboxToken) {
-    return <div className="flex items-center justify-center h-full">Mapbox token is missing.</div>;
-  }
-
-  if (mapError) {
-    return <div className="flex items-center justify-center h-full text-red-600">Error loading map: {mapError}</div>;
-  }
-
+  // --- Render Component ---
   return (
-    <div className={className} style={{ height, width, position: 'relative' }}>
+    <div className={cn("relative", className)} style={{ height, width }}>
+      {/* Loading / Error States Handled by Parent (TrackingPageView) */}
+      {/* Render Map */}
       <Map
-        ref={mapRefInternal} // Ref for react-map-gl component instance
+        ref={mapRefInternal}
         mapboxAccessToken={mapboxToken}
-        // Removed initialViewState, let viewState handle updates
-        {...viewState} // Spread viewState for controlled map
+        initialViewState={DEFAULT_CENTER}
         style={{ width: '100%', height: '100%' }}
-        mapStyle="mapbox://styles/mapbox/streets-v12" // Standard Mapbox style
+        mapStyle="mapbox://styles/mapbox/standard" // Use standard style for 3D features
         maxZoom={maxZoom}
-        attributionControl={false} // Optional: Hide default attribution
         onLoad={handleMapLoad}
-        onError={handleMapError}
-        onMove={handleMove}
-        // onClick={handleMapClick} // Removed direct onClick, using map.on('click', layerId)
+        onError={(e: ErrorEvent) => {
+            logger.error("[TrackingMap] Mapbox GL Error:", e.error);
+            setMapError(e.error.message || 'Map failed to load');
+        }}
+        onMove={disableFollowMode} // Disable follow on manual move
+        onZoom={disableFollowMode} // Disable follow on manual zoom
+        onRotate={disableFollowMode} // Disable follow on manual rotate
+        // onRender={(e) => logger.trace('Map Render Event', e)} // Too noisy
+        // onData={(e) => logger.trace('Map Data Event', e)} // Too noisy
+        reuseMaps // Important for performance with multiple map instances if needed elsewhere
       >
-        {/* Map Controls */}
         <NavigationControl position="top-right" />
 
-        {/* Markers, Popups, Sources, Layers will be added here based on store state */}
-        {/* Example: <Marker longitude={...} latitude={...} /> */}
-        {/* Example: <Source id="route" type="geojson" data={...} /> */}
-        {/* Example: <Layer {...routeLayer} /> */}
+        {/* Vehicle Source and Layer are added via effects */} 
+        {/* Planned Route Source and Layer are added via effects */} 
+        {/* Origin/Destination Markers are added via effects */} 
 
-        {/* --- Live Vehicle Source and Layer (Task 9.5.4) --- */}
-        {isMapLoaded && (
-            <Source
-                id="live-vehicle-source"
-                type="geojson"
-                data={{
-                    type: 'Feature',
-                    geometry: {
-                        type: 'Point',
-                        // Initial position (optional, could be null/empty initially)
-                        coordinates: latestLiveUpdate && typeof latestLiveUpdate.longitude === 'number' && typeof latestLiveUpdate.latitude === 'number'
-                            ? [latestLiveUpdate.longitude, latestLiveUpdate.latitude]
-                            : [0, 0] // Default off-screen or handle null case
-                    },
-                    properties: {}
-                }}
-            >
-                <Layer
-                    id="live-vehicle-layer"
-                    type="symbol"
-                    source="live-vehicle-source" // Link to the source ID
-                    layout={{
-                        'icon-image': 'truck-icon', // MUST match the ID used in map.addImage or style
-                        'icon-size': 0.6,
-                        'icon-allow-overlap': true,
-                        'icon-ignore-placement': true,
-                        'icon-rotate': (latestLiveUpdate?.heading ?? 0) - 90, // Apply offset here too for initial render
-                        'icon-rotation-alignment': 'map'
-                    }}
-                    // Removed interactive={true} prop as it's not valid and interactivity
-                    // is handled by map.on('click', layerId) instead.
-                    // interactive={true} 
-                />
-            </Source>
-        )}
-
-        {/* --- Popup Display (Task 9.5.7) --- */}
+        {/* Popup Display */} 
         {popupInfo && (
           <Popup
             longitude={popupInfo.longitude}
             latitude={popupInfo.latitude}
-            anchor="bottom"
             onClose={() => setPopupInfo(null)}
-            closeOnClick={false} // Keep popup open until explicitly closed
-            // Optional: Add offset if needed
-            // offset={popupOffset} 
+            closeButton={true}
+            closeOnClick={false} // Keep open even if map clicked elsewhere
+            anchor="bottom"
+            offset={25}
           >
-            {/* Popup Content - Neurotic Check: Handle nulls gracefully */}
-            <div className="text-sm p-1">
-              <p><strong>Shipment:</strong> {popupInfo.shipmentId ?? 'N/A'}</p>
-              <p><strong>Driver:</strong> {popupInfo.driverName ?? 'N/A'}</p>
-              <p><strong>Updated:</strong> {popupInfo.timestamp ? formatTimestamp(popupInfo.timestamp) : 'N/A'}</p>
-              <p><strong>Speed:</strong> {popupInfo.speed !== null && popupInfo.speed !== undefined ? formatSpeed(popupInfo.speed) : 'N/A'}</p>
-              <p><strong>Heading:</strong> {popupInfo.heading !== null && popupInfo.heading !== undefined ? `${popupInfo.heading.toFixed(0)}°` : 'N/A'}</p>
-              <p><strong>Accuracy:</strong> {popupInfo.accuracy !== null && popupInfo.accuracy !== undefined ? `${popupInfo.accuracy.toFixed(0)} m` : 'N/A'}</p>
+            <div className="text-xs p-1">
+              <p><strong>Shipment:</strong> {popupInfo.shipmentId || 'N/A'}</p>
+              {popupInfo.timestamp && <p><strong>Updated:</strong> {formatTimestamp(popupInfo.timestamp)}</p>}
+              {popupInfo.speed !== null && popupInfo.speed !== undefined && <p><strong>Speed:</strong> {formatSpeed(popupInfo.speed)}</p>}
+              {popupInfo.heading !== null && popupInfo.heading !== undefined && <p><strong>Heading:</strong> {Math.round(popupInfo.heading)}&deg;</p>}
+              {popupInfo.accuracy !== null && popupInfo.accuracy !== undefined && <p><strong>Accuracy:</strong> {popupInfo.accuracy.toFixed(1)} m</p>}
             </div>
           </Popup>
         )}
-
       </Map>
-      {/* Optional: Overlay elements like loading indicators or error messages based on store state */}
-      {subscriptionStatus === 'subscribing' && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-              <p className="text-white text-lg">Loading live tracking data...</p>
-              {/* Add spinner later if desired */}
+       {/* Display local map errors */} 
+      {mapError && (
+        <div className="absolute top-2 left-2 bg-red-100 text-red-700 p-2 rounded shadow-md text-xs z-10">
+            Map Error: {mapError}
           </div>
       )}
-      {subscriptionStatus === 'error' && (
-          <div className="absolute inset-0 bg-red-900 bg-opacity-75 flex flex-col items-center justify-center z-10 p-4">
-              <p className="text-white text-lg font-semibold mb-2">Error Subscribing</p>
-              <p className="text-white text-center mb-4">{subscriptionError || 'An unknown error occurred.'}</p>
-              {/* Add a Retry button that calls store's subscribe action */}
-              <button 
-                onClick={() => {
-                  // Neurotic Check: Ensure we have the necessary details to retry
-                  if (trackedShipmentId && staticShipmentDetails) {
-                    subscribe(trackedShipmentId, staticShipmentDetails);
-                  } else {
-                    logger.error("[TrackingMap] Cannot retry subscription: Missing shipmentId or static details.");
-                    // Optional: Add user feedback here?
-                  }
-                }}
-                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-red-900"
-              >
-                Retry Subscription
-              </button>
+       {/* Stale data indicator (Optional visual cue on map itself) */} 
+       {isStale && subscriptionStatus === 'active' && (
+          <div className="absolute bottom-2 left-2 bg-yellow-100 text-yellow-800 p-1 px-2 rounded shadow-md text-xs z-10">
+              ⚠️ Live data is stale
           </div>
       )}
+       {/* Loading indicator for subscription */} 
+       {subscriptionStatus === 'subscribing' && (
+            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center z-20">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+       )}
+
     </div>
   );
 }));
 
-// Set display name for debugging
 TrackingMap.displayName = 'TrackingMap'; 
 
 // Helper function placeholders (assuming they exist in utils/formatters.ts)

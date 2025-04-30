@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { MapPinned, Search, X, RefreshCw, ExternalLink, AlertCircle, Loader2 } from "lucide-react";
+import { MapPinned, Search, X, RefreshCw, ExternalLink, AlertCircle, Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ShipmentCard from "@/components/shipments/ShipmentCard";
@@ -18,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { Accordion } from "@/components/ui/accordion";
 import { getShipmentLastKnownLocation } from '@/lib/actions/shipmentActions';
 import { startSimulation } from '@/lib/actions/simulationActions';
+import Link from "next/link";
 
 // Simple debounce hook
 function useDebounce(callback: (...args: any[]) => void, delay: number) {
@@ -552,14 +553,15 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                 </div>
                         </div>
 
-                            {/* Prominent View Tracking Button */}
+                            {/* Prominent Action Buttons */}
                         {showTrackingButton && (
-                            <div className="mt-4 flex justify-center"> 
+                            <div className="mt-4 flex justify-center gap-2"> 
+                                {/* Simulate Button */} 
                                 <Button 
                                         onClick={() => {
-                                            logger.debug('[ShipmentPage Button onClick] Triggered!');
+                                            logger.debug('[ShipmentPage Button onClick] Simulate Triggered!');
                                             if (selectedShipment?.coreInfo?.id) {
-                                                logger.info(`[ShipmentPage Button onClick] Calling handleViewTracking for: ${selectedShipment.coreInfo.id}`);
+                                                logger.info(`[ShipmentPage Button onClick] Calling handleViewTracking (for simulation) for: ${selectedShipment.coreInfo.id}`);
                                                 handleViewTracking(selectedShipment.coreInfo.id, documentid);
                                             } else {
                                                 logger.warn('[ShipmentPage Button onClick] Cannot call handleViewTracking: selectedShipment or ID missing.');
@@ -568,14 +570,25 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                     variant="secondary"
                                     size="sm"
                                     disabled={isSimLoading}
+                                    title="Start or view simulation for this shipment"
                                 >
                                     {isSimLoading ? (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     ) : (
-                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                    <ExternalLink className="mr-2 h-4 w-4" /> 
                                     )}
-                                    {isSimLoading ? "Loading Simulation..." : "View Live Tracking / Simulation"}
+                                    {isSimLoading ? "Loading..." : "Simulate"}
                                 </Button>
+                                
+                                {/* Live Tracking Button */} 
+                                <Link href={`/tracking/${documentid}?selectedShipmentId=${selectedShipment?.coreInfo?.id}`} passHref legacyBehavior>
+                                    <Button asChild variant="secondary" size="sm" title="View live tracking for this shipment (if available)">
+                                        <a href={`/tracking/${documentid}?selectedShipmentId=${selectedShipment?.coreInfo?.id}`}>
+                                            <MapPin className="mr-2 h-4 w-4" />
+                                            Track Live
+                                        </a>
+                                    </Button>
+                                </Link>
                             </div>
                         )}
 
