@@ -246,7 +246,7 @@
         "relatedFiles": ["services/tracking/FirestoreLiveTrackingService.ts", ".env.local"]
     },
     "components/map/TrackingMap.tsx": {
-        "description": "Renders the interactive map for LIVE vehicle tracking using react-map-gl. Displays vehicle marker from GeoJSON source (via store), handles popups, follow mode, zoom-to-fit, origin/destination markers (via props), and planned route layer (via props). Connects to useLiveTrackingStore for live updates.",
+        "description": "Renders the interactive map for LIVE vehicle tracking using react-map-gl. Displays vehicle marker from GeoJSON source (via store), handles popups, follow mode, zoom-to-fit, origin/destination markers (via props), and planned route layer (via props). Connects to useLiveTrackingStore for live updates. Accepts mapStyle prop.",
         "keyImports": ["react", "mapbox-gl", "react-map-gl/mapbox", "@/lib/store/useLiveTrackingStore", "@/types/tracking", "@/utils/logger", "geojson", "lucide-react", "@/utils/formatters", "react-dom/server"],
         "relatedFiles": ["lib/store/useLiveTrackingStore.ts", "app/tracking/[documentId]/_components/TrackingPageView.tsx", "components/map/TrackingControls.tsx", "utils/formatters.ts"]
     },

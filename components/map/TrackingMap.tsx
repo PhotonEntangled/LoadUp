@@ -39,6 +39,7 @@ export interface TrackingMapProps {
   width?: string | number;
   maxZoom?: number;
   mapboxToken: string; // Make token mandatory
+  mapStyle: string; // ADDED: Map style URL
   // ADDED Props for static details (Task 9.R.4)
   originCoords: [number, number] | null;
   destinationCoords: [number, number] | null;
@@ -70,6 +71,7 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
   width = '100%',
   maxZoom = 18,
   mapboxToken,
+  mapStyle, // Destructure mapStyle
   // Destructure new props
   originCoords,
   destinationCoords,
@@ -512,7 +514,7 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
         mapboxAccessToken={mapboxToken}
         initialViewState={DEFAULT_CENTER}
         style={{ width: '100%', height: '100%' }}
-        mapStyle="mapbox://styles/mapbox/standard" // Use standard style for 3D features
+        mapStyle={mapStyle}
         maxZoom={maxZoom}
         onLoad={handleMapLoad}
         onError={(e: ErrorEvent) => {
@@ -522,8 +524,11 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
         onMove={disableFollowMode} // Disable follow on manual move
         onZoom={disableFollowMode} // Disable follow on manual zoom
         onRotate={disableFollowMode} // Disable follow on manual rotate
-        // onRender={(e) => logger.trace('Map Render Event', e)} // Too noisy
-        // onData={(e) => logger.trace('Map Data Event', e)} // Too noisy
+        onPitchStart={disableFollowMode}
+        onDragStart={disableFollowMode}
+        onMouseMove={handleMapMouseMove}
+        onClick={handleLayerClick}
+        interactiveLayerIds={['live-vehicle-layer']}
         reuseMaps // Important for performance with multiple map instances if needed elsewhere
       >
         <NavigationControl position="top-right" />

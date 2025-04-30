@@ -292,6 +292,8 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
   
   // Define mapboxToken here, outside renderMapArea
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  // Define mapStyle consistently with Simulation page
+  const mapStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE_URL || 'mapbox://styles/mapbox/standard'; 
 
   const renderMapArea = () => {
     if (isLoadingSelection) {
@@ -329,6 +331,11 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
         logger.error("[TrackingPageView] Mapbox token is not configured.");
         return <div className="p-4 text-red-600">Map configuration error.</div>;
     }
+    // Check map style availability (added check)
+    if (!mapStyle) {
+        logger.error("[TrackingPageView] Mapbox style URL is not configured.");
+        return <div className="p-4 text-red-600">Map configuration error.</div>;
+    }
 
     // Check if ready to render map (selection made and static details loaded)
     if (!selectedShipmentId || !selectedStaticDetails) {
@@ -342,6 +349,7 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
             <TrackingMap 
                 ref={mapRef}
                 mapboxToken={mapboxToken} 
+                mapStyle={mapStyle}
                 originCoords={selectedStaticDetails.originCoords} 
                 destinationCoords={selectedStaticDetails.destinationCoords} 
                 plannedRouteGeometry={selectedStaticDetails.plannedRouteGeometry} 
@@ -359,8 +367,8 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
   // --- Main Layout ---
   return (
     <div className="grid h-screen grid-cols-1 lg:grid-cols-[minmax(350px,_1fr)_3fr] xl:grid-cols-[minmax(400px,_1fr)_4fr]">
-      {/* Left Column: Shipment List */}
-      <div className="flex flex-col h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
+      {/* Left Column: Shipment List - REMOVED explicit background */}
+      <div className="flex flex-col h-full overflow-y-auto border-r border-gray-200 dark:border-gray-800">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
           <h1 className="text-lg font-semibold">Shipments for Document</h1>
           <p className="text-xs text-muted-foreground truncate" title={documentId}>{documentId}</p> 
