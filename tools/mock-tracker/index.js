@@ -1,207 +1,381 @@
-// tools/mock-tracker/index.cjs
-const path = require('path'); // Import path module
-
-// Load environment variables from .env file IN THIS DIRECTORY
+// tools/mock-tracker/index.js
+const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const admin = require('firebase-admin');
+const xlsx = require('xlsx');
+const MapboxDirections = require('@mapbox/mapbox-sdk/services/directions');
+const turf = require('@turf/turf');
 
-// Neurotic Check: Ensure required environment variables are present
+// --- Environment Variable Checks ---
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
   console.error('FATAL ERROR: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.');
-  console.error('Ensure you have created a .env file in the tools/mock-tracker directory with the correct path to your service account key.');
   process.exit(1);
 }
 if (!process.env.FIRESTORE_DATABASE_URL) {
   console.error('FATAL ERROR: FIRESTORE_DATABASE_URL environment variable is not set.');
-  console.error('Ensure you have created a .env file in the tools/mock-tracker directory with your Firebase database URL.');
   process.exit(1);
 }
+// Neurotic: Check for Mapbox Token needed for Directions API
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_SECRET_TOKEN;
+if (!MAPBOX_TOKEN) {
+    console.error('FATAL ERROR: MAPBOX_TOKEN (checked NEXT_PUBLIC_MAPBOX_TOKEN or MAPBOX_SECRET_TOKEN) is not set in .env');
+    process.exit(1);
+}
 
+// --- Firebase Initialization ---
 try {
-  // Initialize Firebase Admin SDK
-  // It automatically uses the GOOGLE_APPLICATION_CREDENTIALS environment variable
   admin.initializeApp({
-    // credential: admin.credential.applicationDefault(), // This is implicitly used if GOOGLE_APPLICATION_CREDENTIALS is set
     databaseURL: process.env.FIRESTORE_DATABASE_URL
   });
   console.log('Firebase Admin SDK initialized successfully.');
 } catch (error) {
-  console.error('Error initializing Firebase Admin SDK:');
-  console.error(error);
-  console.error('\nPlease check the following:');
-  console.error('  1. The path in GOOGLE_APPLICATION_CREDENTIALS in .env is correct.');
-  console.error('  2. The service account key file is valid JSON.');
-  console.error('  3. The FIRESTORE_DATABASE_URL in .env is correct.');
+  console.error('Error initializing Firebase Admin SDK:', error);
   process.exit(1);
 }
-
-// Get Firestore instance
 const db = admin.firestore();
 console.log('Firestore instance obtained.');
 
-// --- Configuration & Control (Task 9.2.5) ---
-const args = process.argv.slice(2); // Skip node path and script path
+// --- Mapbox Directions Client Initialization ---
+const directionsClient = MapboxDirections({ accessToken: MAPBOX_TOKEN });
+console.log('Mapbox Directions client initialized.');
 
-let targetShipmentId = 'MOCK_SHIPMENT_001'; // Default shipment ID
-let updateIntervalSeconds = 5;         // Default update interval
-
-if (args.length === 0) {
-  console.warn(`No command-line arguments provided. Using defaults:`);
-  console.warn(`  Shipment ID: ${targetShipmentId}`);
-  console.warn(`  Update Interval: ${updateIntervalSeconds} seconds`);
-  console.warn(`Usage: node tools/mock-tracker/index.cjs [shipmentId] [updateIntervalSeconds]`);
-} else {
-  // Argument 1: shipmentId (Required)
-  targetShipmentId = args[0];
-  console.log(`Using Shipment ID from command line: ${targetShipmentId}`);
-
-  // Argument 2: updateIntervalSeconds (Optional)
-  if (args[1]) {
-    const intervalArg = parseInt(args[1], 10);
-    if (!isNaN(intervalArg) && intervalArg > 0) {
-      updateIntervalSeconds = intervalArg;
-      console.log(`Using Update Interval from command line: ${updateIntervalSeconds} seconds`);
-    } else {
-      console.error(`Invalid update interval provided: '${args[1]}'. Must be a positive number. Using default: ${updateIntervalSeconds} seconds.`);
-    }
-  }
+// --- Configuration & Control ---
+const args = process.argv.slice(2);
+let targetShipmentId = args[0] || 'MOCK_ENROUTE_002'; // Default to ENROUTE for better testing
+let updateIntervalSeconds = args[1] ? parseInt(args[1], 10) : 5;
+if (isNaN(updateIntervalSeconds) || updateIntervalSeconds <= 0) {
+    console.warn(`Invalid update interval, using default 5 seconds.`);
+    updateIntervalSeconds = 5;
 }
-// Basic validation: Ensure shipmentId is not empty
 if (!targetShipmentId) {
-  console.error('FATAL ERROR: Shipment ID cannot be empty. Please provide a shipment ID as the first argument.');
-  console.error(`Usage: node tools/mock-tracker/index.cjs [shipmentId] [updateIntervalSeconds]`);
-  process.exit(1);
+  console.error('FATAL ERROR: Shipment ID cannot be empty.'); process.exit(1);
+}
+console.log(`Targeting Shipment ID: ${targetShipmentId}`);
+console.log(`Update Interval: ${updateIntervalSeconds} seconds`);
+
+// --- Mock Address Data (Adapted from services/geolocation/mockAddressData.ts) ---
+const MOCK_MALAYSIAN_ADDRESSES = [
+    {
+        mockId: 'MOCK-PTP-01',
+        keywords: ['ptp', 'pelabuhan tanjung pelepas', 'tanjung pelepas'],
+        street1: 'Blok A, Wisma PTP', street2: 'Jalan Pelabuhan Tanjung Pelepas',
+        city: 'Gelang Patah', state: 'Johor', postalCode: '81560', country: 'Malaysia',
+        latitude: '1.3624', longitude: '103.5520',
+    },
+    {
+        mockId: 'MOCK-KLIA-CARGO',
+        keywords: ['klia', 'cargo village', 'klia cargo', 'sepang'],
+        street1: 'KLIA Cargo Village', street2: 'Free Commercial Zone',
+        city: 'Sepang', state: 'Selangor', postalCode: '64000', country: 'Malaysia',
+        latitude: '2.7456', longitude: '101.7070',
+    },
+    {
+        mockId: 'MOCK-PENANG-PORT',
+        keywords: ['penang port', 'butterworth', 'nbct', 'perai'], // Added perai
+        street1: 'North Butterworth Container Terminal', street2: '',
+        city: 'Butterworth', state: 'Penang', postalCode: '12100', country: 'Malaysia',
+        latitude: '5.4085', longitude: '100.3607',
+    },
+    {
+        mockId: 'MOCK-POS-KL',
+        keywords: ['pos malaysia', 'kuala lumpur', 'kl mail centre'],
+        street1: 'Pusat Mel Nasional', street2: 'Kompleks Dayabumi',
+        city: 'Kuala Lumpur', state: 'W.P. Kuala Lumpur', postalCode: '50670', country: 'Malaysia',
+        latitude: '3.1445', longitude: '101.6931',
+    },
+    {
+        mockId: 'MOCK-SHAH-ALAM-HUB', // Origin for many test cases
+        keywords: [
+            'shah alam', 'logistics hub', 'sek 23', 'xinhwa', 'xin hwa',
+            'niro shah alam', 'pick up at niro', 'pick up at niro shah alam',
+            'pick up at xin hwa', 'pick up at xinhwa',
+            'loadup direct delivery pickup at niro shah alam',
+            'loadup direct delivery pickup at xin hwa',
+            'loadup direct delivery pick up at niro shah alam',
+            'loadup direct delivery pick up at xin hwa',
+        ],
+        street1: 'Jalan Jubli Perak 22/1, Seksyen 22', street2: 'Lot 10, Persiaran Perusahaan',
+        city: 'Shah Alam', state: 'Selangor', postalCode: '40300', country: 'Malaysia',
+        latitude: '3.0520', longitude: '101.5270',
+    },
+    {
+        mockId: 'MOCK-LOADUP-JB',
+        keywords: ['loadup jb', 'load up jb', 'jb hub'],
+        street1: '1 Jalan Kempas Utama 3/1', street2: 'Taman Kempas Utama',
+        city: 'Johor Bahru', state: 'Johor', postalCode: '81300', country: 'Malaysia',
+        latitude: '1.5540', longitude: '103.7180',
+    },
+    {
+        mockId: 'MOCK-LOADUP-PN-PRAI', // Destination for ORD_001
+        keywords: ['loadup pn', 'load up pn', 'penang hub', 'prai hub', 'prai industrial estate', '1 mock address'],
+        street1: 'Lot 247, Lorong Perusahaan 10', street2: 'Prai Industrial Estate',
+        city: 'Perai', state: 'Penang', postalCode: '13600', country: 'Malaysia',
+        latitude: '5.3580', longitude: '100.4100',
+    },
+    {
+        mockId: 'MOCK-LOADUP-PN-BM', // Destination for ORD_002
+        keywords: ['bukit mertajam', 'taman mock', '2 mock avenue'],
+        street1: '2 Mock Avenue', street2: 'Taman Mock',
+        city: 'Bukit Mertajam', state: 'Penang', postalCode: '14000', country: 'Malaysia',
+        latitude: '5.3638', longitude: '100.4609',
+    },
+    {
+        mockId: 'MOCK-LOADUP-PN-GEO', // Destination for ORD_003
+        keywords: ['georgetown', 'georgetown central', '3 mock street'],
+        street1: '3 Mock Street', street2: 'Georgetown Central',
+        city: 'Georgetown', state: 'Penang', postalCode: '10000', country: 'Malaysia',
+        latitude: '5.4145', longitude: '100.3292',
+    },
+    {
+        mockId: 'MOCK-LOADUP-PN-BL', // Destination for ORD_004
+        keywords: ['bayan lepas', 'free industrial zone', '4 mock lane'],
+        street1: '4 Mock Lane', street2: 'Free Industrial Zone',
+        city: 'Bayan Lepas', state: 'Penang', postalCode: '11900', country: 'Malaysia',
+        latitude: '5.2949', longitude: '100.2615',
+    },
+    {
+        mockId: 'MOCK-LOADUP-PN-SA', // Destination for ORD_005
+        keywords: ['simpang ampat', 'taman error', '5 mock close'],
+        street1: '5 Mock Close', street2: 'Taman Error',
+        city: 'Simpang Ampat', state: 'Penang', postalCode: '14100', country: 'Malaysia',
+        latitude: '5.2756', longitude: '100.4767',
+    },
+    {
+        mockId: 'MOCK-UNKNOWN-MY', // Default fallback
+        keywords: [],
+        street1: 'Unknown Location', street2: '',
+        city: 'Unknown', state: 'N/A', postalCode: '00000', country: 'Malaysia',
+        latitude: '3.1390', longitude: '101.6869', // Default to KL
+    },
+];
+
+// Function adapted from services/geolocation/mockAddressData.ts
+const findMockEntryByKeywords = (rawInput) => {
+    if (!rawInput) {
+        return MOCK_MALAYSIAN_ADDRESSES.find(addr => addr.mockId === 'MOCK-UNKNOWN-MY');
+    }
+    const lowerInput = String(rawInput).toLowerCase(); // Ensure string conversion
+    for (const mockAddr of MOCK_MALAYSIAN_ADDRESSES) {
+        if (mockAddr.keywords.some(keyword => lowerInput.includes(keyword))) {
+            return mockAddr;
+        }
+    }
+    return MOCK_MALAYSIAN_ADDRESSES.find(addr => addr.mockId === 'MOCK-UNKNOWN-MY');
+};
+
+// --- Function to get Origin/Destination Coords (Refactored) ---
+function getShipmentRoutePoints(shipmentId) {
+    try {
+        const workbookPath = path.resolve(__dirname, '../../data/mocks/all_status_test_shipments.xlsx');
+        console.log(`Reading Excel file from: ${workbookPath}`);
+        const workbook = xlsx.readFile(workbookPath);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(worksheet);
+
+        const shipmentRow = data.find(row => row['Load no'] === shipmentId);
+        if (!shipmentRow) {
+            console.error(`Shipment ID ${shipmentId} not found in Excel file.`);
+            return null;
+        }
+
+        const originInput = shipmentRow['Pick up warehouse'];
+        const destinationInput = shipmentRow['Address Line 1 and 2']; // Use full address for destination matching
+
+        console.log(`Attempting to resolve Origin: "${originInput}"`);
+        const originEntry = findMockEntryByKeywords(originInput);
+        console.log(`Attempting to resolve Destination: "${destinationInput}"`);
+        const destinationEntry = findMockEntryByKeywords(destinationInput);
+
+        // Check if resolution failed (returned the default Unknown)
+        if (!originEntry || originEntry.mockId === 'MOCK-UNKNOWN-MY') {
+            console.error(`Failed to resolve mock coordinates for origin: "${originInput}"`);
+            return null;
+        }
+        if (!destinationEntry || destinationEntry.mockId === 'MOCK-UNKNOWN-MY') {
+            console.error(`Failed to resolve mock coordinates for destination: "${destinationInput}"`);
+            return null;
+        }
+
+        // Parse coordinates (which are strings in MOCK_MALAYSIAN_ADDRESSES)
+        const originLon = parseFloat(originEntry.longitude);
+        const originLat = parseFloat(originEntry.latitude);
+        const destLon = parseFloat(destinationEntry.longitude);
+        const destLat = parseFloat(destinationEntry.latitude);
+
+        // Validate parsed numbers
+        if (isNaN(originLon) || isNaN(originLat) || isNaN(destLon) || isNaN(destLat)) {
+            console.error("Failed to parse valid coordinates from resolved mock entries.");
+            return null;
+        }
+
+        const originCoords = [originLon, originLat];
+        const destinationCoords = [destLon, destLat];
+
+        console.log(`Resolved route points: Origin ${originEntry.mockId} ${originCoords}, Destination ${destinationEntry.mockId} ${destinationCoords}`);
+        return { origin: originCoords, destination: destinationCoords };
+
+    } catch (error) {
+        console.error("Error reading or processing Excel file:", error);
+        return null;
+    }
 }
 
-// --- Function to publish updates to Firestore (Task 9.2.4) ---
-async function publishLocationUpdate(update) {
-  // Neurotic Check: Confirming Firestore path matches plan Section 2.3
-  // Path: /active_vehicles/{shipmentId}
-  // Method: Overwrite document using set with merge: false
-  const docRef = db.collection('active_vehicles').doc(update.shipmentId);
+// --- Function to Fetch Route using Mapbox SDK ---
+async function fetchRouteGeometry(origin, destination) {
+    try {
+        console.log(`Fetching route from Mapbox: ${origin} -> ${destination}`);
+        const response = await directionsClient
+            .getDirections({
+                profile: 'driving-traffic', // Use traffic profile
+                waypoints: [ { coordinates: origin }, { coordinates: destination } ],
+                geometries: 'geojson',
+                overview: 'full',
+            })
+            .send();
 
+        if (response && response.body && response.body.routes && response.body.routes.length > 0) {
+            const route = response.body.routes[0];
+            console.log(`Route fetched successfully. Distance: ${(route.distance / 1000).toFixed(1)} km, Duration: ${(route.duration / 60).toFixed(0)} min.`);
+            return {
+                geometry: route.geometry, // GeoJSON LineString
+                distance: route.distance, // Meters
+                duration: route.duration  // Seconds
+            };
+        } else {
+            console.warn('No routes found in Mapbox response.');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error fetching route from Mapbox:', error);
+        return null;
+    }
+}
+
+// --- Firestore Publish Function (Unchanged) ---
+async function publishLocationUpdate(update) {
+  const docRef = db.collection('active_vehicles').doc(update.shipmentId);
   try {
-    // Use set with merge:false to overwrite the document entirely
     await docRef.set(update, { merge: false });
     console.log(` -> Published update for ${update.shipmentId} to Firestore at ${new Date(update.timestamp).toISOString()}`);
   } catch (error) {
-    console.error(` *** Firestore Publish Error for ${update.shipmentId}:`);
-    console.error(error);
-    // For mock sender, log error and continue simulation. Real app might need retry/alerting.
+    console.error(` *** Firestore Publish Error for ${update.shipmentId}:`, error);
   }
 }
 
-// --- Placeholder for future logic (Task 9.2.3 onwards) ---
-console.log('\nMock Tracker Initialized. Ready for simulation logic.');
-console.log('Target Firestore DB:', process.env.FIRESTORE_DATABASE_URL);
+// --- Adapted Simulation Logic ---
+let currentRoute = null; // Store fetched route details
+let traveledDistanceMeters = 0;
+const AVERAGE_SPEED_KPH = 70; // Adjusted speed for longer routes
+const METERS_PER_SECOND_PER_KPH = 1000 / 3600;
 
-// --- Simulation Logic (Task 9.2.3) ---
-
-// 1. Define Sample Route (Hardcoded Lon, Lat pairs)
-// Example: Short route within Kuala Lumpur for testing
-const sampleRoute = [
-  [101.6869, 3.1390], // KL Sentral area (approx)
-  [101.6900, 3.1400],
-  [101.6950, 3.1420], // Towards KLCC area
-  [101.7000, 3.1450],
-  [101.7050, 3.1480],
-  [101.7100, 3.1520],
-  [101.7126, 3.1582]  // KLCC area (approx)
-];
-
-// Simulation parameters
-let currentStepIndex = 0;
-// const updateIntervalSeconds = 5; // Using value from args/defaults
-// const targetShipmentId = 'MOCK_SHIPMENT_001'; // Using value from args/defaults
-
-// 2. Simulation Step Function (Simple Linear Interpolation)
-function simulateStep(stepIndex, route) {
-  if (stepIndex >= route.length - 1) {
-    console.log('End of route reached.');
-    return null; // Indicate end of route
-  }
-
-  const startPoint = route[stepIndex];
-  const endPoint = route[stepIndex + 1];
-
-  // Basic linear interpolation (for simplicity, not geographically accurate scaling)
-  const nextLon = startPoint[0] + (endPoint[0] - startPoint[0]); // Moves full segment per step
-  const nextLat = startPoint[1] + (endPoint[1] - startPoint[1]);
-
-  // TODO: Calculate heading based on start/end points if needed
-  const heading = null; // Placeholder
-
-  return {
-    longitude: nextLon,
-    latitude: nextLat,
-    heading: heading
-  };
-}
-
-// Check if interval is valid before starting timer
-if (updateIntervalSeconds <= 0) {
-    console.error('FATAL ERROR: Update interval must be positive.');
-    process.exit(1);
-}
-
-// 3. Timer Loop
-const simulationInterval = setInterval(() => {
-  console.log(`\nSimulating step for ${targetShipmentId}, index: ${currentStepIndex}`);
-  const nextPosition = simulateStep(currentStepIndex, sampleRoute);
-
-  if (nextPosition === null) {
-    console.log('Stopping simulation interval.');
-    clearInterval(simulationInterval);
-    return;
-  }
-
-  // 4. Construct LiveVehicleUpdate
-  const updateData = {
-    shipmentId: targetShipmentId,
-    latitude: nextPosition.latitude,
-    longitude: nextPosition.longitude,
-    timestamp: Date.now(), // Current time in Unix milliseconds UTC
-    heading: nextPosition.heading, // Currently null
-    speed: null,         // Mock data, add if needed
-    accuracy: null,      // Mock data, add if needed
-    batteryLevel: null   // Mock data, add if needed
-  };
-
-  // Log the update object (Task 9.2.3 Verification)
-  console.log('Generated Update:', JSON.stringify(updateData));
-
-  // TODO: Implement Firestore publishing (Task 9.2.4)
-  // publishLocationUpdate(updateData);
-  publishLocationUpdate(updateData); // Calling the publish function
-
-  currentStepIndex++;
-
-}, updateIntervalSeconds * 1000);
-
-console.log(`Mock tracker started. Simulating updates every ${updateIntervalSeconds} seconds for shipment ${targetShipmentId}.`);
-
-// Example: Accessing firestore (uncomment to test basic connectivity after initialization)
-/*
-async function testFirestoreAccess() {
-  try {
-    const docRef = db.collection('test_collection').doc('test_doc');
-    await docRef.set({ initializedAt: new Date().toISOString(), status: 'OK' });
-    console.log('\nSuccessfully wrote a test document to Firestore.');
-    const docSnap = await docRef.get();
-    if (docSnap.exists) {
-      console.log('Successfully read test document:', docSnap.data());
-    } else {
-      console.error('Failed to read back test document.');
+async function initializeSimulation() {
+    console.log(`Initializing simulation for ${targetShipmentId}...`);
+    const routePoints = getShipmentRoutePoints(targetShipmentId);
+    if (!routePoints) {
+        console.error("Failed to get route points. Stopping simulation.");
+        process.exit(1);
     }
-  } catch (error) {
-    console.error('\nError during Firestore test access:');
-    console.error(error);
-    console.error('Check Firestore security rules and service account permissions.');
-  }
-}
-testFirestoreAccess();
-*/
 
-// Keep the script running indefinitely for testing purposes, or implement proper exit logic
-// setInterval(() => {}, 1 << 30); // Keeps node running 
+    currentRoute = await fetchRouteGeometry(routePoints.origin, routePoints.destination);
+    if (!currentRoute || !currentRoute.geometry || !currentRoute.distance) {
+        console.error("Failed to fetch route geometry. Stopping simulation.");
+        process.exit(1);
+    }
+
+    traveledDistanceMeters = 0; // Reset traveled distance
+    console.log(`Simulation initialized. Route distance: ${(currentRoute.distance / 1000).toFixed(1)} km.`);
+    startSimulationLoop(); // Start the loop only after initialization
+}
+
+function simulateNextStep() {
+    if (!currentRoute || !currentRoute.geometry || typeof currentRoute.distance !== 'number') {
+        console.error("Simulation cannot proceed: Route not available.");
+        return null; // Cannot simulate
+    }
+
+    const routeLine = currentRoute.geometry;
+    const totalRouteDistance = currentRoute.distance;
+
+    // Calculate distance to travel in this interval
+    const speedMPS = AVERAGE_SPEED_KPH * METERS_PER_SECOND_PER_KPH;
+    const distanceThisInterval = speedMPS * updateIntervalSeconds;
+
+    traveledDistanceMeters += distanceThisInterval;
+
+    if (traveledDistanceMeters >= totalRouteDistance) {
+        console.log("End of route reached.");
+        traveledDistanceMeters = totalRouteDistance; // Cap at total distance
+    }
+
+    try {
+        const currentPointFeature = turf.along(routeLine, traveledDistanceMeters, { units: 'meters' });
+        const coords = currentPointFeature.geometry.coordinates;
+
+        // Calculate bearing
+        let bearing = 0;
+        if (traveledDistanceMeters < totalRouteDistance) {
+            const lookAheadPoint = turf.along(routeLine, Math.min(traveledDistanceMeters + 50, totalRouteDistance), { units: 'meters' }); // Look 50m ahead
+            bearing = turf.bearing(currentPointFeature, lookAheadPoint);
+        } else if (totalRouteDistance > 50) { // If at the end, look back
+             const lookBehindPoint = turf.along(routeLine, totalRouteDistance - 50, { units: 'meters' });
+             bearing = turf.bearing(lookBehindPoint, currentPointFeature);
+        }
+        bearing = (bearing + 360) % 360; // Normalize
+
+        return {
+            longitude: coords[0],
+            latitude: coords[1],
+            heading: bearing,
+            isEndOfRoute: traveledDistanceMeters >= totalRouteDistance
+        };
+    } catch (error) {
+        console.error("Error calculating position with Turf.js:", error);
+        return null;
+    }
+}
+
+// --- Main Simulation Loop ---
+let simulationIntervalId = null;
+
+function startSimulationLoop() {
+    console.log(`Starting simulation loop with ${updateIntervalSeconds}s interval.`);
+    simulationIntervalId = setInterval(async () => {
+        console.log(`
+Simulating step for ${targetShipmentId}... Traveled: ${(traveledDistanceMeters / 1000).toFixed(1)} km`);
+        const nextPositionData = simulateNextStep();
+
+        if (nextPositionData === null) {
+             console.error("Simulation step failed. Stopping loop.");
+             clearInterval(simulationIntervalId);
+             return;
+        }
+
+        const updateData = {
+            shipmentId: targetShipmentId,
+            latitude: nextPositionData.latitude,
+            longitude: nextPositionData.longitude,
+            timestamp: Date.now(),
+            heading: nextPositionData.heading,
+            speed: AVERAGE_SPEED_KPH * METERS_PER_SECOND_PER_KPH, // Approximate speed
+            accuracy: 10, // Mock accuracy
+            batteryLevel: 0.8 // Mock battery
+        };
+
+        console.log('Generated Update:', JSON.stringify(updateData, null, 2));
+        await publishLocationUpdate(updateData);
+
+        if (nextPositionData.isEndOfRoute) {
+            console.log('End of route published. Stopping simulation interval.');
+            clearInterval(simulationIntervalId);
+        }
+    }, updateIntervalSeconds * 1000);
+}
+
+
+// --- Start the process ---
+initializeSimulation();
+
+// Keep script running if needed (might not be necessary if interval is running)
+// process.stdin.resume(); 
