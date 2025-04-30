@@ -267,7 +267,7 @@ const mapFullDbDataToApiShipmentDetail = (
  * Server Action: Fetches all shipments associated with the GIVEN document ID.
  * Returns FULL ApiShipmentDetail for each.
  * 
- * @param documentId - The customerDocumentNumber identifying the document.
+ * @param documentId - The sourceDocumentId identifying the document.
  * @returns A promise resolving to an array of ApiShipmentDetail or null if not found/error.
  */
 export async function getShipmentsForDocumentContaining(
@@ -278,10 +278,10 @@ export async function getShipmentsForDocumentContaining(
     return null;
   }
 
-  logger.info(`[Action getShipmentsForDocumentContaining] Fetching shipments for documentId: ${documentId}`);
+  logger.info(`[Action getShipmentsForDocumentContaining] Fetching shipments for documentId (sourceDocumentId): ${documentId}`);
 
   try {
-    // Fetch all shipments matching the documentId, joining ALL necessary tables
+    // Fetch shipments matching the sourceDocumentId, joining necessary tables
     const dbShipmentsWithDetails = await db
         .select({
             shipment: shipmentsErd,
@@ -291,16 +291,22 @@ export async function getShipmentsForDocumentContaining(
             transporter: transporters
         })
         .from(shipmentsErd)
+        // Join custom details ON shipmentsErd.id = customShipmentDetails.shipmentId
         .leftJoin(customShipmentDetails, eq(shipmentsErd.id, customShipmentDetails.shipmentId))
+        // Join trip ON shipmentsErd.tripId = trips.id
         .leftJoin(trips, eq(shipmentsErd.tripId, trips.id)) 
+        // Join vehicles ON trips.truckId = vehicles.id
         .leftJoin(vehicles, eq(trips.truckId, vehicles.id))
+        // Join transporters ON trips.materialTransporter = transporters.id
         .leftJoin(transporters, eq(trips.materialTransporter, transporters.id))
-        .where(eq(customShipmentDetails.customerDocumentNumber, documentId))
+        // FILTER based on the documentId corresponding to the sourceDocumentId field
+        .where(eq(shipmentsErd.sourceDocumentId, documentId)) // CORRECTED FIELD
         .orderBy(desc(shipmentsErd.shipmentDateCreated)); 
 
     if (!dbShipmentsWithDetails || dbShipmentsWithDetails.length === 0) {
-        logger.warn(`[Action getShipmentsForDocumentContaining] No shipments found for document context: ${documentId}`);
-        return []; // Return empty array if no shipments found for this document
+        // Corrected log message to reflect the field used
+        logger.warn(`[Action getShipmentsForDocumentContaining] No shipments found matching sourceDocumentId: ${documentId}`);
+        return []; 
     }
 
     const shipmentIds = dbShipmentsWithDetails.map(s => s.shipment.id);
@@ -372,16 +378,16 @@ export async function getShipmentsForDocumentContaining(
         );
     });
 
-    logger.info(`[Action getShipmentsForDocumentContaining] Successfully fetched ${result.length} full shipment details for document context: ${documentId}`);
+    logger.info(`[Action getShipmentsForDocumentContaining] Successfully fetched ${result.length} shipment details for sourceDocumentId: ${documentId}`);
     return result;
 
   } catch (error: any) {
-    logger.error("[Action getShipmentsForDocumentContaining] Error fetching full shipments:", {
-      documentId, // Log the documentId on error
+    logger.error("[Action getShipmentsForDocumentContaining] Error fetching shipments:", {
+      documentId, 
       errorMessage: error.message,
       errorStack: error.stack,
     });
-    return null; // Return null on error
+    return null; 
   }
 }
 
