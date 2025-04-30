@@ -13,9 +13,10 @@ import { shipmentStatusEnum } from '@/lib/database/schema';
 
 // --- UI & Utils ---
 import { cn } from "@/lib/utils";
-import { Accordion } from "@/components/ui/accordion";
+import { Accordion, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 // Define a type for the static details needed by the map
 // Based on TrackingMap potential needs (Task 9.R.4)
@@ -29,117 +30,102 @@ interface TrackingPageViewProps {
   documentId: string;
 }
 
-// Trackable statuses
-const TRACKABLE_STATUSES: (typeof shipmentStatusEnum.enumValues[number])[] = [
-  shipmentStatusEnum.enumValues[2], // 'IN_TRANSIT'
-  shipmentStatusEnum.enumValues[3], // 'AT_PICKUP'
-  shipmentStatusEnum.enumValues[4], // 'AT_DROPOFF'
-  // Consider if 'BOOKED' (index 1) should be trackable
+// Define thresholds
+const STALE_THRESHOLD_MS = 30000; // e.g., 30 seconds
+
+// List of statuses considered trackable for initiating live updates
+const TRACKABLE_STATUSES = [
+    shipmentStatusEnum.enumValues[1], // Idle
+    shipmentStatusEnum.enumValues[2], // Assigned
+    shipmentStatusEnum.enumValues[3], // Accepted
+    shipmentStatusEnum.enumValues[4], // ArrivedAtPickup
+    shipmentStatusEnum.enumValues[5], // Loading
+    shipmentStatusEnum.enumValues[6], // LoadingComplete
+    shipmentStatusEnum.enumValues[7], // EnRoute
+    shipmentStatusEnum.enumValues[8], // ArrivedAtDropoff
+    shipmentStatusEnum.enumValues[8], // Unloading (Corrected index from 9 to 8)
 ];
 
 export default function TrackingPageView({ documentId }: TrackingPageViewProps) {
   const mapRef = useRef<TrackingMapRef>(null);
 
-  // State for fetching/displaying the list of related shipments
-  const [shipmentList, setShipmentList] = useState<ApiShipmentDetail[]>([]); 
+  // State for the list of shipments
+  const [shipmentList, setShipmentList] = useState<ApiShipmentDetail[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
 
-  // State for the currently selected shipment ID in the UI list
-  const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null); 
-
-  // State for static details of the *selected* shipment (to pass to map)
+  // State for the selected shipment and its static details
+  const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
   const [selectedStaticDetails, setSelectedStaticDetails] = useState<MapStaticProps | null>(null);
-  const [isLoadingSelection, setIsLoadingSelection] = useState(false); // Loading state for selection processing
+  const [isLoadingSelection, setIsLoadingSelection] = useState(false);
   const [selectionError, setSelectionError] = useState<string | null>(null);
 
-  // Get actions from the live tracking store
-  const { subscribe, unsubscribe, trackedShipmentId, subscriptionStatus, subscriptionError } = useLiveTrackingStore(
-    useCallback(state => ({ 
-      subscribe: state.subscribe,
-      unsubscribe: state.unsubscribe,
-      trackedShipmentId: state.trackedShipmentId, // Needed to compare with selected
-      subscriptionStatus: state.subscriptionStatus, // Needed for loading/error display
-      subscriptionError: state.subscriptionError,
-    }), [])
-  );
+  // Zustand store hooks
+  const subscribe = useLiveTrackingStore((state) => state.subscribe);
+  const unsubscribe = useLiveTrackingStore((state) => state.unsubscribe);
+  const latestLiveUpdate = useLiveTrackingStore((state) => state.latestLiveUpdate);
+  const subscriptionStatus = useLiveTrackingStore((state) => state.subscriptionStatus);
+  const subscriptionError = useLiveTrackingStore((state) => state.subscriptionError);
 
-  // Get necessary state for display and controls
-  const { latestLiveUpdate } = useLiveTrackingStore(
-    useCallback(state => ({ latestLiveUpdate: state.latestLiveUpdate }), [])
-  );
-
-  // Calculate staleness here, similar to TrackingMap
+  // State for data staleness
   const [isStale, setIsStale] = useState(false);
-  useEffect(() => {
-    const STALE_THRESHOLD_MS = 30000; // 30 seconds
-    let staleCheckTimer: NodeJS.Timeout | null = null;
 
+  // --- Derived State: Calculate staleness based on latest update ---
+  useEffect(() => {
     const checkStaleness = () => {
-        let currentIsStale = false;
-        if (latestLiveUpdate && typeof latestLiveUpdate.timestamp === 'number') {
-            const timeDiff = Date.now() - latestLiveUpdate.timestamp;
-            currentIsStale = timeDiff > STALE_THRESHOLD_MS;
-        } else {
-            currentIsStale = false; // Not stale if no update exists
-        }
-        setIsStale(currentIsStale);
+      if (!latestLiveUpdate?.timestamp) {
+        setIsStale(true); // Consider stale if no timestamp
+        return;
+      }
+      const timeDiff = Date.now() - latestLiveUpdate.timestamp;
+      setIsStale(timeDiff > STALE_THRESHOLD_MS);
     };
 
     checkStaleness(); // Initial check
+    const intervalId = setInterval(checkStaleness, 5000); // Check every 5 seconds
 
-    // Periodically check even if no new updates arrive
-    staleCheckTimer = setInterval(checkStaleness, 5000); // Check every 5 seconds
+    return () => clearInterval(intervalId); // Cleanup interval
+  }, [latestLiveUpdate?.timestamp]);
 
-    return () => {
-      if (staleCheckTimer) {
-        clearInterval(staleCheckTimer);
-      }
-    };
-  }, [latestLiveUpdate]);
-
-  // Effect 1: Fetch the list of shipments belonging to the same document
+  // --- Effects ---
+  
+  // Effect to fetch the shipment list when the documentId changes
   useEffect(() => {
     let isMounted = true;
     const fetchShipmentList = async () => {
-      if (!documentId) return; 
+      if (!documentId) {
+        setListError("Document ID is missing.");
+        setIsLoadingList(false);
+        return;
+      }
       logger.info(`[TrackingPageView] Fetching shipment list for document: ${documentId}`);
       setIsLoadingList(true);
       setListError(null);
       setShipmentList([]); // Clear previous list
       setSelectedShipmentId(null); // Clear selection
-      setSelectedStaticDetails(null); // Clear map details
+      setSelectedStaticDetails(null);
       unsubscribe(); // Unsubscribe if switching documents
 
       try {
-        // --- Call actual Server Action --- 
-        const list = await getShipmentsForDocumentContaining(documentId);
-        // --- End Server Action Call ---
-
+        const result = await getShipmentsForDocumentContaining(documentId);
         if (isMounted) {
-          if (list) {
-            setShipmentList(list);
-            // Optionally, auto-select the first *trackable* shipment
-            const firstTrackable = list.find(s => 
-                s.coreInfo.status && TRACKABLE_STATUSES.includes(s.coreInfo.status as any) // Type assertion needed due to string type
-            );
-            if (firstTrackable) {
-              // Trigger selection logic for the first trackable item
-              // Use a timeout to allow initial render before triggering selection effects
-              setTimeout(() => handleSelectShipment(firstTrackable), 0);
-            } else {
-              logger.info(`[TrackingPageView] No initially trackable shipments found in document ${documentId}.`);
+          if (result) {
+            setShipmentList(result);
+            logger.info(`[TrackingPageView] Fetched ${result.length} shipments.`);
+            // Check if any are initially trackable (optional, for logging/initial state)
+            const initiallyTrackable = result.some(s => s.coreInfo.status && TRACKABLE_STATUSES.includes(s.coreInfo.status as any));
+            if (!initiallyTrackable) {
+                logger.info(`[TrackingPageView] No initially trackable shipments found in document ${documentId}.`);
             }
           } else {
-            setListError('Could not find related shipments.');
             setShipmentList([]);
+            setListError('Failed to fetch shipments or none found.');
           }
         }
       } catch (error: any) {
         logger.error("[TrackingPageView] Error fetching shipment list:", error);
         if (isMounted) {
-          setListError(error.message || 'Failed to load shipment list.');
-          setShipmentList([]);
+          setListError(error.message || "Failed to load shipments.");
         }
       } finally {
         if (isMounted) {
@@ -150,12 +136,11 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
 
     fetchShipmentList();
 
-    // Cleanup on documentId change or unmount
     return () => { 
       isMounted = false; 
-      unsubscribe(); // Ensure cleanup when component unmounts or documentId changes
+      unsubscribe(); 
     };
-  }, [documentId, unsubscribe]); // Depend on documentId and unsubscribe action
+  }, [documentId, unsubscribe]); 
 
   // Handler for selecting a shipment from the list
   const handleSelectShipment = useCallback(async (shipment: ApiShipmentDetail) => {
@@ -167,7 +152,6 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
         return;
     }
 
-    // Prevent re-processing if already selected
     if (newId === selectedShipmentId) {
         logger.debug(`[TrackingPageView] Shipment ${newId} already selected.`);
         return;
@@ -176,16 +160,12 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
     setIsLoadingSelection(true);
     setSelectionError(null);
     setSelectedShipmentId(newId);
-    setSelectedStaticDetails(null); // Clear previous details immediately
-    unsubscribe(); // Unsubscribe from previous selection first
+    setSelectedStaticDetails(null);
+    unsubscribe();
 
     try {
-        // Check if the selected shipment is trackable
         const currentStatus = shipment.coreInfo.status;
-        const isTrackable = currentStatus ? TRACKABLE_STATUSES.includes(currentStatus as any) : false; // Type assertion needed
-
-        // Prepare static details needed by the map component
-        // Correct path based on ApiShipmentDetail type inspection
+        const isTrackable = currentStatus ? TRACKABLE_STATUSES.includes(currentStatus as any) : false;
         const pickupAddress = shipment.locationDetails?.pickups?.[0]?.address;
         const dropoffAddress = shipment.locationDetails?.dropoffs?.[0]?.address;
         const mapDetails: MapStaticProps = {
@@ -195,11 +175,9 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
             destinationCoords: dropoffAddress && dropoffAddress.longitude != null && dropoffAddress.latitude != null
                 ? [dropoffAddress.longitude, dropoffAddress.latitude]
                 : null,
-            // Initialize plannedRouteGeometry as null
             plannedRouteGeometry: null, 
         };
         
-        // Fetch route geometry if origin/destination exist
         if(mapDetails.originCoords && mapDetails.destinationCoords) {
             try {
                 logger.info(`[TrackingPageView] Fetching route geometry for ${newId}...`);
@@ -209,38 +187,32 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
                     logger.info(`[TrackingPageView] Successfully fetched route geometry for ${newId}.`);
                 } else {
                     logger.warn(`[TrackingPageView] Failed to fetch route geometry for ${newId}. Proceeding without route line.`);
-                    // Optionally set selectionError here if route is mandatory?
-                    // setSelectionError('Failed to calculate route for this shipment.');
                 }
             } catch (routeError) {
                 logger.error(`[TrackingPageView] Error fetching route geometry for ${newId}:`, routeError);
-                // Optionally set selectionError
-                // setSelectionError('Error calculating route.');
             }
         }
 
-        setSelectedStaticDetails(mapDetails); // Set details needed for the map (including fetched route or null)
+        setSelectedStaticDetails(mapDetails);
 
         if (isTrackable) {
             logger.info(`[TrackingPageView] Shipment ${newId} is trackable. Subscribing...`);
-            // Assuming subscribe now only needs shipmentId (pending store refactor)
             await subscribe(newId); 
         } else {
             logger.info(`[TrackingPageView] Shipment ${newId} is not trackable (status: ${shipment.coreInfo.status}). Skipping subscription.`);
-            // Optionally display a message to the user
         }
-         setSelectionError(null); // Clear error on success
+         setSelectionError(null); 
     } catch (error: any) {
         logger.error(`[TrackingPageView] Error processing selection for ${newId}:`, error);
         setSelectionError(error.message || 'Failed to process selection.');
-        setSelectedStaticDetails(null); // Clear details on error
+        setSelectedStaticDetails(null); 
     } finally {
        setIsLoadingSelection(false);
     }
 
-  }, [selectedShipmentId, subscribe, unsubscribe]); // Dependencies
+  }, [selectedShipmentId, subscribe, unsubscribe]);
 
-  // --- Render Logic ---
+  // --- Render Functions ---
   const renderShipmentList = () => {
     if (isLoadingList) {
       return <div className="p-4 flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -252,31 +224,76 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
       return <div className="p-4 text-gray-500">No related shipments found.</div>;
     }
     return (
-      <Accordion type="single" collapsible className="w-full" value={selectedShipmentId ?? undefined} >
+      <Accordion type="single" collapsible className="w-full space-y-2">
         {shipmentList.map((shipment) => { 
-          // Determine if the card should be disabled for selection
+          const shipmentId = shipment.coreInfo.id;
           const currentStatus = shipment.coreInfo.status;
-          const isTrackable = currentStatus ? TRACKABLE_STATUSES.includes(currentStatus as any) : false; // Type assertion needed
-          const isSelected = shipment.coreInfo.id === selectedShipmentId;
-          
+          const isTrackable = currentStatus ? TRACKABLE_STATUSES.includes(currentStatus as any) : false;
+          const isSelected = shipmentId === selectedShipmentId;
+          const isDisabled = !isTrackable || isLoadingSelection; 
+
           return (
-            <ShipmentCard 
-              key={shipment.coreInfo.id}
-              shipment={shipment} 
-              isSelected={isSelected}
-              // Pass selection handler, wrap in no-op if not trackable
-              onSelectShipment={isTrackable ? () => handleSelectShipment(shipment) : () => {}} 
-              onDownload={() => logger.warn('Download clicked, not implemented in TrackingPageView')}
-              onEdit={() => logger.warn('Edit clicked, not implemented in TrackingPageView')}
-            />
+            <AccordionItem 
+              value={shipmentId} 
+              key={shipmentId}
+              className={cn(
+                "border rounded-lg bg-card text-card-foreground", 
+                isSelected ? "ring-2 ring-primary ring-inset" : "", 
+                isDisabled && "opacity-60 cursor-not-allowed"
+              )}
+            >
+               <AccordionTrigger 
+                 disabled={isDisabled}
+                 className={cn(
+                   "flex justify-between items-center w-full p-3 hover:no-underline focus:outline-none group data-[state=open]:border-b",
+                   isDisabled && "pointer-events-none"
+                 )}
+                 onClick={(e) => {
+                    if (!isDisabled) {
+                        handleSelectShipment(shipment);
+                    } else {
+                        e.preventDefault();
+                    }
+                 }}
+                 role="button"
+                 tabIndex={isDisabled ? -1 : 0}
+                 aria-label={isSelected ? `Selected Shipment ${shipment.coreInfo.loadNumber || shipmentId.substring(0,8)}` : `Select Shipment ${shipment.coreInfo.loadNumber || shipmentId.substring(0,8)}`}
+                 aria-disabled={isDisabled}
+               >
+                  <div className="flex-grow flex items-center gap-2 text-left mr-2">
+                     <div className="flex-grow">
+                        <h2 className="text-sm font-semibold leading-tight" title={shipment.coreInfo.loadNumber ? `Load #${shipment.coreInfo.loadNumber}` : `Shipment ID: ${shipmentId}`}>
+                           {shipment.coreInfo.loadNumber 
+                              ? `Load #${shipment.coreInfo.loadNumber}` 
+                              : <span className="text-xs text-muted-foreground">ID: {shipmentId.substring(0,8)}...</span>
+                           }
+                        </h2>
+                        {shipment.coreInfo.poNumber && 
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate" title={`PO #${shipment.coreInfo.poNumber}`}>
+                           {`PO #${shipment.coreInfo.poNumber}`}
+                        </p>
+                        }
+                     </div>
+                  </div>
+                  <div className="flex-none flex items-center space-x-2">
+                     {isLoadingSelection && isSelected ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                     ) : (
+                        <StatusBadge status={shipment.coreInfo.status ?? "UNKNOWN"} /> 
+                     )}
+                  </div>
+               </AccordionTrigger>
+            </AccordionItem>
           );
         })}
       </Accordion>
     );
   };
+  
+  // Define mapboxToken here, outside renderMapArea
+  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
   const renderMapArea = () => {
-    // Show loading/error related to selection process or subscription status
     if (isLoadingSelection) {
          return <div className="p-4 flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /><span> Processing selection...</span></div>;
     }
@@ -284,16 +301,13 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
         return (
             <div className="p-4 flex flex-col items-center justify-center h-full text-red-600">
                 <p className="mb-4">Error processing selection: {selectionError}</p>
-                {/* Add a retry mechanism if applicable, e.g., re-select? */}
             </div>
         );
     }
-     // Display subscription errors from the store
-    if (subscriptionStatus === 'error' && subscriptionError) {
+     if (subscriptionStatus === 'error' && subscriptionError) {
          return (
             <div className="p-4 flex flex-col items-center justify-center h-full text-red-600">
                 <p className="mb-4">Subscription Error: {subscriptionError}</p>
-                {/* Consider adding a retry button that calls handleSelectShipment with current selectedShipmentId */}
                 {selectedShipmentId && shipmentList.find(s => s.coreInfo.id === selectedShipmentId) && (
                     <Button 
                        onClick={() => handleSelectShipment(shipmentList.find(s => s.coreInfo.id === selectedShipmentId)!)} 
@@ -306,31 +320,31 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
         );
     }
 
-    // Show loading indicator during subscription process
     if (subscriptionStatus === 'subscribing') {
          return <div className="p-4 flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /><span> Subscribing to live updates...</span></div>;
     }
     
-    // Only render map if a shipment is selected AND we have the static details
+    // Check map token availability first
+    if (!mapboxToken) {
+        logger.error("[TrackingPageView] Mapbox token is not configured.");
+        return <div className="p-4 text-red-600">Map configuration error.</div>;
+    }
+
+    // Check if ready to render map (selection made and static details loaded)
     if (!selectedShipmentId || !selectedStaticDetails) {
          return <div className="p-4 flex justify-center items-center h-full text-gray-500">Select a trackable shipment from the list to view tracking.</div>;
     }
-    
-    // TODO: Get Mapbox token securely
-    const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (!mapboxToken) {
-        return <div className="p-4 text-red-600">Mapbox token is not configured.</div>;
-    }
 
+    // Render the map and controls
+    // Null checks for selectedStaticDetails are implicitly handled by the check above
     return (
         <div className="relative h-full w-full">
             <TrackingMap 
                 ref={mapRef}
-                mapboxToken={mapboxToken}
-                // Pass static details needed by the map as props
-                originCoords={selectedStaticDetails.originCoords}
-                destinationCoords={selectedStaticDetails.destinationCoords}
-                plannedRouteGeometry={selectedStaticDetails.plannedRouteGeometry}
+                mapboxToken={mapboxToken} 
+                originCoords={selectedStaticDetails.originCoords} 
+                destinationCoords={selectedStaticDetails.destinationCoords} 
+                plannedRouteGeometry={selectedStaticDetails.plannedRouteGeometry} 
                 className="h-full w-full"
             />
             <TrackingControls 
@@ -347,19 +361,18 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
     <div className="grid h-screen grid-cols-1 lg:grid-cols-[minmax(350px,_1fr)_3fr] xl:grid-cols-[minmax(400px,_1fr)_4fr]">
       {/* Left Column: Shipment List */}
       <div className="flex flex-col h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
-          <div className="p-4 font-semibold border-b border-gray-200 dark:border-gray-800">
-              Shipments for Document {documentId} 
-          </div>
-          {/* TODO: Add Search/Filter Bar here if needed */} 
-          <div className="flex-grow overflow-y-auto">
-            {renderShipmentList()}
-          </div>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+          <h1 className="text-lg font-semibold">Shipments for Document</h1>
+          <p className="text-xs text-muted-foreground truncate" title={documentId}>{documentId}</p> 
+        </div>
+        <div className="flex-grow p-2 overflow-y-auto">
+          {renderShipmentList()} 
+        </div>
       </div>
 
-      {/* Right Column: Map & Controls */}
+      {/* Right Column: Map Area */}
       <div className="flex flex-col h-full overflow-hidden">
-          {/* Removed the Controls placeholder - Map Area will render map + controls */} 
-          {renderMapArea()}
+        {renderMapArea()} 
       </div>
     </div>
   );
