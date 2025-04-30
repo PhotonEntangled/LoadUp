@@ -13,7 +13,7 @@ import { SimulationControls } from '@/components/simulation/SimulationControls';
 import { useSimulationStoreContext } from '@/lib/store/useSimulationStoreContext'; 
 import { SimulationStoreContext } from '@/lib/context/SimulationStoreContext';
 import type { SimulationStoreApi } from '@/lib/store/useSimulationStore';
-import { getSimulationInputForShipment, startSimulation } from '@/lib/actions/simulationActions';
+import { getSimulationInputForShipment, startSimulation, stopSimulation } from '@/lib/actions/simulationActions';
 import type { SimulatedVehicle } from '@/types/vehicles';
 import type { SimulationInput } from '@/types/simulation';
 
@@ -68,21 +68,22 @@ export default function SimulationDocumentPage() {
   // ADDED: State for the backend start action
   const [isStartingBackendSim, setIsStartingBackendSim] = useState(false);
 
-  const store = useContext(SimulationStoreContext); // <<< Get the raw store context
-  if (!store) {
-    throw new Error("SimulationStoreContext not found. Make sure SimulationStoreProvider wraps the layout.");
+  // <<< ADDED BACK: Get storeApi from context >>>
+  const storeApi = useContext(SimulationStoreContext);
+  if (!storeApi) {
+    throw new Error('SimulationStoreContext is not available');
   }
 
   // --- Use useStore with context and selectors --- 
-  const loadSimulationFromInput = useStore(store, (state) => state.loadSimulationFromInput);
-  const isSimulationRunning = useStore(store, (state) => state.isSimulationRunning);
-  const selectedVehicleId = useStore(store, (state) => state.selectedVehicleId);
-  const vehicles = useStore(store, (state) => state.vehicles);
-  const startGlobalSimulation = useStore(store, (state) => state.startGlobalSimulation);
+  const loadSimulationFromInput = useStore(storeApi, (state) => state.loadSimulationFromInput);
+  const isSimulationRunning = useStore(storeApi, (state) => state.isSimulationRunning);
+  const selectedVehicleId = useStore(storeApi, (state) => state.selectedVehicleId);
+  const vehicles = useStore(storeApi, (state) => state.vehicles);
+  const startGlobalSimulation = useStore(storeApi, (state) => state.startGlobalSimulation);
   // --- END: Use useStore with context and selectors --- 
 
   // --- FIX: Get selected ID for comparison OUTSIDE the handler --- 
-  const currentStoreSelectedId = useStore(store, (state) => state.selectedVehicleId);
+  const currentStoreSelectedId = useStore(storeApi, (state) => state.selectedVehicleId);
 
   const selectedVehicle: SimulatedVehicle | undefined = selectedVehicleId ? vehicles[selectedVehicleId] : undefined;
 
@@ -177,7 +178,13 @@ export default function SimulationDocumentPage() {
           }
 
         } catch (err: any) {
-          logger.error(`[SimulationDocumentPage] Error fetching shipments for documentId: ${documentId}`, err);
+          // <<< ENHANCED LOGGING >>>
+          logger.error(`[SimulationDocumentPage] Error fetching shipments for documentId: ${documentId}`, {
+            errorMessage: err.message,
+            errorStack: err.stack,
+            errorObject: err, // Log the full error object
+            documentId: documentId // Add context
+          });
           setListError(err.message || 'Failed to fetch shipment data.'); // Use list error state
           setShipments([]); // Clear potentially stale data on error
         } finally {
@@ -262,21 +269,29 @@ export default function SimulationDocumentPage() {
       }
 
     } catch (error: any) {
-      logger.error(`[handleSelectShipment] Error loading simulation for ${idToSelect}:`, error);
+      // Local state setting preserved as requested.
+      // Keyed state management would ideally happen within loadSimulationFromInput.
+      logger.error(`[handleSelectShipment] Error loading simulation for ${idToSelect}:`, {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        errorObject: error,
+        shipmentId: idToSelect // Add context
+      });
       setSimError(error.message || 'Failed to load simulation data.');
       toast({
         title: "Simulation Load Error",
         description: error.message || 'Could not load simulation data for the selected shipment.',
         variant: "destructive",
       });
-      // Optionally clear store state on error? Depends on desired behavior.
-      // Consider calling a reset action here if needed.
     } finally {
       setIsSimLoading(false);
     }
   };
 
-  // --- ADDED HANDLER TO START BACKEND SIMULATION ---
+  // <<< KEPT handleStartBackendSimulation as requested >>>
+  // This handler appears to trigger the backend simulation start explicitly.
+  // Its necessity compared to the useEffect hook reacting to selection might need future review,
+  // but we preserve it for now to avoid breaking potential existing workflows.
   const handleStartBackendSimulation = async () => {
     logger.info("[SimulationDocumentPage] handleStartBackendSimulation triggered.");
     if (!selectedVehicleId) {
@@ -324,7 +339,12 @@ export default function SimulationDocumentPage() {
         //             Or disable the start button permanently?
 
     } catch (error: any) {
-        logger.error(`[SimulationDocumentPage] Error starting backend simulation:`, error);
+        logger.error(`[SimulationDocumentPage] Error starting backend simulation:`, {
+            errorMessage: error.message,
+            errorStack: error.stack,
+            errorObject: error,
+            shipmentId: selectedVehicleId // Add context
+        });
         const errorMessage = error.message || "Failed to start backend simulation.";
         setSimError(errorMessage);
         toast({
@@ -347,6 +367,44 @@ export default function SimulationDocumentPage() {
       logger.info(`[SimulationPage] Edit requested for ${shipment?.coreInfo?.id}`);
       toast({ title: "Info", description: "Edit functionality not yet implemented.", variant: "default" });
   };
+
+  // <<< ADDED: Handler for Reset Simulation (client-side only) >>>
+  const handleResetSimulation = useCallback(() => {
+    logger.warn('[SimulationDocumentPage] Reset Simulation button clicked. Resetting client store ONLY.');
+    // Get resetStore action from the context
+    const resetStoreAction = storeApi.getState().resetStore;
+    if (typeof resetStoreAction === 'function') {
+        resetStoreAction();
+    } else {
+        logger.error('[handleResetSimulation] resetStore action not found on store!');
+    }
+    // Clear local UI selection state as well
+    setSelectedShipmentId(null);
+    // Clear URL param by navigating without the `selectedShipment` query param
+    router.push(`/simulation/${documentId}`, { scroll: false });
+    // REMOVED: Backend stopSimulation call to make this purely client-side reset
+    // if (selectedVehicleId) {
+    //   logger.info(`[handleResetSimulation] Attempting to stop backend simulation for ${selectedVehicleId}...`);
+    //   stopSimulation(selectedVehicleId) // Fire-and-forget backend stop
+    //     .catch(err => logger.error(`[handleResetSimulation] Error during backend stop call:`, err));
+    // }
+  }, [storeApi, router, documentId]); // Dependencies
+
+  // <<< ADDED COMMENT explaining initialization logic >>>
+  // This useEffect hook runs once on client mount.
+  // It sets the `isInitialized` flag in the Zustand store.
+  // This flag can be used by UI components (like SimulationControls)
+  // to ensure they are only enabled after the store has been hydrated
+  // and is ready on the client, preventing hydration mismatches or
+  // enabling controls before the store state is accurate.
+  useEffect(() => {
+    // Check added to avoid unnecessary setState if component somehow re-mounts
+    // after initialization.
+    if (!storeApi.getState().isInitialized) {
+        logger.debug('[SimulationDocumentPage] Client mount detected, setting store isInitialized = true');
+        storeApi.setState({ isInitialized: true });
+    }
+  }, [storeApi]); // Run once on mount
 
   // Determine overall disabled state for selection
   const selectionDisabled = isLoadingList || isSimLoading || isSimulationRunning;
@@ -575,6 +633,14 @@ export default function SimulationDocumentPage() {
                             <TestTube className="mr-2 h-4 w-4" /> // Or some other icon
                         )}
                         Start Backend Sim
+                    </Button>
+                    <Button
+                        onClick={handleResetSimulation}
+                        disabled={isStartingBackendSim || isSimulationRunning} // Disable if backend start is loading or sim is running
+                        size="sm"
+                        variant="destructive"
+                    >
+                       Reset Client Sim
                     </Button>
                 </div>
                 {simError && <p className="text-destructive text-sm mt-2">Error: {simError}</p>} 

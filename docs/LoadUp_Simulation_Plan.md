@@ -1,3 +1,49 @@
+# 📦 LoadUp Simulation & Tracking Implementation Plan (v1.1 - Post-Prototype Review)
+
+## 🎯 Summary & Current Status (As of [27/04/2025])
+
+**Objective:** Implement a reliable and robust vehicle tracking simulation feature as a foundation for future live tracking capabilities.
+
+**Current State:**
+*   A functional simulation **prototype** has been successfully implemented (covering Phases 1-7 and Task 6.7 cleanup).
+*   Core **backend architecture** ("Professional Kitchen": KV Cache, API Worker, External Trigger) is in place.
+*   **Frontend UI** (`SimulationMap`, `SimulationControls`, `/simulation/[documentId]` page) is functional, displaying simulation based on DB/JSON data via Zustand state management.
+*   **Code Review (Task 6.7) completed**, identifying key architectural realities (manual UI integration, backend calculation flow, specific service usage) and critical risks.
+
+**Immediate Goal:** **Harden the prototype foundation.** Before integrating live data sources (Phase 9), we must address identified risks and ensure the existing simulation is demonstrably stable, reliable, and maintainable according to production standards for a logistics platform. Progress to Phase 9 is **blocked** until the tasks below are completed and verified.
+
+---
+
+## 🚦 Current Priorities & Hardening Tasks (Mandatory Before Phase 9)
+
+**Goal:** Ensure the simulation prototype foundation is demonstrably stable, reliable, and ready to support live data integration. Address critical risks identified during review (Task 6.7).
+
+1.  **Verify `page.tsx` Stability:** ✅ **COMPLETED**
+    *   **Action:** Targeted fixes applied to `app/simulation/[documentId]/page.tsx`. Manual verification pending final testing.
+    *   **Risk Mitigation:** Addresses REGRESSION RISK on a known fragile component.
+2.  **Implement & Document Worker Trigger:** ✅ **COMPLETED**
+    *   **Action:** GitHub Actions Schedule workflow (`.github/workflows/trigger-simulation-ticks.yml`) created to call `/api/simulation/enqueue-ticks/route.ts` every minute. 
+    *   **Action:** Documentation requires update (README/Deployment Guide) & `DEPLOYMENT_URL` secret must be set in GitHub repo.
+    *   **Risk Mitigation:** Addresses CRITICAL RISK of simulations not progressing automatically.
+3.  **Mitigate KV/DB Inconsistency Risk (Tick Worker):** ✅ **COMPLETED**
+    *   **Action (Minimum):** Enhanced logging in the `/api/simulation/tick-worker/route.ts` DB update `catch` block. **(✅ COMPLETED)**
+    *   **Action (Recommended):** Implemented simple retry mechanism (1 retry with delay) for the DB update within the tick worker. **(✅ COMPLETED)**
+    *   **Risk Mitigation:** Addresses DATA INTEGRITY RISK.
+4.  **Implement Baseline Automated Tests:** **(IN PROGRESS)**
+    *   **Action:** Create unit/integration tests for critical backend components:
+        *   `lib/actions/simulationActions.ts` (start, stop, confirm). **(CURRENT FOCUS)**
+        *   `services/kv/simulationCacheService.ts` methods (mocking `@vercel/kv`).
+        *   `/api/simulation/tick-worker/route.ts` handler logic (mocking services/DB).
+    *   **Risk Mitigation:** Addresses MAJOR RISK of regressions. Essential safety net.
+5.  **Confirm Backend Calculation Flow:** **(PENDING)**
+    *   **Action:** Add explicit logging or perform code trace to confirm `calculateNewPosition` is *only* called by the backend (`tick-worker`) and that the frontend (`useSimulationStore`) relies solely on the state pushed from/triggered by the backend worker updates.
+    *   **Risk Mitigation:** Ensures architectural clarity and prevents performance/consistency issues.
+6.  **Verify Static Map LKL Display:** **(PENDING)**
+    *   **Action:** Debug `StaticRouteMap.tsx` to understand why the `lastKnownPosition` marker isn't rendering despite data being fetched successfully. Ensure the component correctly handles the prop.
+    *   **Risk Mitigation:** Fixes known bug identified in Phase 7.
+
+---
+
 # 📦 LoadUp Simulation & Tracking Implementation Plan (Atomic & Fool-Proof)
 
 ## 🔁 Overall Strategy
@@ -534,6 +580,7 @@ This confirms the necessity of the creation steps outlined in the subsequent pha
 *   **Phase 9:** Firebase / Live Data Integration.
 *   Add route progression color (like simulation map) to `StaticRouteMap`. 
 *   Investigate intermittent visual rendering glitch on simulation rejoin.
+*   **NEW:** Revisit Unit Testing for `lib/actions/simulationActions.ts` (Intractable Drizzle mocking issues with Vitest - See ticket #XYZ if created; Covered by integration tests for now).
 
 ## 🔧 Phase 7 (NEW): Debugging & Stabilization
 

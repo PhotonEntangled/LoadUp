@@ -252,7 +252,10 @@ class SimulationFromShipmentService {
             logger.debug(`[SimService] Initializing state for 'Completed'.`);
             initialPositionCoords = defaultDestination;
             initialTraveledDistance = routeDistanceMeters; // Full distance
-            initialBearing = 0; // No movement expected
+             if (routeCoords && routeCoords.length >= 2) {
+                 initialBearing = bearing(point(routeCoords[routeCoords.length - 2]), point(routeCoords[routeCoords.length - 1]));
+             }
+            logger.debug(`[SimService] Calculated Completed state: Pos=${initialPositionCoords}, Bearing=${initialBearing.toFixed(1)}, Dist=${initialTraveledDistance.toFixed(0)}m`);
 
         } else if (resolvedInitialStatus === 'Error') {
              logger.debug(`[SimService] Initializing state for 'Error'.`);
@@ -264,12 +267,12 @@ class SimulationFromShipmentService {
         } else if (resolvedInitialStatus === 'AWAITING_STATUS') {
             logger.debug(`[SimService] Initializing state for 'AWAITING_STATUS'.`);
             // Place at origin if valid, else default map center. No distance/bearing.
-             initialPositionCoords = hasValidOrigin ? input.originCoordinates! : [101.6869, 3.1390]; 
+             initialPositionCoords = hasValidOrigin ? input.originCoordinates! : [101.6869, 3.1390]; // <<< ADD COMMENT: Fallback to map center (e.g., Kuala Lumpur) if origin coordinates are invalid/missing.
              initialTraveledDistance = 0;
              initialBearing = 0;
         }
     } catch (turfError) {
-        logger.error(`[SimService] Turf error during initial state calculation for ${resolvedInitialStatus}:`, turfError);
+        logger.error(`[SimService] Error during initial state calculation (Turf) for shipment ${input.shipmentId}:`, turfError);
         resolvedInitialStatus = 'Error'; // Downgrade status on calculation error
         initialPositionCoords = hasValidOrigin ? input.originCoordinates! : [0, 0]; // Reset to origin or 0,0
         initialTraveledDistance = 0;

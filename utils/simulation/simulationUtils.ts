@@ -70,7 +70,8 @@ export function calculateNewPosition(
     };
 
   } catch (error) {
-    console.error('Error calculating new position with Turf.js:', error, { vehicleId: vehicle.id });
+    // Use logger for consistency
+    logger.error('Error calculating new position with Turf.js:', { error: error, vehicleId: vehicle?.id });
     return null;
   }
 } 

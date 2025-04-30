@@ -113,24 +113,50 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             logger.error(`${LOG_PREFIX}(${shortId}) Invalid coordinates in nextState for DB update. Skipping persistence.`, { position: nextState.currentPosition });
             // Decide if this is an error state or just skip DB update
         } else {
-        const latitude = nextState.currentPosition.geometry.coordinates[1];
-        const longitude = nextState.currentPosition.geometry.coordinates[0];
+            const latitude = nextState.currentPosition.geometry.coordinates[1];
+            const longitude = nextState.currentPosition.geometry.coordinates[0];
             const timestamp = new Date(nextState.lastUpdateTime);
 
-            logger.debug(`${LOG_PREFIX}(${shortId}) Attempting DB update for ${shipmentId}`, { latitude, longitude, timestamp });
+            // --- Retry Logic for DB Update ---
+            const MAX_RETRIES = 2; // Try the initial attempt + 1 retry
+            const RETRY_DELAY_MS = 200; // Wait 200ms between attempts
+            let success = false;
 
-        try {
-            await trackingService.updateShipmentLastKnownLocation({
-                shipmentId: shipmentId,
-                latitude: latitude,
-                longitude: longitude,
-                    timestamp: timestamp // Pass Date object
-            });
-                logger.info(`${LOG_PREFIX}(${shortId}) Successfully updated DB for ${shipmentId}`);
-        } catch (dbError) {
-                logger.error(`${LOG_PREFIX}(${shortId}) Database update failed for ${shipmentId}`, { error: dbError });
-            // Decide if we should return an error or just log
-            }
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                logger.debug(`${LOG_PREFIX}(${shortId}) Attempting DB update (Attempt ${attempt}/${MAX_RETRIES}) for ${shipmentId}`, { latitude, longitude, timestamp });
+                try {
+                    await trackingService.updateShipmentLastKnownLocation({
+                        shipmentId: shipmentId,
+                        latitude: latitude,
+                        longitude: longitude,
+                        timestamp: timestamp // Pass Date object
+                    });
+                    logger.info(`${LOG_PREFIX}(${shortId}) Successfully updated DB for ${shipmentId} (Attempt ${attempt})`);
+                    success = true;
+                    break; // Exit loop on success
+                } catch (dbError) {
+                    logger.warn(`${LOG_PREFIX}(${shortId}) DB update attempt ${attempt} failed for ${shipmentId}`, { 
+                        errorMessage: dbError instanceof Error ? dbError.message : JSON.stringify(dbError)
+                    });
+                    if (attempt === MAX_RETRIES) {
+                        // <<< ENHANCED LOGGING on FINAL FAILURE >>>
+                        logger.error(`${LOG_PREFIX}(${shortId}) CRITICAL: Database update failed after ${MAX_RETRIES} attempts for shipmentId=${shipmentId}`, {
+                             errorMessage: dbError instanceof Error ? dbError.message : JSON.stringify(dbError),
+                             errorStack: dbError instanceof Error ? dbError.stack : undefined,
+                             errorObject: dbError, 
+                             shipmentId: shipmentId, 
+                             attemptedLatitude: latitude,
+                             attemptedLongitude: longitude,
+                             attemptedTimestamp: timestamp?.toISOString() 
+                         });
+                        // Still proceed without throwing, but log critical error
+                    } else {
+                        // Wait before retrying
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                    }
+                }
+            } 
+            // --- End Retry Logic ---
         }
 
         // 6. If the simulation just reached a terminal state, remove from active set

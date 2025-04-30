@@ -17,16 +17,16 @@ export interface SimulationState {
   isSimulationRunning: boolean;
   /** Multiplier for simulation speed (e.g., 1, 2, 5, 10) */
   simulationSpeedMultiplier: number;
-  /** Potential error message related to simulation state */
-  error: string | null;
-  /** Flag indicating if the store is performing a background loading operation */
-  isLoading: boolean;
   simulationIntervalId: NodeJS.Timeout | null; // To store the interval ID
   isFollowingVehicle: boolean; // <<< ADDED: Flag for follow mode
   isInitialized: boolean; // <<< ADDED: Flag to track client-side store readiness
-  lastDbUpdateTime: Record<string, number>; // <<< ADDED: Track last DB update time per vehicle
-  loadingState: Record<string, boolean>; // <<< ADDED: Track loading state for actions
-  errorState: Record<string, string | null>; // <<< ADDED: Track error state for actions
+  /** 
+   * Tracks the timestamp of the frontend tick that triggered the last backend update request via the tick worker for each vehicle.
+   * Used for potential throttling or debugging, not necessarily the actual DB update time.
+   */
+  lastDbUpdateTime: Record<string, number>; // <<< ADDED: Track last DB update time per vehicle. CLARIFIED COMMENT.
+  loadingState: Record<string, boolean>; // <<< ADDED: Track loading state for actions (keyed by action/vehicle ID)
+  errorState: Record<string, string | null>; // <<< ADDED: Track error state for actions (keyed by action/vehicle ID)
 }
 
 // Define the actions available to modify the simulation state
@@ -68,8 +68,6 @@ export const initialSimulationState: SimulationState = {
   selectedVehicleId: null,
   isSimulationRunning: false,
   simulationSpeedMultiplier: 1,
-  error: null,
-  isLoading: false,
   simulationIntervalId: null, // Initialize interval ID as null
   isFollowingVehicle: false, // <<< ADDED: Initialize follow mode to false
   isInitialized: false, // <<< ADDED: Initialize as false
@@ -100,13 +98,14 @@ export const createSimulationStore = () => {
         delete newErrorState[`confirm_${vehicleId}`];
         delete newErrorState[`stop_${vehicleId}`];
         delete newErrorState[`setVehicle_${vehicleId}`];
+        const newLastDbUpdateTime = { ...state.lastDbUpdateTime };
+        delete newLastDbUpdateTime[vehicleId];
 
         return {
           vehicles: remainingVehicles,
           // Deselect if the removed vehicle was selected
           selectedVehicleId: state.selectedVehicleId === vehicleId ? null : state.selectedVehicleId,
-          // <<< ADDED: Clear DB update time for removed vehicle
-          lastDbUpdateTime: (({ [vehicleId]: removed, ...rest }) => rest)(state.lastDbUpdateTime),
+          lastDbUpdateTime: newLastDbUpdateTime,
           loadingState: newLoadingState,
           errorState: newErrorState,
         };
@@ -165,7 +164,7 @@ export const createSimulationStore = () => {
 
       if (!vehicle || vehicle.status !== 'Pending Delivery Confirmation') {
         logger.warn(`[Store] confirmDelivery: Vehicle not found or not in correct state: ${vehicleId}`, { status: vehicle?.status });
-        set(state => ({ errorState: { ...(state.errorState || {}), [actionKey]: 'Vehicle not in Pending Delivery Confirmation state.' }})); // Ensure errorState is object
+        set(state => ({ errorState: { ...(state.errorState || {}), [actionKey]: 'Vehicle not in Pending Delivery Confirmation state.' }}));
         return;
       }
 
@@ -175,14 +174,14 @@ export const createSimulationStore = () => {
       set((state: SimulationState) => ({
         vehicles: {
           ...state.vehicles,
-          [vehicleId]: { 
+          [vehicleId]: {
             ...state.vehicles[vehicleId],
             status: 'Completed',
             lastUpdateTime: Date.now(),
           },
         },
         loadingState: { ...(state.loadingState || {}), [actionKey]: true },
-        errorState: { ...(state.errorState || {}), [actionKey]: null }, // Clear previous error
+        errorState: { ...(state.errorState || {}), [actionKey]: null },
       }));
       logger.debug(`[Store] Optimistically updated vehicle ${vehicleId} status to Completed.`);
 
@@ -207,11 +206,11 @@ export const createSimulationStore = () => {
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        logger.error(`[Store] Error during confirmShipmentDelivery for vehicle ${vehicleId}: ${errorMessage}`, error);
+        logger.error(`[Store] Error during confirmDelivery for vehicle ${vehicleId}: ${errorMessage}`, error);
         set((state: SimulationState) => ({
           vehicles: {
             ...state.vehicles,
-            [vehicleId]: { 
+            [vehicleId]: {
               ...state.vehicles[vehicleId],
               status: originalStatus,
             },
@@ -340,8 +339,8 @@ export const createSimulationStore = () => {
       if (criticalErrorOccurred) {
           logger.error('Stopping simulation due to critical error during tick calculation.');
           get().stopGlobalSimulation();
-          set(state => ({ 
-              errorState: { ...(state.errorState || {}), global: 'Simulation stopped due to a critical error during position calculation.' } 
+          set(state => ({
+              errorState: { ...(state.errorState || {}), tickError: 'Simulation stopped due to a critical error during position calculation.' }
           }));
       }
 
@@ -367,7 +366,7 @@ export const createSimulationStore = () => {
           logger.info(`[Store] Setting up new simulation interval (${SIMULATION_INTERVAL_MS}ms)...`);
           const newIntervalId = setInterval(tickSimulation, SIMULATION_INTERVAL_MS);
           logger.info(`[Store] Interval created with ID: ${newIntervalId}. Setting isSimulationRunning = true.`);
-          set({ isSimulationRunning: true, simulationIntervalId: newIntervalId, error: null });
+          set({ isSimulationRunning: true, simulationIntervalId: newIntervalId }); 
       } else {
           logger.warn('[Store] startGlobalSimulation called but simulation is already running.');
       }
@@ -375,10 +374,10 @@ export const createSimulationStore = () => {
     },
 
     stopGlobalSimulation: () => {
-      const { isSimulationRunning, simulationIntervalId, selectedVehicleId } = get(); // Get selectedVehicleId AND updateVehicleState action
+      const { isSimulationRunning, simulationIntervalId, selectedVehicleId, updateVehicleState } = get(); // Get updateVehicleState action
       logger.info('[Store] stopGlobalSimulation action called.', { currentState: isSimulationRunning, selectedId: selectedVehicleId });
       
-      // --- Stop local interval FIRST --- 
+      // --- Stop local interval FIRST ---
       if (isSimulationRunning) {
         if (simulationIntervalId) {
           logger.info(`[Store] Clearing simulation interval ID: ${simulationIntervalId}`);
@@ -390,36 +389,43 @@ export const createSimulationStore = () => {
         set({ isSimulationRunning: false, simulationIntervalId: null });
       } else {
          logger.warn('[Store] stopGlobalSimulation called but simulation was not running locally.');
-         // Still attempt backend cleanup even if local state is already stopped
          if (simulationIntervalId) {
              logger.warn('[Store] Clearing lingering interval ID found while simulation was stopped locally.');
              clearInterval(simulationIntervalId);
-             set({ simulationIntervalId: null }); 
+             set({ simulationIntervalId: null });
          }
       }
       
       // --- Trigger Backend Cleanup --- 
+      // TODO: If multiple simulations are allowed, this needs rethinking.
+      // Currently assumes only the selectedVehicle needs stopping.
       if (selectedVehicleId) {
            const vehicleIdToStop = selectedVehicleId; // Capture ID for async context
            const actionKey = `stop_${vehicleIdToStop}`;
-           logger.info(`[Store] Triggering backend stopSimulation Server Action for shipment ID: ${vehicleIdToStop}`);
+           logger.info(`[Store] Triggering backend stopSimulation Server Action for shipment ID associated with vehicle: ${vehicleIdToStop}`);
            set(state => ({ 
                loadingState: { ...(state.loadingState || {}), [actionKey]: true },
                errorState: { ...(state.errorState || {}), [actionKey]: null },
             }));
-           stopSimulationServerAction(vehicleIdToStop)
+           stopSimulationServerAction(vehicleIdToStop) // Assuming this stops based on vehicle/shipment ID
              .then((result) => {
                if (result?.success) {
                      logger.info(`[Store] Backend stopSimulation succeeded for ${vehicleIdToStop}.`);
-                         } else {
+                     // <<< ADDED: Update local state on success >>>
+                     // Ideally, use status from result if provided, otherwise assume 'Idle'
+                     const finalStatus = result?.updatedState?.status === 'Idle' ? 'Idle' : 'Idle'; // Default to Idle on success
+                     logger.info(`[Store] Updating local vehicle ${vehicleIdToStop} status to ${finalStatus} after successful backend stop.`);
+                     updateVehicleState(vehicleIdToStop, { status: finalStatus, lastUpdateTime: Date.now() });
+                 } else {
                  // Handle potential error from server action
                  logger.error(`[Store] Backend stopSimulation failed for ${vehicleIdToStop}.`, { error: result?.error });
                  set(state => ({ errorState: { ...(state.errorState || {}), [actionKey]: `Backend stop failed: ${result?.error || 'Unknown error'}` }}));
                  }
              })
              .catch((error) => {
+                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                  logger.error(`[Store] CRITICAL error calling stopSimulation Server Action for ${vehicleIdToStop}:`, error);
-                 set(state => ({ errorState: { ...(state.errorState || {}), [actionKey]: `Error communicating with backend: ${error.message}` }}));
+                 set(state => ({ errorState: { ...(state.errorState || {}), [actionKey]: `Error communicating with backend: ${errorMessage}` }}));
              })
              .finally(() => {
                  set(state => ({ loadingState: { ...(state.loadingState || {}), [actionKey]: false }}));
@@ -450,15 +456,21 @@ export const createSimulationStore = () => {
       if (simulationIntervalId) {
         clearInterval(simulationIntervalId);
       }
-      // FIX: Correctly reset state using initialSimulationState
+      // Reset state using initialSimulationState (which no longer has global isLoading/error)
       set(initialSimulationState);
+      // Explicitly ensure isInitialized remains true if reset happens after init
+      set({ isInitialized: true }); 
     },
 
     loadSimulationFromInput: async (input: SimulationInput) => {
+      const actionKey = 'loadSimulation'; // Key for loading/error state
       logger.info('[loadSimulationFromInput] Attempting to load simulation from input', { shipmentId: input.shipmentId });
       
-      // Set loading state at the beginning of the operation (managed externally now, but useful to keep here)
-      set({ isLoading: true, error: null }); // Clear previous errors
+      // Set loading state using keyed state
+      set(state => ({ 
+          loadingState: { ...(state.loadingState || {}), [actionKey]: true },
+          errorState: { ...(state.errorState || {}), [actionKey]: null } // Clear previous error for this action
+      })); 
 
       let vehicle: SimulatedVehicle | null = null;
       try {
@@ -472,7 +484,6 @@ export const createSimulationStore = () => {
         if (vehicle) {
           logger.info('[loadSimulationFromInput] Vehicle created successfully, preparing to add/update in store.', { vehicleId: vehicle.id, shipmentId: vehicle.shipmentId });
 
-          // <<< REVISED: Add/Update vehicle without full reset >>>
           const vehicleToAdd = vehicle; // Assign to a const within the non-null scope
           set((state) => ({
             vehicles: {
@@ -480,28 +491,29 @@ export const createSimulationStore = () => {
               [vehicleToAdd.id]: vehicleToAdd // Add or overwrite the vehicle
             },
             selectedVehicleId: vehicleToAdd.id, // Automatically select the newly loaded vehicle
-            isLoading: false, // Set loading false on success
-            error: null // Clear any previous error
+            loadingState: { ...(state.loadingState || {}), [actionKey]: false }, // Set loading false on success
+            errorState: { ...(state.errorState || {}), [actionKey]: null } // Clear any previous error for this action
           }));
           
           logger.info('[loadSimulationFromInput] Successfully loaded and selected vehicle.', { vehicleId: vehicle.id });
 
         } else {
-          // Handle case where service returns null
           logger.warn('[loadSimulationFromInput] Simulation service returned null for vehicle creation.', { shipmentId: input.shipmentId });
-          set({ isLoading: false, error: 'Failed to create vehicle simulation (Service returned null).' });
+           set(state => ({ 
+              loadingState: { ...(state.loadingState || {}), [actionKey]: false },
+              errorState: { ...(state.errorState || {}), [actionKey]: 'Failed to create vehicle simulation (Service returned null).' } 
+          }));
         }
       } catch (error: any) {
-        logger.error('[loadSimulationFromInput] Critical error creating/adding vehicle from SimulationInput:', { 
-            errorObject: error, 
-            errorMessage: error?.message, 
-            errorStack: error?.stack 
+        logger.error('[loadSimulationFromInput] Critical error creating/adding vehicle from SimulationInput:', {
+            errorObject: error,
+            errorMessage: error?.message,
+            errorStack: error?.stack
         });
-        // Replace setError call with errorState update using a specific key
-        set(state => ({ 
-            errorState: { ...(state.errorState || {}), loadSimulation: `SimulationFromShipmentService failed: ${error.message || 'Unknown error'}` },
-            isLoading: false // Ensure loading is set to false on error
-        })); 
+        set(state => ({
+            errorState: { ...(state.errorState || {}), [actionKey]: `Simulation service failed: ${error.message || 'Unknown error'}` },
+            loadingState: { ...(state.loadingState || {}), [actionKey]: false } // Ensure loading is set to false on error
+        }));
       }
     },
 

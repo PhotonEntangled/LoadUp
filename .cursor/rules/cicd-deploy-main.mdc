@@ -3,3 +3,36 @@ description:
 globs:
 alwaysApply: false
 ---
+# Cursor Rule: cicd-deploy-main.mdc
+
+## Objective
+Automate the common CI/CD workflow step of staging, committing, and pushing code changes to the `main` branch to trigger an automatic deployment (e.g., via Vercel).
+
+---
+
+### Trigger Phrases
+*   "Deploy the latest changes via CI/CD."
+*   "Push to main and deploy."
+*   "Commit and trigger deployment."
+*   "Run the standard deploy sequence."
+
+---
+
+### Action Sequence
+
+1.  **Confirm Scope:** Briefly verify the changes intended for this deployment commit.
+2.  **Get Commit Message:**
+    *   Request a commit message adhering to the Conventional Commits standard (e.g., `feat: Add new login button`, `fix: Correct calculation error`, `refactor: Simplify map component`, `docs: Update README`).
+    *   If none is provided, suggest one based on context or changed files, ensuring it follows the format, and *always* confirm it with the user.
+3.  **Execute CI/CD Trigger Commands:**
+    *   Run `git add .` (Explain: Staging all modified files for the commit).
+    *   Run `git commit -m "<confirmed_commit_message>"` (Explain: Committing changes locally).
+    *   Run `git push origin main` (or `git push` if tracking is set) (Explain: Pushing commit to the `main` branch on GitHub, which triggers the CI/CD pipeline for deployment).
+4.  **Confirm Trigger:** Announce that the push to `main` is complete and the automated Vercel deployment pipeline should now be running.
+
+---
+
+### Notes
+*   Assumes the current branch is ready to be pushed to `main`.
+*   Remind the user about Conventional Commits format for meaningful history.
+*   If any command fails, report the error clearly.

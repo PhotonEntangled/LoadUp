@@ -1,5 +1,5 @@
 "use client"
-import { MapPin, CheckCircle, HelpCircle, AlertTriangle, Edit, Download, Calendar, Package, Truck, MoreHorizontal, Info, ChevronDown, ChevronUp, User, Phone, Loader2 } from "lucide-react"
+import { MapPin, CheckCircle, HelpCircle, AlertTriangle, Edit, Download, Calendar, Package, Truck, MoreHorizontal, Info, ChevronDown, ChevronUp, User, Phone, Loader2, Map } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -27,6 +27,7 @@ import {
   AccordionTrigger 
 } from "@/components/ui/accordion"; // Added Accordion imports
 import { StatusBadge } from "@/components/shipments/StatusBadge";
+import Link from 'next/link'; // Import Link
 
 // Define the props interface for the ShipmentCard component
 interface ShipmentCardProps {
@@ -196,6 +197,12 @@ export default function ShipmentCard({
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuItem onSelect={() => onDownload(shipment, "csv")}>Download as CSV</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onDownload(shipment, "json")}>Download as JSON</DropdownMenuItem>
+            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}> 
+              <Link href={`/tracking/${shipment.coreInfo?.id}`} className="flex items-center cursor-pointer">
+                 <Map className="mr-2 h-4 w-4" />
+                 View Live Tracking
+              </Link>
+            </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onEdit(shipment); }} title="Edit Shipment">

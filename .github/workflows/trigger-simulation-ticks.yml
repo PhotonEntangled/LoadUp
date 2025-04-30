@@ -1,0 +1,47 @@
+name: Trigger Simulation Tick Enqueuer
+
+on:
+  schedule:
+    # Runs every minute
+    - cron: '* * * * *'
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  trigger-enqueue-ticks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Enqueue Ticks API Endpoint
+        env:
+          # IMPORTANT: Set this as a secret in your GitHub repository settings
+          #          (Settings > Secrets and variables > Actions > New repository secret)
+          #          It should be the full base URL of your deployment 
+          #          e.g., https://your-loadup-app.vercel.app
+          DEPLOYMENT_URL: ${{ secrets.DEPLOYMENT_URL }}
+          # OPTIONAL: If your endpoint needs an API key later, add it here:
+          # API_KEY: ${{ secrets.SIMULATION_API_KEY }} 
+        run: |
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "Error: DEPLOYMENT_URL secret is not set."
+            exit 1
+          fi
+          
+          # Construct the full URL
+          API_URL="$DEPLOYMENT_URL/api/simulation/enqueue-ticks"
+          
+          echo "Attempting to trigger simulation ticks at: $API_URL"
+          
+          # Use curl to make a GET request. 
+          # -f makes curl fail silently on server errors (HTTP status >= 400)
+          # -s makes curl silent (no progress meter)
+          # -S shows errors if -s is used and it fails
+          # We check the exit code ($?) to see if curl succeeded (0 means success)
+          curl -fsS "$API_URL" 
+          # Optional: Add header if API key is needed: -H "Authorization: Bearer $API_KEY"
+          
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to trigger the API endpoint. Curl exited with status $?."
+            # You could add more error handling here, like notifications
+            exit 1 # Exit with error status
+          else
+            echo "Successfully triggered the API endpoint."
+          fi 

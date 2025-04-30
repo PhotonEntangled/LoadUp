@@ -1,0 +1,4 @@
+# Ignore sensitive files and node_modules
+loadup-logistics-dev-firebase-adminsdk.json
+.env
+node_modules/ 

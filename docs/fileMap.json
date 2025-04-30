@@ -217,6 +217,95 @@
     "lib/actions/shipmentActions.ts": {
       "description": "Defines Next.js Server Actions related to non-simulation shipment updates, specifically getShipmentLastKnownLocation.",
       "relatedFiles": ["app/shipments/[documentid]/page.tsx"]
+    },
+
+  
+    "types/tracking.ts": {
+        "description": "Defines core interfaces for live tracking: LiveVehicleUpdate (data from source) and StaticTrackingDetails (data fetched on page load).",
+        "keyImports": ["geojson"],
+        "relatedFiles": ["services/tracking/LiveTrackingService.ts", "lib/store/useLiveTrackingStore.ts", "tools/mock-tracker/index.js", "components/map/TrackingMap.tsx", "app/tracking/[shipmentId]/page.tsx"]
+    },
+    "services/tracking/LiveTrackingService.ts": {
+        "description": "Defines the interface/contract for services handling real-time vehicle location subscriptions (e.g., Firestore implementation).",
+        "keyImports": ["@/types/tracking"],
+        "relatedFiles": ["types/tracking.ts", "services/tracking/FirestoreLiveTrackingService.ts", "lib/store/useLiveTrackingStore.ts"]
+    },
+    "services/tracking/FirestoreLiveTrackingService.ts": {
+        "description": "Concrete implementation of LiveTrackingService using Firebase Firestore (onSnapshot) for subscribing to updates. Uses clientApp for Firebase instance.",
+        "keyImports": ["firebase/firestore", "@/lib/firebase/clientApp", "@/services/tracking/LiveTrackingService", "@/types/tracking", "@/utils/logger"],
+        "relatedFiles": ["services/tracking/LiveTrackingService.ts", "lib/firebase/clientApp.ts", "lib/store/useLiveTrackingStore.ts"]
+    },
+    "lib/store/useLiveTrackingStore.ts": {
+        "description": "Zustand store managing client-side state for live vehicle tracking. Handles subscription lifecycle, latest updates, static details, errors, and map interaction state (isFollowingVehicle).",
+        "keyImports": ["zustand", "@/types/tracking", "@/services/tracking/FirestoreLiveTrackingService", "mapbox-gl"],
+        "relatedFiles": ["types/tracking.ts", "services/tracking/LiveTrackingService.ts", "services/tracking/FirestoreLiveTrackingService.ts", "components/map/TrackingMap.tsx", "app/tracking/[shipmentId]/page.tsx", "components/map/TrackingControls.tsx"]
+    },
+    "lib/firebase/clientApp.ts": {
+        "description": "Initializes the Firebase client-side application instance using environment variables (NEXT_PUBLIC_...). Ensures singleton pattern.",
+        "keyImports": ["firebase/app", "firebase/firestore"],
+        "relatedFiles": ["services/tracking/FirestoreLiveTrackingService.ts", ".env.local"]
+    },
+    "components/map/TrackingMap.tsx": {
+        "description": "Renders the interactive map for LIVE vehicle tracking using react-map-gl. Displays vehicle marker from GeoJSON source, handles popups, follow mode, zoom-to-fit (via ref), origin/destination markers, and planned route layer. Connects to useLiveTrackingStore.",
+        "keyImports": ["react", "mapbox-gl", "react-map-gl/mapbox", "@/lib/store/useLiveTrackingStore", "@/types/tracking", "@/utils/logger", "geojson", "lucide-react", "@/utils/formatters"],
+        "relatedFiles": ["lib/store/useLiveTrackingStore.ts", "app/tracking/[shipmentId]/page.tsx", "components/map/TrackingControls.tsx", "utils/formatters.ts"]
+    },
+     "components/map/TrackingControls.tsx": {
+        "description": "Provides UI controls (buttons) for the TrackingMap, specifically Zoom-to-Fit and Follow Vehicle toggle. Interacts with map via ref and store actions.",
+        "keyImports": ["react", "lucide-react", "@/components/ui/button", "@/lib/store/useLiveTrackingStore", "./TrackingMap", "@/utils/logger", "@/lib/utils"],
+        "relatedFiles": ["components/map/TrackingMap.tsx", "app/tracking/[shipmentId]/page.tsx", "lib/store/useLiveTrackingStore.ts"]
+    },
+    "utils/formatters.ts": {
+        "description": "Utility functions for formatting data for display, e.g., timestamps and speeds.",
+        "keyImports": [],
+        "relatedFiles": ["components/map/TrackingMap.tsx"]
+    },
+    "tools/mock-tracker/index.js": {
+        "description": "Standalone Node.js script to simulate a device sending LiveVehicleUpdate data to Firestore. Uses Firebase Admin SDK and reads config from tools/mock-tracker/.env.",
+        "relatedFiles": ["tools/mock-tracker/.env", "tools/mock-tracker/.gitignore", "tools/mock-tracker/loadup-logistics-dev-firebase-adminsdk.json", "types/tracking.ts"]
+    },
+    "tools/mock-tracker/.env": {
+        "description": "Environment variables specifically for the mock-tracker Node.js script (contains GOOGLE_APPLICATION_CREDENTIALS path). Should be gitignored.",
+        "relatedFiles": ["tools/mock-tracker/index.js", "tools/mock-tracker/.gitignore"]
+    },
+    "tools/mock-tracker/.gitignore": {
+        "description": "Git ignore file specifically for the mock-tracker tool directory, ensuring key files and .env are not committed.",
+        "relatedFiles": ["tools/mock-tracker/.env", "tools/mock-tracker/loadup-logistics-dev-firebase-adminsdk.json"]
+    },
+    "lib/actions/trackingActions.ts": {
+        "description": "Defines Server Actions for live tracking page: getShipmentsForDocumentContaining (fetches related shipments, maps to full ApiShipmentDetail) and getStaticTrackingDetails (fetches data for StaticTrackingDetails).",
+        "keyImports": ["server-only", "@/lib/database/drizzle", "@/lib/database/schema", "@/types/api", "@/types/tracking", "@/utils/logger", "drizzle-orm"],
+        "relatedFiles": ["app/tracking/[shipmentId]/_components/TrackingPageView.tsx", "types/api.ts", "types/tracking.ts", "lib/database/schema.ts"]
+    },
+    "app/tracking/[shipmentId]/page.tsx": {
+        "description": "Minimal page component for the /tracking/[shipmentId] route. Extracts param and renders TrackingPageView.",
+        "keyImports": ["react"],
+        "relatedFiles": ["app/tracking/[shipmentId]/_components/TrackingPageView.tsx"]
+    },
+    "app/tracking/[shipmentId]/_components/TrackingPageView.tsx": {
+        "description": "Main client component for the live tracking page. Handles fetching shipment list and static details via Server Actions, manages selection, integrates TrackingMap and TrackingControls, and orchestrates live data subscription via useLiveTrackingStore.",
+        "keyImports": ["react", "@/utils/logger", "@/types/api", "@/types/tracking", "@/components/shipments/ShipmentCard", "@/components/map/TrackingMap", "@/components/map/TrackingControls", "@/lib/store/useLiveTrackingStore", "@/lib/actions/trackingActions", "@/components/ui/accordion", "lucide-react"],
+        "relatedFiles": ["app/tracking/[shipmentId]/page.tsx", "lib/actions/trackingActions.ts", "lib/store/useLiveTrackingStore.ts", "components/map/TrackingMap.tsx", "components/map/TrackingControls.tsx", "components/shipments/ShipmentCard.tsx"]
+    },
+    "lib/actions/auth.ts": {
+        "description": "Defines Next.js Server Actions for handling user sign-in (with credentials) and sign-up (currently disabled). Interacts with NextAuth.js signIn function.",
+        "keyImports": ["server-only", "@/lib/auth", "@/lib/validations", "@auth/core/errors"],
+        "relatedFiles": ["lib/auth.ts", "app/api/auth/[...nextauth]/options.ts", "lib/validations.ts", "components/AuthForm.tsx"]
+    },
+    "lib/auth.ts": {
+        "description": "Initializes and exports NextAuth.js core functions (auth, signIn, signOut), handling a development bypass flag. Imports main configuration from options.ts.",
+        "keyImports": ["next-auth", "@/app/api/auth/[...nextauth]/options"],
+        "relatedFiles": ["lib/actions/auth.ts", "app/api/auth/[...nextauth]/options.ts", "app/api/auth/[...nextauth]/route.ts"]
+    },
+    "app/api/auth/[...nextauth]/options.ts": {
+        "description": "Defines the core NextAuth.js configuration (AuthOptions). Includes providers (Credentials with mock data), JWT/Session callbacks (adding user role), pages, and role-based route access logic.",
+        "keyImports": ["next-auth", "next-auth/providers/credentials", "bcryptjs", "next-auth/jwt"],
+        "relatedFiles": ["lib/auth.ts", "lib/actions/auth.ts", "app/api/auth/[...nextauth]/route.ts", "types/next-auth.d.ts"]
+    },
+    "app/api/auth/[...nextauth]/route.ts": {
+        "description": "Standard Next.js route handler that exports the GET and POST handlers from NextAuth.js initialized with authOptions.",
+        "keyImports": ["next-auth", "@/app/api/auth/[...nextauth]/options"],
+        "relatedFiles": ["lib/auth.ts", "app/api/auth/[...nextauth]/options.ts"]
     }
   }
 }
