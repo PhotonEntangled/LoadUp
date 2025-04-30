@@ -19,7 +19,7 @@ export default function SimulationPage() {
 
   // --- Access store state via context hook selectors ---
   const isSimulationRunning = useSimulationStoreContext((state: SimulationStoreApi) => state.isSimulationRunning);
-  const globalSimulationError = useSimulationStoreContext((state: SimulationStoreApi) => state.error);
+  const globalSimulationError = useSimulationStoreContext((state: SimulationStoreApi) => state.errorState['loadSimulation']);
   const loadSimulationFromInput = useSimulationStoreContext((state: SimulationStoreApi) => state.loadSimulationFromInput);
 
   const handleLoadScenario = async (scenarioId: string) => {
