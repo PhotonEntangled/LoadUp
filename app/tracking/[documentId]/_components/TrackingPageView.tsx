@@ -378,8 +378,8 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
         </div>
       </div>
 
-      {/* Right Column: Map Area */}
-      <div className="flex flex-col h-full overflow-hidden">
+      {/* Right Column: Map Area - Added padding and gap */}
+      <div className="flex flex-col h-full overflow-hidden p-4 gap-4">
         {renderMapArea()} 
       </div>
     </div>

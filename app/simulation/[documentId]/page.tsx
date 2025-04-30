@@ -483,7 +483,7 @@ export default function SimulationDocumentPage() {
                   value={shipmentId} 
                   key={shipmentId}
                   className={cn(
-                    "border rounded-lg bg-card text-card-foreground mb-2", 
+                    "border rounded-lg bg-card text-card-foreground",
                     // Use ring-inset to avoid clipping by parent overflow/padding
                     isSelected ? "ring-2 ring-primary ring-inset" : "", 
                     isDisabled && "opacity-60 cursor-not-allowed"
