@@ -413,21 +413,29 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
 
   // --- Main Layout ---
   return (
-    <div className="grid h-screen grid-cols-1 lg:grid-cols-[minmax(350px,_1fr)_3fr] xl:grid-cols-[minmax(400px,_1fr)_4fr]">
-      {/* Left Column: Shipment List - REMOVED border-r */}
-      <div className="flex flex-col h-full overflow-y-auto pr-2">
-        <div className="p-4 border-gray-200 dark:border-gray-800">
-          <h1 className="text-lg font-semibold">Shipments for Document</h1>
-          <p className="text-xs text-muted-foreground truncate" title={documentId}>{documentId}</p> 
+    // Ensure the top-level container takes full height and uses flex column layout
+    <div className="flex flex-col h-[calc(100vh-var(--header-height))] overflow-hidden"> 
+      {/* Use a flex-grow container for the main content area */}
+      <div className="flex flex-1 overflow-hidden"> 
+        {/* Left Column: Shipment List - Ensure it scrolls vertically */}
+        {/* Add max-width and allow vertical scrolling */}
+        <div className="w-full max-w-sm lg:max-w-md xl:max-w-lg border-r border-gray-200 dark:border-gray-800 flex flex-col h-full overflow-y-auto"> 
+          {/* Header Section */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800"> 
+            <h1 className="text-lg font-semibold">Shipments for Document</h1>
+            <p className="text-xs text-muted-foreground truncate" title={documentId}>{documentId}</p>
+          </div>
+          {/* Shipment List Content */}
+          <div className="flex-1 overflow-y-auto p-2">
+            {renderShipmentList()}
+          </div>
         </div>
-        <div className="flex-grow p-2 overflow-y-auto">
-          {renderShipmentList()} 
-        </div>
-      </div>
 
-      {/* Right Column: Map Area - Added padding and gap */}
-      <div className="flex flex-col h-full overflow-hidden p-4 gap-4">
-        {renderMapArea()} 
+        {/* Right Column: Map Area - Make it take remaining space and handle its own potential overflow */}
+        {/* Use flex-1 to grow and min-w-0 to prevent pushing out */}
+        <div className="flex-1 flex flex-col min-w-0 h-full"> 
+          {renderMapArea()}
+        </div>
       </div>
     </div>
   );
