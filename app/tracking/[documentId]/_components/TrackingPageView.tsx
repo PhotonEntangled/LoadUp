@@ -416,7 +416,7 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
     <div className="grid h-screen grid-cols-1 lg:grid-cols-[minmax(350px,_1fr)_3fr] xl:grid-cols-[minmax(400px,_1fr)_4fr]">
       {/* Left Column: Shipment List - REMOVED border-r */}
       <div className="flex flex-col h-full overflow-y-auto pr-2">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+        <div className="p-4 border-gray-200 dark:border-gray-800">
           <h1 className="text-lg font-semibold">Shipments for Document</h1>
           <p className="text-xs text-muted-foreground truncate" title={documentId}>{documentId}</p> 
         </div>

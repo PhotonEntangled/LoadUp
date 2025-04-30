@@ -35,30 +35,40 @@ import { eq, and, desc, inArray, sql, SQL } from "drizzle-orm";
 import { type LineString } from 'geojson';
 import { MapDirectionsService } from "@/services/map/MapDirectionsService";
 
-// --- Helper Function: Map DB Address to ApiAddressDetail --- 
-const mapDbAddressToApi = (addr: typeof addresses.$inferSelect | undefined | null): ApiAddressDetail | null => {
+// Type definition for explicitly selected address fields
+type SelectedDbAddress = Pick<typeof addresses.$inferSelect, 'id' | 'rawInput' | 'street1' | 'city' | 'state' | 'postalCode' | 'country' | 'latitude' | 'longitude' | 'resolutionMethod' | 'resolutionConfidence' | 'updatedAt'>;
+
+// Updated Helper Function: Map Explicitly Selected DB Address to ApiAddressDetail
+const mapSelectedDbAddressToApi = (addr: SelectedDbAddress | undefined | null): ApiAddressDetail | null => {
     if (!addr) return null;
     return {
         id: addr.id,
-        rawInput: addr.rawInput ?? null, 
+        rawInput: addr.rawInput ?? null,
         name: null, // No direct 'name' field in addresses schema
-        street: addr.street1 ?? null, 
+        street: addr.street1 ?? null,
         city: addr.city ?? null,
-        stateProvince: addr.state ?? null, 
+        stateProvince: addr.state ?? null,
         postalCode: addr.postalCode ?? null,
         country: addr.country ?? null,
         fullAddress: addr.rawInput ?? null, // Use rawInput as fallback
         latitude: addr.latitude ? parseFloat(addr.latitude) : null,
         longitude: addr.longitude ? parseFloat(addr.longitude) : null,
-        resolutionMethod: addr.resolutionMethod as ApiAddressDetail['resolutionMethod'] ?? null, 
+        resolutionMethod: addr.resolutionMethod as ApiAddressDetail['resolutionMethod'] ?? null,
         resolutionConfidence: addr.resolutionConfidence ? parseFloat(addr.resolutionConfidence) : null,
-        resolvedTimestamp: addr.updatedAt?.toISOString() ?? null, 
+        resolvedTimestamp: addr.updatedAt?.toISOString() ?? null,
     };
 };
 
-// --- Helper Function: Map DB Pickup/Dropoff to ApiPickupDropoffInfo --- 
-const mapDbStopToApiLocation = (
-    stop: typeof pickups.$inferSelect | typeof dropoffs.$inferSelect | undefined | null,
+// Type definition for explicitly selected pickup/dropoff fields
+// Combined relevant fields from both pickups and dropoffs tables
+type SelectedDbStop = Pick<
+    typeof pickups.$inferSelect & typeof dropoffs.$inferSelect, // Combine types
+    'id' | 'shipmentId' | 'addressId' | 'estimatedDateTimeOfArrival' | 'pickup_date' | 'actualDateTimeOfArrival' | 'pickup_position' | 'dropoff_date' | 'dropoff_position' | 'recipientContactName' | 'customerPoNumbers' | 'actualDateTimeOfDeparture'
+>;
+
+// Updated Helper Function: Map DB Pickup/Dropoff to ApiPickupDropoffInfo
+const mapSelectedDbStopToApiLocation = (
+    stop: SelectedDbStop | undefined | null,
     address: ApiAddressDetail | null, 
     type: 'Pickup' | 'Dropoff',
     sequence: number
@@ -71,11 +81,11 @@ const mapDbStopToApiLocation = (
     let locationName: string | null = address?.name ?? null;
 
     if (type === 'Pickup') {
-        const p = stop as typeof pickups.$inferSelect;
+        const p = stop; // No need to cast if type SelectedDbStop includes all fields
         scheduledDateTime = p.estimatedDateTimeOfArrival?.toISOString() ?? p.pickup_date?.toISOString() ?? null;
         actualDateTime = p.actualDateTimeOfArrival?.toISOString() ?? null;
     } else {
-        const d = stop as typeof dropoffs.$inferSelect;
+        const d = stop; // No need to cast
         scheduledDateTime = d.estimatedDateTimeOfArrival?.toISOString() ?? d.dropoff_date?.toISOString() ?? null;
         actualDateTime = d.actualDateTimeOfArrival?.toISOString() ?? null;
         locationName = locationName ?? d.recipientContactName ?? null;
@@ -95,23 +105,26 @@ const mapDbStopToApiLocation = (
     };
 };
 
-// --- Main Helper Function: Map Full DB Data to ApiShipmentDetail --- 
+// Type definition for explicitly selected item fields
+type SelectedDbItem = Pick<typeof shipmentItems.$inferSelect, 'id' | 'shipmentId' | 'itemNumber' | 'secondaryItemNumber' | 'description' | 'quantity' | 'weight' | 'lotSerialNumber'>;
+
+// --- Main Helper Function: Map Full DB Data to ApiShipmentDetail ---
 const mapFullDbDataToApiShipmentDetail = (
     dbShipment: typeof shipmentsErd.$inferSelect,
-    dbItems: (typeof shipmentItems.$inferSelect)[] | null,
-    dbPickups: (typeof pickups.$inferSelect)[] | null,
-    dbDropoffs: (typeof dropoffs.$inferSelect)[] | null,
-    dbPickupAddresses: (typeof addresses.$inferSelect)[] | null,
-    dbDropoffAddresses: (typeof addresses.$inferSelect)[] | null,
+    dbItems: SelectedDbItem[] | null, // Use selected type
+    dbPickups: SelectedDbStop[] | null, // Use selected type
+    dbDropoffs: SelectedDbStop[] | null, // Use selected type
+    dbPickupAddresses: SelectedDbAddress[] | null, // Use selected type
+    dbDropoffAddresses: SelectedDbAddress[] | null, // Use selected type
     dbCustomDetails: typeof customShipmentDetails.$inferSelect | null,
-    dbTrip: typeof trips.$inferSelect | null, 
+    dbTrip: typeof trips.$inferSelect | null,
     dbVehicle: typeof vehicles.$inferSelect | null,
     dbTransporter: typeof transporters.$inferSelect | null
 ): ApiShipmentDetail => {
 
     // 1. Map Addresses first
-    const originAddressMapped = mapDbAddressToApi(dbPickupAddresses?.[0]);
-    const destinationAddressMapped = mapDbAddressToApi(dbDropoffAddresses?.[0]);
+    const originAddressMapped = mapSelectedDbAddressToApi(dbPickupAddresses?.[0]);
+    const destinationAddressMapped = mapSelectedDbAddressToApi(dbDropoffAddresses?.[0]);
 
     // 2. Map Core Info - Strict to schema and ApiShipmentCoreInfo
     const coreInfo: ApiShipmentCoreInfo = {
@@ -194,11 +207,11 @@ const mapFullDbDataToApiShipmentDetail = (
 
     // 6. Map Location Details (Pickups/Dropoffs)
     const pickupsMapped: ApiPickupDropoffInfo[] = dbPickups?.map((p, index) => 
-        mapDbStopToApiLocation(p, mapDbAddressToApi(dbPickupAddresses?.[index]), 'Pickup', p.pickup_position ?? index + 1)
+        mapSelectedDbStopToApiLocation(p, mapSelectedDbAddressToApi(dbPickupAddresses?.[index]), 'Pickup', p.pickup_position ?? index + 1)
     ).filter(Boolean) as ApiPickupDropoffInfo[] ?? [];
 
     const dropoffsMapped: ApiPickupDropoffInfo[] = dbDropoffs?.map((d, index) => 
-        mapDbStopToApiLocation(d, mapDbAddressToApi(dbDropoffAddresses?.[index]), 'Dropoff', d.dropoff_position ?? index + 1)
+        mapSelectedDbStopToApiLocation(d, mapSelectedDbAddressToApi(dbDropoffAddresses?.[index]), 'Dropoff', d.dropoff_position ?? index + 1)
     ).filter(Boolean) as ApiPickupDropoffInfo[] ?? [];
 
     // 7. Map Contacts (Placeholder)
@@ -311,17 +324,65 @@ export async function getShipmentsForDocumentContaining(
 
     const shipmentIds = dbShipmentsWithDetails.map(s => s.shipment.id);
 
-    // Fetch related data (Pickups, Dropoffs, Addresses, Items) efficiently
+    // Fetch related data (Pickups, Dropoffs, Addresses, Items) efficiently using explicit selects
     const [dbPrimaryPickups, dbPrimaryDropoffs, dbAllItems] = await Promise.all([
-        db.select().from(pickups).where(and(inArray(pickups.shipmentId, shipmentIds), eq(pickups.pickup_position, 1))).orderBy(pickups.shipmentId), 
-        db.select().from(dropoffs).where(and(inArray(dropoffs.shipmentId, shipmentIds), eq(dropoffs.dropoff_position, 1))).orderBy(dropoffs.shipmentId), 
-        db.select().from(shipmentItems).where(inArray(shipmentItems.shipmentId, shipmentIds)).orderBy(shipmentItems.shipmentId), // Fetch items
+        db.select({
+            id: pickups.id,
+            shipmentId: pickups.shipmentId,
+            addressId: pickups.addressId,
+            estimatedDateTimeOfArrival: pickups.estimatedDateTimeOfArrival,
+            pickup_date: pickups.pickup_date,
+            actualDateTimeOfArrival: pickups.actualDateTimeOfArrival,
+            pickup_position: pickups.pickup_position,
+            actualDateTimeOfDeparture: pickups.actualDateTimeOfDeparture,
+            dropoff_date: sql<Date | null>`null`, // Explicitly null
+            dropoff_position: sql<number | null>`null`,
+            recipientContactName: sql<string | null>`null`, // Use sql null
+            customerPoNumbers: sql<string | null>`null`, // Use sql null
+        }).from(pickups).where(and(inArray(pickups.shipmentId, shipmentIds), eq(pickups.pickup_position, 1))).orderBy(pickups.shipmentId),
+        db.select({
+            id: dropoffs.id,
+            shipmentId: dropoffs.shipmentId,
+            addressId: dropoffs.addressId,
+            estimatedDateTimeOfArrival: dropoffs.estimatedDateTimeOfArrival,
+            dropoff_date: dropoffs.dropoff_date,
+            actualDateTimeOfArrival: dropoffs.actualDateTimeOfArrival,
+            dropoff_position: dropoffs.dropoff_position,
+            recipientContactName: dropoffs.recipientContactName,
+            customerPoNumbers: dropoffs.customerPoNumbers,
+            actualDateTimeOfDeparture: dropoffs.actualDateTimeOfDeparture,
+            pickup_date: sql<Date | null>`null`,
+            pickup_position: sql<number | null>`null`,
+        }).from(dropoffs).where(and(inArray(dropoffs.shipmentId, shipmentIds), eq(dropoffs.dropoff_position, 1))).orderBy(dropoffs.shipmentId),
+        db.select({
+            id: shipmentItems.id,
+            shipmentId: shipmentItems.shipmentId,
+            itemNumber: shipmentItems.itemNumber,
+            secondaryItemNumber: shipmentItems.secondaryItemNumber,
+            description: shipmentItems.description,
+            quantity: shipmentItems.quantity,
+            weight: shipmentItems.weight,
+            lotSerialNumber: shipmentItems.lotSerialNumber,
+        }).from(shipmentItems).where(inArray(shipmentItems.shipmentId, shipmentIds)).orderBy(shipmentItems.shipmentId),
     ]);
 
     const pickupLocationIds = dbPrimaryPickups.map(p => p.addressId).filter(Boolean) as string[];
     const dropoffLocationIds = dbPrimaryDropoffs.map(d => d.addressId).filter(Boolean) as string[];
     const locationIds = [...new Set([...pickupLocationIds, ...dropoffLocationIds])];
-    const dbAddresses = locationIds.length > 0 ? await db.select().from(addresses).where(inArray(addresses.id, locationIds)) : [];
+    const dbAddresses = locationIds.length > 0 ? await db.select({
+        id: addresses.id,
+        rawInput: addresses.rawInput,
+        street1: addresses.street1,
+        city: addresses.city,
+        state: addresses.state,
+        postalCode: addresses.postalCode,
+        country: addresses.country,
+        latitude: addresses.latitude,
+        longitude: addresses.longitude,
+        resolutionMethod: addresses.resolutionMethod,
+        resolutionConfidence: addresses.resolutionConfidence,
+        updatedAt: addresses.updatedAt,
+    }).from(addresses).where(inArray(addresses.id, locationIds)) : [];
 
     // Organize related data by shipmentId
     const itemsByShipmentId = dbAllItems.reduce((acc, item) => {
@@ -329,26 +390,26 @@ export async function getShipmentsForDocumentContaining(
            (acc[item.shipmentId] = acc[item.shipmentId] || []).push(item);
         }
         return acc;
-    }, {} as Record<string, (typeof shipmentItems.$inferSelect)[]>);
+    }, {} as Record<string, SelectedDbItem[]>);
 
     const pickupsByShipmentId = dbPrimaryPickups.reduce((acc, pickup) => {
         if (pickup.shipmentId) {
            (acc[pickup.shipmentId] = acc[pickup.shipmentId] || []).push(pickup);
         }
         return acc;
-    }, {} as Record<string, (typeof pickups.$inferSelect)[]>);
+    }, {} as Record<string, SelectedDbStop[]>);
 
     const dropoffsByShipmentId = dbPrimaryDropoffs.reduce((acc, dropoff) => {
         if (dropoff.shipmentId) {
             (acc[dropoff.shipmentId] = acc[dropoff.shipmentId] || []).push(dropoff);
         }
         return acc;
-    }, {} as Record<string, (typeof dropoffs.$inferSelect)[]>);
+    }, {} as Record<string, SelectedDbStop[]>);
 
     const addressesById = dbAddresses.reduce((acc, addr) => {
         acc[addr.id] = addr;
         return acc;
-    }, {} as Record<string, typeof addresses.$inferSelect>); 
+    }, {} as Record<string, SelectedDbAddress>);
 
     // Map the results using the comprehensive mapping function
     const result = dbShipmentsWithDetails.map(data => {
@@ -358,10 +419,10 @@ export async function getShipmentsForDocumentContaining(
         
         const pickupAddresses = shipmentPickups
             .map(p => p.addressId ? addressesById[p.addressId] : null)
-            .filter(Boolean) as (typeof addresses.$inferSelect)[];
+            .filter(Boolean) as SelectedDbAddress[];
         const dropoffAddresses = shipmentDropoffs
             .map(d => d.addressId ? addressesById[d.addressId] : null)
-            .filter(Boolean) as (typeof addresses.$inferSelect)[];
+            .filter(Boolean) as SelectedDbAddress[];
         
         // Call the main mapping function with all fetched related data
         return mapFullDbDataToApiShipmentDetail(
