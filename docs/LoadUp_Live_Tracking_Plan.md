@@ -687,3 +687,10 @@ graph LR
     *   `AnmolSaini16/next-maps`: Modern Next.js App Router + Mapbox GL JS integration example (no real-time).
     *   `vegardloewe/next-mapbox`: Basic Next.js + Mapbox GL JS example (older, no real-time).
 *   **Neurotic Decision:** Focus on adapting the client-side subscription management and state update patterns from `location-tRacer` to our Firestore/Zustand stack, as detailed in the implementation phases.
+
+**4. Phase 9.9: Testing (DETAILED)**
+    *   **Goal:** Verify the end-to-end functionality, error handling, and user experience of the live tracking feature.
+    *   **Note:** A Vercel build failure occurred after pushing Phase 9.7/9.8 changes due to `prefer-const` ESLint errors in `lib/actions/trackingActions.ts`. These errors have been fixed. A re-push is required.
+    *   [ ] **Task 9.9.1: Prepare Test Environment.**
+        *   [ ] **Action:** Ensure Vercel deployment (triggered by push after fixing build errors) is successful.
+        *   [ ] **Action:** Verify Firebase project (`loadup-logistics-dev`) is accessible.

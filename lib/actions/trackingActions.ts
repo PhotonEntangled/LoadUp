@@ -66,7 +66,7 @@ const mapDbStopToApiLocation = (
 
     let scheduledDateTime: string | null = null;
     let actualDateTime: string | null = null;
-    let notes: string | null = null;
+    const notes: string | null = null;
     let locationName: string | null = address?.name ?? null;
 
     if (type === 'Pickup') {
@@ -461,7 +461,7 @@ export async function getStaticTrackingDetails(
         }
 
         // TODO: Implement route geometry fetching (keep placeholder)
-        let plannedRouteGeometry: LineString | null = null; 
+        const plannedRouteGeometry = null; // Changed let to const (safe as assigned once)
         const originCoordsForRoute = pickupAddress?.latitude && pickupAddress?.longitude
             ? [parseFloat(pickupAddress.longitude), parseFloat(pickupAddress.latitude)] // [lon, lat]
             : null;
