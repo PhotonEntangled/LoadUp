@@ -264,39 +264,24 @@ const mapFullDbDataToApiShipmentDetail = (
 
 
 /**
- * Server Action: Fetches all shipments associated with the document 
- * containing the given shipmentId. Returns FULL ApiShipmentDetail.
+ * Server Action: Fetches all shipments associated with the GIVEN document ID.
+ * Returns FULL ApiShipmentDetail for each.
  * 
- * @param shipmentId - The ID of a shipment within the target document.
+ * @param documentId - The customerDocumentNumber identifying the document.
  * @returns A promise resolving to an array of ApiShipmentDetail or null if not found/error.
  */
 export async function getShipmentsForDocumentContaining(
-  shipmentId: string
+  documentId: string
 ): Promise<ApiShipmentDetail[] | null> {
-  if (!shipmentId) {
-    logger.warn("[Action getShipmentsForDocumentContaining] Received null or empty shipmentId.");
+  if (!documentId) {
+    logger.warn("[Action getShipmentsForDocumentContaining] Received null or empty documentId.");
     return null;
   }
 
-  logger.info(`[Action getShipmentsForDocumentContaining] Finding document context for shipmentId: ${shipmentId}`);
+  logger.info(`[Action getShipmentsForDocumentContaining] Fetching shipments for documentId: ${documentId}`);
 
   try {
-    // 1. Find the document context (customerDocumentNumber)
-    const sourceShipmentDetails = await db
-        .select({ documentId: customShipmentDetails.customerDocumentNumber })
-        .from(shipmentsErd)
-        .leftJoin(customShipmentDetails, eq(shipmentsErd.id, customShipmentDetails.shipmentId))
-        .where(eq(shipmentsErd.id, shipmentId))
-        .limit(1);
-
-    if (!sourceShipmentDetails || sourceShipmentDetails.length === 0 || !sourceShipmentDetails[0].documentId) {
-      logger.warn(`[Action getShipmentsForDocumentContaining] Document context not found for shipmentId: ${shipmentId}`);
-      return []; 
-    }
-    const targetDocumentId = sourceShipmentDetails[0].documentId;
-    logger.info(`[Action getShipmentsForDocumentContaining] Found document context: ${targetDocumentId}. Fetching related shipments...`);
-
-    // 2. Fetch all shipments matching context, joining ALL necessary tables for ApiShipmentDetail
+    // Fetch all shipments matching the documentId, joining ALL necessary tables
     const dbShipmentsWithDetails = await db
         .select({
             shipment: shipmentsErd,
@@ -309,18 +294,18 @@ export async function getShipmentsForDocumentContaining(
         .leftJoin(customShipmentDetails, eq(shipmentsErd.id, customShipmentDetails.shipmentId))
         .leftJoin(trips, eq(shipmentsErd.tripId, trips.id)) 
         .leftJoin(vehicles, eq(trips.truckId, vehicles.id))
-        .leftJoin(transporters, eq(trips.materialTransporter, transporters.id)) // VERIFY FK
-        .where(eq(customShipmentDetails.customerDocumentNumber, targetDocumentId))
+        .leftJoin(transporters, eq(trips.materialTransporter, transporters.id))
+        .where(eq(customShipmentDetails.customerDocumentNumber, documentId))
         .orderBy(desc(shipmentsErd.shipmentDateCreated)); 
 
     if (!dbShipmentsWithDetails || dbShipmentsWithDetails.length === 0) {
-        logger.warn(`[Action getShipmentsForDocumentContaining] No shipments found for document context: ${targetDocumentId}`);
-        return []; 
+        logger.warn(`[Action getShipmentsForDocumentContaining] No shipments found for document context: ${documentId}`);
+        return []; // Return empty array if no shipments found for this document
     }
 
     const shipmentIds = dbShipmentsWithDetails.map(s => s.shipment.id);
 
-    // 3. Fetch related data (Pickups, Dropoffs, Addresses, Items) efficiently
+    // Fetch related data (Pickups, Dropoffs, Addresses, Items) efficiently
     const [dbPrimaryPickups, dbPrimaryDropoffs, dbAllItems] = await Promise.all([
         db.select().from(pickups).where(and(inArray(pickups.shipmentId, shipmentIds), eq(pickups.pickup_position, 1))).orderBy(pickups.shipmentId), 
         db.select().from(dropoffs).where(and(inArray(dropoffs.shipmentId, shipmentIds), eq(dropoffs.dropoff_position, 1))).orderBy(dropoffs.shipmentId), 
@@ -332,7 +317,7 @@ export async function getShipmentsForDocumentContaining(
     const locationIds = [...new Set([...pickupLocationIds, ...dropoffLocationIds])];
     const dbAddresses = locationIds.length > 0 ? await db.select().from(addresses).where(inArray(addresses.id, locationIds)) : [];
 
-    // 4. Organize related data by shipmentId
+    // Organize related data by shipmentId
     const itemsByShipmentId = dbAllItems.reduce((acc, item) => {
         if (item.shipmentId) {
            (acc[item.shipmentId] = acc[item.shipmentId] || []).push(item);
@@ -359,7 +344,7 @@ export async function getShipmentsForDocumentContaining(
         return acc;
     }, {} as Record<string, typeof addresses.$inferSelect>); 
 
-    // 5. Map the results using the comprehensive mapping function
+    // Map the results using the comprehensive mapping function
     const result = dbShipmentsWithDetails.map(data => {
         const shipmentId = data.shipment.id;
         const shipmentPickups = pickupsByShipmentId[shipmentId] ?? [];
@@ -387,12 +372,12 @@ export async function getShipmentsForDocumentContaining(
         );
     });
 
-    logger.info(`[Action getShipmentsForDocumentContaining] Successfully fetched ${result.length} full shipment details for document context: ${targetDocumentId}`);
+    logger.info(`[Action getShipmentsForDocumentContaining] Successfully fetched ${result.length} full shipment details for document context: ${documentId}`);
     return result;
 
   } catch (error: any) {
     logger.error("[Action getShipmentsForDocumentContaining] Error fetching full shipments:", {
-      shipmentId,
+      documentId, // Log the documentId on error
       errorMessage: error.message,
       errorStack: error.stack,
     });
