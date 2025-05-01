@@ -86,7 +86,8 @@ export async function GET(
             // pickupId: shipmentsErd.pickupId, // Not needed directly if fetching pickups separately
             // dropoffId: shipmentsErd.dropoffId, // Not needed directly if fetching dropoffs separately
             shipmentDescription: shipmentsErd.shipmentDescription, // Keep for mapping
-            isActive: shipmentsErd.isActive // Keep if needed
+            isActive: shipmentsErd.isActive, // Keep if needed
+            lastKnownBearing: shipmentsErd.lastKnownBearing // <<< ADDED: Select bearing >>>
             // Missing: loadNumber, bolNumber, poNumber, organizationId - likely in related tables
         })
         .from(shipmentsErd)
@@ -170,6 +171,7 @@ export async function GET(
             lastKnownLatitude: toFloatOrNull(coreShipment.lastKnownLatitude),
             lastKnownLongitude: toFloatOrNull(coreShipment.lastKnownLongitude),
             lastKnownTimestamp: toISOStringOrNull(coreShipment.lastKnownTimestamp), // CORRECTED Field Name
+            lastKnownBearing: toFloatOrNull(coreShipment.lastKnownBearing) // <<< ADDED: Map bearing >>>
         },
         originAddress: originInfo?.addresses ? {
             id: originInfo.addresses.id,
