@@ -129,7 +129,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                         shipmentId: shipmentId,
                         latitude: latitude,
                         longitude: longitude,
-                        timestamp: timestamp // Pass Date object
+                        timestamp: timestamp, // Pass Date object
+                        bearing: nextState.bearing ?? null // Pass the calculated bearing
                     });
                     logger.info(`${LOG_PREFIX}(${shortId}) Successfully updated DB for ${shipmentId} (Attempt ${attempt})`);
                     success = true;

@@ -229,10 +229,10 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
     logger.info('[TrackingMap] Map Loaded');
     const loadedMap = event.target;
     mapInstanceRef.current = loadedMap;
-    
+
     // Set map loaded state to true
     setIsMapLoaded(true);
-
+    
     // Add truck icon image
     if (!loadedMap.hasImage('truck-icon')) {
       loadedMap.loadImage(
@@ -256,7 +256,7 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
 
     // Initial source/layer setup for planned route (if needed immediately)
     addRouteSourceAndLayer(loadedMap);
-
+      
     // Initial setup for origin/destination markers (if needed immediately)
     updateOriginDestinationMarkers(loadedMap, originCoords, destinationCoords);
 
@@ -538,15 +538,15 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
 
         {/* Vehicle Source and Layer are added via effects */}
         {isMapLoaded && (
-           <Source
-             id="live-vehicle-source"
-             type="geojson"
-             data={{
+            <Source
+                id="live-vehicle-source"
+                type="geojson"
+                data={{
                type: 'FeatureCollection',
                features: latestLiveUpdate ? [{
-                 type: 'Feature',
-                 geometry: {
-                   type: 'Point',
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
                    coordinates: [latestLiveUpdate.longitude, latestLiveUpdate.latitude]
                  },
                  properties: {
@@ -555,18 +555,18 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
                    timestamp: latestLiveUpdate.timestamp
                  }
                }] : []
-             }}
-           >
-             <Layer
-               id="live-vehicle-layer"
-               type="symbol"
+                }}
+            >
+                <Layer
+                    id="live-vehicle-layer"
+                    type="symbol"
                source="live-vehicle-source" // Link to source id
-               layout={{
+                    layout={{
                  'icon-image': 'truck-icon', // Reference the added image
                  'icon-size': 0.75,
                  'icon-rotate': ['get', 'heading'], // Get rotation from feature properties
                  'icon-rotation-alignment': 'map',
-                 'icon-allow-overlap': true,
+                        'icon-allow-overlap': true,
                  'icon-ignore-placement': true
                }}
              />
@@ -593,8 +593,8 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
                     'line-width': 4,
                     'line-dasharray': [2, 2] // Dashed line
                 }}
-            />
-          </Source>
+                />
+            </Source>
         )}
 
         {/* Origin Marker */} 

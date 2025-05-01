@@ -20,7 +20,7 @@ if (!process.env.FIRESTORE_DATABASE_URL) {
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_SECRET_TOKEN;
 if (!MAPBOX_TOKEN) {
     console.error('FATAL ERROR: MAPBOX_TOKEN (checked NEXT_PUBLIC_MAPBOX_TOKEN or MAPBOX_SECRET_TOKEN) is not set in .env');
-    process.exit(1);
+  process.exit(1);
 }
 
 // --- Firebase Initialization ---
@@ -307,7 +307,7 @@ function simulateNextStep() {
     if (traveledDistanceMeters >= totalRouteDistance) {
         console.log("End of route reached.");
         traveledDistanceMeters = totalRouteDistance; // Cap at total distance
-    }
+  }
 
     try {
         const currentPointFeature = turf.along(routeLine, traveledDistanceMeters, { units: 'meters' });
@@ -324,7 +324,7 @@ function simulateNextStep() {
         }
         bearing = (bearing + 360) % 360; // Normalize
 
-        return {
+  return {
             longitude: coords[0],
             latitude: coords[1],
             heading: bearing,
@@ -349,11 +349,11 @@ Simulating step for ${targetShipmentId}... Traveled: ${(traveledDistanceMeters /
         if (nextPositionData === null) {
              console.error("Simulation step failed. Stopping loop.");
              clearInterval(simulationIntervalId);
-             return;
-        }
+    return;
+  }
 
-        const updateData = {
-            shipmentId: targetShipmentId,
+  const updateData = {
+    shipmentId: targetShipmentId,
             latitude: nextPositionData.latitude,
             longitude: nextPositionData.longitude,
             timestamp: Date.now(),
@@ -361,7 +361,7 @@ Simulating step for ${targetShipmentId}... Traveled: ${(traveledDistanceMeters /
             speed: AVERAGE_SPEED_KPH * METERS_PER_SECOND_PER_KPH, // Approximate speed
             accuracy: 10, // Mock accuracy
             batteryLevel: 0.8 // Mock battery
-        };
+  };
 
         console.log('Generated Update:', JSON.stringify(updateData, null, 2));
         await publishLocationUpdate(updateData);
@@ -370,7 +370,7 @@ Simulating step for ${targetShipmentId}... Traveled: ${(traveledDistanceMeters /
             console.log('End of route published. Stopping simulation interval.');
             clearInterval(simulationIntervalId);
         }
-    }, updateIntervalSeconds * 1000);
+}, updateIntervalSeconds * 1000);
 }
 
 

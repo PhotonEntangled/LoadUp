@@ -75,6 +75,12 @@ export async function getSimulationInputForShipment(
         const coreShipment = coreShipmentResult[0];
         logger.debug("[Server Action] Core shipment fetched:", coreShipment.id);
 
+        // --- ADDED: Define type for core shipment selection including bearing ---
+        type CoreShipmentWithBearing = typeof coreShipment & {
+            last_known_bearing: string | null; // Assuming DB returns decimal as string
+        };
+        // --- END ADDED ---
+
         // 2. Fetch associated pickup(s) with address (prioritize first if multiple)
         // Assuming relation is pickups.shipment_id -> shipmentsErd.id
         const pickupResult = await db
@@ -135,6 +141,12 @@ export async function getSimulationInputForShipment(
              return { error: "Invalid or missing destination coordinates." };
         }
         logger.debug("[Server Action] Destination coordinates validated.");
+
+        // <<< START: ADD bearing parsing >>>
+        // Parse last_known_bearing (newly added field)
+        const initialBearing = safeParseFloat((coreShipment as CoreShipmentWithBearing).last_known_bearing); // Use type assertion
+        logger.debug(`[Server Action] Parsed initial bearing: ${initialBearing}`);
+        // <<< END: ADD bearing parsing >>>
 
         // Determine and Validate RDD (Mandatory)
         // Neurotic choice: Prioritize dropoff_date as it seems more aligned with RDD intent based on context.
@@ -244,6 +256,10 @@ export async function getSimulationInputForShipment(
              // Address Strings (from address rawInput)
              originAddressString: originAddress.rawInput || undefined, // Use camelCase
              destinationAddressString: destinationAddress.rawInput || undefined,
+             
+             // <<< ADDED: Map parsed bearing >>>
+             initialBearing: initialBearing, // Map the parsed bearing value
+             // <<< END ADDED >>>
         };
 
         // <<< Removed Marker Comment >>>

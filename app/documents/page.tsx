@@ -253,7 +253,7 @@ export default function DocumentsPage() {
                   <CardTitle className="text-sm font-medium truncate max-w-[200px]" title={doc.filename ?? 'Untitled Document'}>
                     {doc.filename ?? 'Untitled Document'}
                   </CardTitle>
-                  <StatusBadge status={doc.shipmentSummaryStatus} />
+                    <StatusBadge status={doc.shipmentSummaryStatus} />
                 </CardHeader>
                 <CardContent className="text-xs text-muted-foreground pt-2 pb-4">
                   <p>ID: {doc.id}</p>
@@ -270,31 +270,31 @@ export default function DocumentsPage() {
                   <Link href={`/tracking/${doc.id}`} passHref legacyBehavior>
                     <Button asChild variant="outline" size="sm"><a href={`/tracking/${doc.id}`}>Track Live</a></Button>
                   </Link>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 h-8 w-8 ml-auto">
-                        <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete Document</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the document
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the document
                           record <span className="font-semibold">{doc.filename ?? doc.id}</span> and all associated shipment data.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => handleDeleteDocument(doc.id, doc.filename)} 
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteDocument(doc.id, doc.filename)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </CardFooter>
               </Card>
             ))}

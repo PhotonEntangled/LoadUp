@@ -28,6 +28,7 @@ export interface StaticRouteMapProps {
   originCoordinates: [number, number];
   destinationCoordinates: [number, number];
   lastKnownPosition?: Feature<Point> | null; // Optional
+  lastKnownBearing?: number | null; // <<< ADDED: Bearing prop >>>
   mapboxToken: string; // Passed from parent
   mapStyle?: string;
   className?: string;
@@ -51,6 +52,7 @@ export const StaticRouteMap = React.memo(({
   originCoordinates,
   destinationCoordinates,
   lastKnownPosition,
+  lastKnownBearing, // <<< ADDED: Destructure prop >>>
   mapboxToken,
   mapStyle = "mapbox://styles/mapbox/navigation-night-v1",
   className = '',
@@ -177,9 +179,10 @@ export const StaticRouteMap = React.memo(({
       originCoordinates,
       destinationCoordinates,
       routeGeometry: !!routeGeometry, // Log boolean presence
-      lastKnownPosition: lastKnownPosition // Log the actual feature or null
+      lastKnownPosition: lastKnownPosition, // Log the actual feature or null
+      lastKnownBearing: lastKnownBearing // Log the bearing prop
     });
-  }, [originCoordinates, destinationCoordinates, routeGeometry, lastKnownPosition]);
+  }, [originCoordinates, destinationCoordinates, routeGeometry, lastKnownPosition, lastKnownBearing]);
 
   // --- Event Handlers ---
 
@@ -289,8 +292,8 @@ export const StaticRouteMap = React.memo(({
           {isMapLoaded && lastKnownPosition?.geometry?.coordinates && (
             (() => {
               const [lon, lat] = lastKnownPosition.geometry.coordinates;
-              // Extract bearing from properties, default to 0 if not present
-              const bearing = lastKnownPosition.properties?.bearing ?? 0; 
+              // Extract bearing from prop, default to 0 if not present or invalid
+              const bearing = typeof lastKnownBearing === 'number' ? lastKnownBearing : 0;
               // Calculate rotation like in SimulationMap
               const rotation = bearing - 90; 
 

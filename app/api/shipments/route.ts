@@ -164,6 +164,7 @@ function mapDbShipmentToApi(
         lastKnownLatitude: safeParseFloat(coreShipment.lastKnownLatitude) ?? null,
         lastKnownLongitude: safeParseFloat(coreShipment.lastKnownLongitude) ?? null,
         lastKnownTimestamp: safeToISOString(coreShipment.lastKnownTimestamp),
+        lastKnownBearing: safeParseFloat(coreShipment.lastKnownBearing) ?? null,
     };
 
     // Helper to construct full address string

@@ -52,12 +52,12 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
   const mapRef = useRef<TrackingMapRef>(null);
 
   // State for the list of shipments
-  const [shipmentList, setShipmentList] = useState<ApiShipmentDetail[]>([]);
+  const [shipmentList, setShipmentList] = useState<ApiShipmentDetail[]>([]); 
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
 
   // State for the selected shipment and its static details
-  const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
+  const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null); 
   const [selectedStaticDetails, setSelectedStaticDetails] = useState<MapStaticProps | null>(null);
   const [isLoadingSelection, setIsLoadingSelection] = useState(false);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -79,7 +79,7 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
         setIsStale(true); // Consider stale if no timestamp
         return;
       }
-      const timeDiff = Date.now() - latestLiveUpdate.timestamp;
+            const timeDiff = Date.now() - latestLiveUpdate.timestamp;
       setIsStale(timeDiff > STALE_THRESHOLD_MS);
     };
 
@@ -117,7 +117,7 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
             // Check if any are initially trackable (optional, for logging/initial state)
             const initiallyTrackable = result.some(s => s.coreInfo.status && TRACKABLE_STATUSES.includes(s.coreInfo.status as any));
             if (!initiallyTrackable) {
-                logger.info(`[TrackingPageView] No initially trackable shipments found in document ${documentId}.`);
+              logger.info(`[TrackingPageView] No initially trackable shipments found in document ${documentId}.`);
             }
           } else {
             setShipmentList([]);
@@ -238,7 +238,7 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
           const originAddress = shipment.locationDetails?.pickups?.[0]?.address;
           const destinationAddress = shipment.locationDetails?.dropoffs?.[0]?.address;
           const deliveryDate = shipment.coreInfo.plannedDeliveryDate;
-
+          
           return (
             <AccordionItem 
               value={shipmentId} 
@@ -353,7 +353,7 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
             </div>
         );
     }
-     if (subscriptionStatus === 'error' && subscriptionError) {
+    if (subscriptionStatus === 'error' && subscriptionError) {
          return (
             <div className="p-4 flex flex-col items-center justify-center h-full text-red-600">
                 <p className="mb-4">Subscription Error: {subscriptionError}</p>
@@ -388,18 +388,18 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
     if (!selectedShipmentId || !selectedStaticDetails) {
          return <div className="p-4 flex justify-center items-center h-full text-gray-500">Select a trackable shipment from the list to view tracking.</div>;
     }
-
+    
     // Render the map and controls
     // Null checks for selectedStaticDetails are implicitly handled by the check above
     return (
         <div className="relative h-full w-full">
             <TrackingMap 
                 ref={mapRef}
-                mapboxToken={mapboxToken} 
+                mapboxToken={mapboxToken}
                 mapStyle={mapStyle}
-                originCoords={selectedStaticDetails.originCoords} 
-                destinationCoords={selectedStaticDetails.destinationCoords} 
-                plannedRouteGeometry={selectedStaticDetails.plannedRouteGeometry} 
+                originCoords={selectedStaticDetails.originCoords}
+                destinationCoords={selectedStaticDetails.destinationCoords}
+                plannedRouteGeometry={selectedStaticDetails.plannedRouteGeometry}
                 className="h-full w-full"
             />
             <TrackingControls 
@@ -429,7 +429,7 @@ export default function TrackingPageView({ documentId }: TrackingPageViewProps) 
           <div className="flex-1 overflow-y-auto p-2">
             {renderShipmentList()}
           </div>
-        </div>
+      </div>
 
         {/* Right Column: Map Area - Make it take remaining space and handle its own potential overflow */}
         {/* Use flex-1 to grow and min-w-0 to prevent pushing out */}

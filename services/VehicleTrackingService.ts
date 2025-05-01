@@ -8,6 +8,7 @@ interface UpdateLocationParams {
   latitude: number;
   longitude: number;
   timestamp: Date;
+  bearing?: number | null;
 }
 
 /**
@@ -25,7 +26,7 @@ export class VehicleTrackingService {
    * @returns Promise<boolean> - True if the update was successful, false otherwise.
    */
   async updateShipmentLastKnownLocation(params: UpdateLocationParams): Promise<boolean> {
-    const { shipmentId, latitude, longitude, timestamp } = params;
+    const { shipmentId, latitude, longitude, timestamp, bearing } = params;
     const functionName = 'updateShipmentLastKnownLocation';
     logger.debug(`[${functionName}] Attempting update for shipment ID: ${shipmentId}`);
 
@@ -36,16 +37,18 @@ export class VehicleTrackingService {
          return false;
       }
        
-      // Convert numbers to strings for decimal fields, as expected by Drizzle for numeric/decimal types
+      // Convert numbers to strings for decimal fields, including bearing
       const latString = String(latitude);
       const lonString = String(longitude);
+      const bearingString = bearing !== null && bearing !== undefined ? String(bearing) : null;
 
       // Perform the database update using Drizzle
       const result = await db.update(schema.shipmentsErd)
         .set({ 
           lastKnownLatitude: latString, 
           lastKnownLongitude: lonString, 
-          lastKnownTimestamp: timestamp 
+          lastKnownTimestamp: timestamp,
+          lastKnownBearing: bearingString
         })
         .where(eq(schema.shipmentsErd.id, shipmentId))
         .returning({ updatedId: schema.shipmentsErd.id }); // Optional: return ID to confirm update

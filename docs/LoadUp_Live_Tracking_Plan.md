@@ -622,7 +622,7 @@ graph LR
 **3.9. Phase 9.R: Refactor Tracking Page to Document Level (NEW)**
     *   **Goal:** Restructure the live tracking page and related components to operate at the document level, allowing users to select a trackable shipment from a list within the document context, mirroring the `/simulation/[documentId]` page pattern.
     *   **Rationale:** The initial implementation (`/tracking/[shipmentId]`) did not align with the intended UX or the established simulation page pattern. This refactoring corrects the architecture before testing.
-    *   [ ] **Task 9.R.1: Rename Tracking Page Route.** 
+    *   [ ] **Task 9.R.1: Rename Tracking Page Route.**
         *   [ ] **Action:** Rename directory `/app/tracking/[shipmentId]` to `/app/tracking/[documentId]`. (**Requires Manual User Action**)
         *   [ ] **Action:** Update any internal references or links if necessary (though most links will be added/fixed in Task 9.R.5).
         *   [ ] **Verification:** Directory structure is updated.
@@ -727,3 +727,30 @@ graph LR
     *   [ ] **Task 9.9.1: Prepare Test Environment.**
         *   [ ] **Action:** Ensure Vercel deployment (triggered by push after fixing build errors) is successful.
         *   [ ] **Action:** Verify Firebase project (`loadup-logistics-dev`) is accessible.
+
+## 🔮 6. Future Enhancements & Refactoring Opportunities
+
+*(Based on analysis during Phase 9 implementation and debugging)*
+
+**6.1. Standardize Map Component Architecture:**
+*   **Problem:** Multiple map components (`SimulationMap`, `TrackingMap`, `StaticRouteMap`, etc.) share significant boilerplate and foundational logic (Mapbox initialization, token handling, basic controls), but have diverged in implementation details (state management, marker rendering).
+*   **Proposed Solution:** 
+    *   Create a `BaseMapComponent` or use a higher-order component (HOC) pattern to encapsulate common map setup, loading state management (potentially adopting the instance check or component-based loading discussed), error handling, and basic controls.
+    *   Extract shared logic like marker rendering (origin, destination, potentially vehicle markers if styles align) into reusable sub-components or utility functions.
+*   **Benefit:** Reduced code duplication, improved maintainability, consistent map behavior across the application.
+
+**6.2. Improve TypeScript Integration for Map Components:**
+*   **Problem:** Type conflicts and ambiguities arose between `react-map-gl/mapbox` (React wrapper) and the underlying `mapbox-gl` library, particularly around the `MapRef` type. The current solution uses `any` as a temporary workaround.
+*   **Proposed Solution:**
+    *   Investigate creating custom type definitions or utility types that effectively bridge the gap between the React wrapper's props/refs and the imperative methods/types of the Mapbox GL JS instance.
+    *   Explore conditional typing or type guards to handle situations where either library's types might be relevant.
+    *   Replace all instances of `any` related to map refs and instances with strongly-typed alternatives.
+*   **Benefit:** Enhanced type safety, improved developer experience (better autocompletion/intellisense), reduced runtime errors related to type mismatches.
+
+**6.3. Enhance Error Handling & Resilience:**
+*   **Problem:** While basic error handling exists (displaying map load errors, subscription errors), it could be made more robust and user-friendly.
+*   **Proposed Solution:**
+    *   Implement consistent React Error Boundaries specifically for map components to catch rendering errors gracefully and provide clearer feedback or fallback UI.
+    *   Develop more sophisticated retry mechanisms for map loading failures or initial data/subscription fetches, potentially with exponential backoff.
+    *   Consider adding more specific error states and visual cues beyond simple overlays (e.g., degraded state indicators).
+*   **Benefit:** More resilient map rendering, better user experience when encountering transient network or configuration issues.

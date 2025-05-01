@@ -57,6 +57,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
     // State for map-specific data
     const [currentRouteGeometry, setCurrentRouteGeometry] = useState<Feature<LineString> | null>(null);
     const [currentLastPosition, setCurrentLastPosition] = useState<Feature<Point> | null>(null);
+    const [currentLastBearing, setCurrentLastBearing] = useState<number | null>(null);
     const [mapDataLoading, setMapDataLoading] = useState<boolean>(false); // State for loading map geometry/LKL
     const [mapError, setMapError] = useState<string | null>(null); // Specific error for map data fetch
 
@@ -137,6 +138,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
             setSelectedShipment(null);
             setCurrentRouteGeometry(null);
             setCurrentLastPosition(null);
+            setCurrentLastBearing(null);
             logger.debug(`Fetching shipments for document ID: ${documentid}`);
             try {
                 const res = await fetch(`/api/shipments?documentId=${documentid}`);
@@ -177,6 +179,9 @@ export default function Page({ params }: { params: { documentid: string } }) {
                              initialSelected.coreInfo.lastKnownLongitude,
                              initialSelected.coreInfo.lastKnownTimestamp
                          );
+                         const initialBearing = initialSelected.coreInfo.lastKnownBearing;
+                         setCurrentLastBearing(initialBearing);
+                         logger.info(`[ShipmentPage] Initial bearing set from fetch: ${initialBearing}`);
                          setCurrentLastPosition(initialPosition);
                          if (initialPosition) {
                             logger.info("[ShipmentPage] Initial last known position set from fetch.", initialPosition);
@@ -217,6 +222,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
         if (!selectedShipment) {
             setCurrentRouteGeometry(null);
             setCurrentLastPosition(null);
+            setCurrentLastBearing(null);
             setMapError(null);
             return; 
         }
@@ -229,7 +235,8 @@ export default function Page({ params }: { params: { documentid: string } }) {
         } else {
             logger.warn("Selected shipment missing valid coordinates for route fetching.");
             setCurrentRouteGeometry(null);
-            setCurrentLastPosition(null); 
+            setCurrentLastPosition(null);
+            setCurrentLastBearing(null);
             setMapError("Missing coordinates for route.");
         }
 
@@ -246,6 +253,9 @@ export default function Page({ params }: { params: { documentid: string } }) {
                 selectedShipment.coreInfo.lastKnownLongitude,
                 selectedShipment.coreInfo.lastKnownTimestamp
             );
+            const newBearing = selectedShipment.coreInfo.lastKnownBearing;
+            setCurrentLastBearing(newBearing);
+            logger.info(`[ShipmentPage] Bearing updated on selection change: ${newBearing}`);
             setCurrentLastPosition(newPosition);
              if (newPosition) {
                  logger.info("[ShipmentPage] Last known position updated on selection change.", newPosition);
@@ -309,6 +319,8 @@ export default function Page({ params }: { params: { documentid: string } }) {
                 throw new Error(result.error);
             }
             setCurrentLastPosition(result.position);
+            setCurrentLastBearing(result.bearing);
+            logger.info(`[ShipmentPage] Bearing refreshed successfully: ${result.bearing}`);
             if (result.position) {
                  toast({ title: "Success", description: `Location updated to ${result.timestamp ? new Date(result.timestamp).toLocaleString() : 'latest'}.`, variant: "default" });
                  logger.info(`[ShipmentPage] Location refreshed successfully. Position:`, result.position);
@@ -521,6 +533,7 @@ export default function Page({ params }: { params: { documentid: string } }) {
                                                         logger.debug('[Render] Passing lastKnownPosition to StaticRouteMap:', currentLastPosition);
                                                         return currentLastPosition; 
                                                     })()}
+                                                    lastKnownBearing={currentLastBearing}
                                                           className="w-full h-full rounded"
                                                       />
                                                       {/* Map Overlay Buttons Container */}

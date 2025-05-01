@@ -114,6 +114,7 @@ export interface ApiShipmentCoreInfo {
   lastKnownLatitude: number | null;
   lastKnownLongitude: number | null;
   lastKnownTimestamp: string | null; // ISO 8601
+  lastKnownBearing: number | null; // ADDED: Bearing in degrees (0-360)
 }
 
 export interface ApiShipmentMetadata {

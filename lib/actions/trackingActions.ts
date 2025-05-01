@@ -43,19 +43,19 @@ const mapSelectedDbAddressToApi = (addr: SelectedDbAddress | undefined | null): 
     if (!addr) return null;
     return {
         id: addr.id,
-        rawInput: addr.rawInput ?? null,
+        rawInput: addr.rawInput ?? null, 
         name: null, // No direct 'name' field in addresses schema
-        street: addr.street1 ?? null,
+        street: addr.street1 ?? null, 
         city: addr.city ?? null,
-        stateProvince: addr.state ?? null,
+        stateProvince: addr.state ?? null, 
         postalCode: addr.postalCode ?? null,
         country: addr.country ?? null,
         fullAddress: addr.rawInput ?? null, // Use rawInput as fallback
         latitude: addr.latitude ? parseFloat(addr.latitude) : null,
         longitude: addr.longitude ? parseFloat(addr.longitude) : null,
-        resolutionMethod: addr.resolutionMethod as ApiAddressDetail['resolutionMethod'] ?? null,
+        resolutionMethod: addr.resolutionMethod as ApiAddressDetail['resolutionMethod'] ?? null, 
         resolutionConfidence: addr.resolutionConfidence ? parseFloat(addr.resolutionConfidence) : null,
-        resolvedTimestamp: addr.updatedAt?.toISOString() ?? null,
+        resolvedTimestamp: addr.updatedAt?.toISOString() ?? null, 
     };
 };
 
@@ -108,7 +108,7 @@ const mapSelectedDbStopToApiLocation = (
 // Type definition for explicitly selected item fields
 type SelectedDbItem = Pick<typeof shipmentItems.$inferSelect, 'id' | 'shipmentId' | 'itemNumber' | 'secondaryItemNumber' | 'description' | 'quantity' | 'weight' | 'lotSerialNumber'>;
 
-// --- Main Helper Function: Map Full DB Data to ApiShipmentDetail ---
+// --- Main Helper Function: Map Full DB Data to ApiShipmentDetail --- 
 const mapFullDbDataToApiShipmentDetail = (
     dbShipment: typeof shipmentsErd.$inferSelect,
     dbItems: SelectedDbItem[] | null, // Use selected type
@@ -117,7 +117,7 @@ const mapFullDbDataToApiShipmentDetail = (
     dbPickupAddresses: SelectedDbAddress[] | null, // Use selected type
     dbDropoffAddresses: SelectedDbAddress[] | null, // Use selected type
     dbCustomDetails: typeof customShipmentDetails.$inferSelect | null,
-    dbTrip: typeof trips.$inferSelect | null,
+    dbTrip: typeof trips.$inferSelect | null, 
     dbVehicle: typeof vehicles.$inferSelect | null,
     dbTransporter: typeof transporters.$inferSelect | null
 ): ApiShipmentDetail => {
@@ -148,6 +148,7 @@ const mapFullDbDataToApiShipmentDetail = (
         lastKnownLatitude: dbShipment.lastKnownLatitude ? parseFloat(dbShipment.lastKnownLatitude) : null,
         lastKnownLongitude: dbShipment.lastKnownLongitude ? parseFloat(dbShipment.lastKnownLongitude) : null,
         lastKnownTimestamp: dbShipment.lastKnownTimestamp?.toISOString() ?? null,
+        lastKnownBearing: dbShipment.lastKnownBearing ? parseFloat(dbShipment.lastKnownBearing) : null,
     };
 
     // 3. Map Items - Strict to schema and ApiShipmentItem

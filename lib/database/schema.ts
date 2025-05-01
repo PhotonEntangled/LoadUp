@@ -279,6 +279,7 @@ export const shipmentsErd = pgTable('shipments_erd', { // Use distinct name for 
     lastKnownLatitude: decimal('last_known_latitude', { precision: 9, scale: 6 }),
     lastKnownLongitude: decimal('last_known_longitude', { precision: 9, scale: 6 }),
     lastKnownTimestamp: timestamp('last_known_timestamp'),
+    lastKnownBearing: decimal('last_known_bearing', { precision: 9, scale: 6 }).default('0'), // Added Bearing
 });
 
 export const customBookingDetails = pgTable('custom_booking_details', {

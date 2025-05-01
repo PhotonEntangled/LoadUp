@@ -21,7 +21,7 @@ interface LastKnownLocation {
  */
 export async function getShipmentLastKnownLocation(
   shipmentId: string
-): Promise<{ position: Feature<Point> | null; timestamp: string | null; error?: string }> {
+): Promise<{ position: Feature<Point> | null; timestamp: string | null; bearing: number | null; error?: string }> {
   // --- ADDED: Entry Log ---
   logger.info(`
 -------
@@ -32,7 +32,7 @@ export async function getShipmentLastKnownLocation(
 
   if (!shipmentId) {
     logger.error("[Server Action getShipmentLastKnownLocation] Failed: Shipment ID is required.")
-    return { position: null, timestamp: null, error: 'Shipment ID is required.' };
+    return { position: null, timestamp: null, bearing: null, error: 'Shipment ID is required.' };
   }
 
   try {
@@ -42,6 +42,7 @@ export async function getShipmentLastKnownLocation(
         latitude: shipmentsErd.lastKnownLatitude,
         longitude: shipmentsErd.lastKnownLongitude,
         timestamp: shipmentsErd.lastKnownTimestamp,
+        bearing: shipmentsErd.lastKnownBearing
       })
       .from(shipmentsErd)
       .where(eq(shipmentsErd.id, shipmentId))
@@ -53,7 +54,7 @@ export async function getShipmentLastKnownLocation(
 
     if (!result || result.length === 0) {
       logger.warn(`[Server Action getShipmentLastKnownLocation] No shipment found in DB with ID: ${shipmentId}`);
-      return { position: null, timestamp: null, error: 'Shipment not found.' }; // Keep error for frontend clarity
+      return { position: null, timestamp: null, bearing: null, error: 'Shipment not found.' }; // Keep error for frontend clarity
     }
 
     const locationData = result[0];
@@ -84,11 +85,14 @@ export async function getShipmentLastKnownLocation(
       logger.warn(`[Server Action getShipmentLastKnownLocation] No valid coordinates after parsing for ${shipmentId}. Lat: ${locationData.latitude}, Lon: ${locationData.longitude}`);
     }
 
-    return { position: positionFeature, timestamp: timestamp };
+    const bearing = locationData.bearing ? parseFloat(locationData.bearing) : null;
+    logger.debug(`[Server Action getShipmentLastKnownLocation] Parsed bearing: ${bearing}`);
+
+    return { position: positionFeature, timestamp: timestamp, bearing: bearing };
   } catch (error) {
     logger.error(`[Server Action getShipmentLastKnownLocation] CRITICAL ERROR fetching location for ${shipmentId}:`, error);
     // Ensure the error is propagated
     const errorMessage = error instanceof Error ? error.message : 'Database error fetching location.';
-    return { position: null, timestamp: null, error: errorMessage };
+    return { position: null, timestamp: null, bearing: null, error: errorMessage };
   }
 } 
