@@ -78,14 +78,20 @@
 - The `authorize` function *is* returning the user object.
 
 **Hypotheses:**
-1.  **`NEXTAUTH_SECRET` Mismatch:** The environment variable might differ between the API route runtime and the Edge middleware runtime in Vercel.
-2.  **Cookie Issue:** NextAuth might not be setting the cookie correctly, or the middleware can't read it (path/domain/HttpOnly issue).
-3.  **Edge Runtime Issue:** Potential subtle problem with `getToken` on the Edge.
+1.  **`NEXTAUTH_SECRET` Mismatch:** The environment variable might differ between the API route runtime and the Edge middleware runtime in Vercel. **Confirmed as Primary Suspect.**
+2.  **Cookie Issue:** NextAuth might not be setting the cookie correctly, or the middleware can't read it (path/domain/HttpOnly issue). **Ruled Out:** Logs show cookie `__Secure-next-auth.session-token` is present in middleware request.
+3.  **Edge Runtime Issue:** Potential subtle problem with `getToken` on the Edge. **Less Likely:** `getToken` is being called, but fails validation.
+4.  **Stale Middleware Deployment:** Vercel might not be running the latest `middleware.ts` code. **(Addressed by force-redeploy)**
 
 **Troubleshooting Steps:**
 1.  Added logging to `middleware.ts` to print incoming cookie names. **(Done)**
-2.  **Action:** User to verify `NEXTAUTH_SECRET` is correctly set and available in Vercel project environment variables (for both Production/Preview/Development environments as applicable).
-3.  Deploy logging changes and re-test login.
-4.  Analyze Vercel logs for cookie names present when "No token found" is logged.
+2.  Added more verbose logging to `middleware.ts` before `getToken` call. **(Done)**
+3.  Added explicit cookie config in `options.ts`. **(Done)**
+4.  Forced middleware re-deploy with trivial change. **(Done)**
+5.  **Action:** User to **reset/re-verify** `NEXTAUTH_SECRET` in Vercel project environment variables (for *all* relevant environments - Preview/Production), ensuring exact match with `.env.local` and no extra characters. **(Pending User Action)**
+6.  **Action:** User to trigger a Vercel re-deploy after fixing secret. **(Pending User Action)**
+7.  Removed temporary password bypass from `options.ts`. **(Done)**
+8.  Re-test login using correct password (`password`) after secret verification and redeploy. **(Next Step)**
+9.  Analyze Vercel logs again. Expect `Token found...` message if secret is correct.
 
 ---
