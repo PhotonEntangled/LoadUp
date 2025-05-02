@@ -29,6 +29,7 @@ async function hasAccess(req: NextRequest) {
 }
 
 export async function middleware(req: NextRequest) {
+  console.log('--- MIDDLEWARE EXECUTION START ---');
   const { pathname } = req.nextUrl;
   const secret = process.env.NEXTAUTH_SECRET;
 

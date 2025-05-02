@@ -152,6 +152,23 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
+  // <<< ADDED: Explicit Cookie Configuration >>>
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production' 
+        ? `__Secure-next-auth.session-token` 
+        : `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        // domain: // Optional: specify if needed for subdomains
+      }
+    }
+    // Add other cookie configurations if needed (e.g., csrfToken, callbackUrl, pkceCodeVerifier)
+  },
+  // <<< END ADDED >>>
   // pages: {
   //   signIn: "/sign-in",
   //   signOut: "/sign-out",
