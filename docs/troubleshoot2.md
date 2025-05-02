@@ -96,7 +96,10 @@
 10. Re-applied bypass to isolate bcrypt vs session issue. **(Done - commit 1ea68eb)**
 11. **Current Status:** Login bypass works, but middleware logs show `getToken` returns null despite seeing the session cookie. `NEXTAUTH_SECRET` *should* be correct per user update.
 12. Added middleware logging for first 10 chars + length of `NEXTAUTH_SECRET` being used by Edge runtime. **(Done - commit pending)**
-13. **Next Step:** Commit and deploy these changes. User re-tests login. Analyze Vercel logs for BOTH secret logs (from `options.ts` JWT callback and `middleware.ts`) to confirm an EXACT match. Verify if middleware now finds the token.
+13. **Add Detailed Token Logging:** Added `console.log` for the raw value returned by `getToken` in `middleware.ts` and for the `token` object received by the `session` callback in `options.ts`. Rationale: Observe the exact state of the token object at different points to pinpoint where the data loss or invalidation occurs. **(Done - Failed, Logs Missing/Incomplete)**
+14. **Log Raw Cookie/Token Values (Re-attempt):** Re-applied logging in `middleware.ts` to confirm presence of raw session cookie string and to log BOTH the parsed object (`getToken`) and the raw JWT string (`getToken({ raw: true })`). Confirmed session callback logging in `options.ts`. Rationale: Ensure logging wasn't missed and determine if the raw token exists even if parsing fails. **(Done - Failed, Logs Still Missing)**
+15. **Add Session Callback Entry Log & Re-apply Middleware Logging:** Added log at start of `session` callback (options.ts). Re-re-applied middleware logging for raw cookie/token presence and parsed/raw `getToken` results. Rationale: Confirm session callback entry and ensure middleware logs are definitely included in deployment. **(Done - commit pending)**
+16. **Next Step:** Commit and deploy. User re-tests login. Analyze Vercel logs for session callback entry and the full set of middleware token logs.
 
 ---
 
@@ -110,6 +113,8 @@
 
 1.  **Simplify Cookie Config:** Reverted cookie settings in `app/api/auth/[...nextauth]/options.ts` to default behavior. Removed explicit `useSecureCookies: true` and changed `secure` attribute check back to `process.env.NODE_ENV === 'production'`. Rationale: Eliminate possibility that overrides were causing conflicts with default NextAuth secure cookie handling or environment detection between Node/Edge runtimes. **(Done - Failed)**
 2.  **Add Detailed Token Logging:** Added `console.log` for the raw value returned by `getToken` in `middleware.ts` and for the `token` object received by the `session` callback in `options.ts`. Rationale: Observe the exact state of the token object at different points to pinpoint where the data loss or invalidation occurs. **(Done - commit pending)**
-3.  **Next Step:** Commit and deploy. User re-tests login. Analyze Vercel logs for the new detailed token logs in both middleware and session callback. Compare the logged token structure/values.
+3.  **Log Raw Cookie/Token Values (Re-attempt):** Re-applied logging in `middleware.ts` to confirm presence of raw session cookie string and to log BOTH the parsed object (`getToken`) and the raw JWT string (`getToken({ raw: true })`). Confirmed session callback logging in `options.ts`. Rationale: Ensure logging wasn't missed and determine if the raw token exists even if parsing fails. **(Done - commit pending)**
+4.  **Add Session Callback Entry Log & Re-apply Middleware Logging:** Added log at start of `session` callback (options.ts). Re-re-applied middleware logging for raw cookie/token presence and parsed/raw `getToken` results. Rationale: Confirm session callback entry and ensure middleware logs are definitely included in deployment. **(Done - commit pending)**
+5.  **Next Step:** Commit and deploy. User re-tests login. Analyze Vercel logs for session callback entry and the full set of middleware token logs.
 
 ---

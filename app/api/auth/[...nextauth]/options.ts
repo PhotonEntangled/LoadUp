@@ -215,7 +215,8 @@ export const authOptions: AuthOptions = {
 
     // Session callback - Make custom claims available on session object
     async session({ session, token, user }) {
-       console.log("[AUTH CALLBACK] Session Callback triggered");
+       console.log("[AUTH CALLBACK] === Session Callback ENTERED ==="); // <<< ADDED ENTRY LOG >>>
+       console.log("[AUTH CALLBACK] Session Callback triggered"); // Existing redundant log
        // <<< ADDED: Log incoming token object >>>
        console.log(`[AUTH CALLBACK] Session received token: ${JSON.stringify(token)}`);
        // <<< END ADDED >>>

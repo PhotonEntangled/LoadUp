@@ -38,16 +38,22 @@ export async function middleware(req: NextRequest) {
     const cookieNames = cookieHeader ? cookieHeader.split(';').map(c => c.split('=')[0].trim()) : [];
     console.log(`Middleware: Incoming cookie names: ${JSON.stringify(cookieNames)}`);
 
+    // <<< RE-APPLIED: Log raw session cookie value >>>
+    const sessionCookie = cookieHeader?.split('; ').find(c => c.startsWith('__Secure-next-auth.session-token='));
+    console.log(`Middleware: Raw session cookie found: ${sessionCookie ? 'Yes' : 'No'}`);
+    // <<< END RE-APPLIED >>>
+
     // Log before getToken
-    // <<< MODIFIED: Log more of the secret for verification >>>
     console.log(`Middleware: About to call getToken with secret starting: ${secret?.substring(0, 10)}... [Length: ${secret?.length}]`);
-    // <<< END MODIFIED >>>
 
+    // Call getToken for both parsed and raw results
     const token = await getToken({ req, secret });
+    const rawToken = await getToken({ req, secret, raw: true });
 
-    // <<< ADDED: Log the raw token value >>>
-    console.log(`Middleware: getToken returned: ${JSON.stringify(token)}`);
-    // <<< END ADDED >>>
+    // <<< RE-APPLIED: Log both parsed and raw token values >>>
+    console.log(`Middleware: getToken (parsed) returned: ${JSON.stringify(token)}`);
+    console.log(`Middleware: getToken (raw) returned: ${rawToken ? '[Raw JWT String Present]' : 'null/undefined'}`);
+    // <<< END RE-APPLIED >>>
 
     if (!token) {
       // No token found, user is not authenticated
