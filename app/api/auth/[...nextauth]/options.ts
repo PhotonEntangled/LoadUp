@@ -88,6 +88,16 @@ interface CustomUser extends User {
   role: UserRole;
 }
 
+// Determine cookie name based on environment
+const nodeEnv = process.env.NODE_ENV;
+const cookieName = nodeEnv === 'production' 
+  ? `__Secure-next-auth.session-token` 
+  : `next-auth.session-token`;
+
+// <<< ADDED: Log determined cookie name >>>
+console.log(`[AUTH OPTIONS] Determined session cookie name for NODE_ENV='${nodeEnv}': ${cookieName}`);
+// <<< END ADDED >>>
+
 // Create the auth options
 export const authOptions: AuthOptions = {
   providers: [
@@ -157,23 +167,20 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
-  // <<< ADDED: Explicit Cookie Configuration >>>
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === 'production' 
-        ? `__Secure-next-auth.session-token` 
-        : `next-auth.session-token`,
+      name: cookieName, // Use dynamically determined name
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
+        secure: nodeEnv === 'production',
         // domain: // Optional: specify if needed for subdomains
       }
     }
     // Add other cookie configurations if needed (e.g., csrfToken, callbackUrl, pkceCodeVerifier)
   },
-  // <<< END ADDED >>>
+  // <<< ADDED: Explicit Cookie Configuration >>>
   // pages: {
   //   signIn: "/sign-in",
   //   signOut: "/sign-out",
@@ -182,28 +189,32 @@ export const authOptions: AuthOptions = {
   callbacks: {
     // JWT callback - Add custom claims
     // Use broader type for incoming user, handle role conversion
-    async jwt({ token, user }: { token: JWT, user?: User }): Promise<JWT> {
-      if (user) {
-        // User object is available on initial sign-in
-        token.id = user.id;
-        // Assign role from user object, casting to UserRole if necessary
-        // Provide a default role if user.role is undefined/null
-        token.role = (user.role as UserRole) || UserRole.USER;
-        token.email = user.email;
-        token.name = user.name;
-        console.log('JWT callback: User signed in, adding to token:', { id: token.id, role: token.role });
-      }
+    async jwt({ token, user, account, profile, isNewUser }) {
+      console.log("[AUTH CALLBACK] JWT Callback triggered");
+      // <<< TEMPORARILY COMMENTED OUT >>>
+      // if (user) { // User object is available on initial sign in
+      //   console.log("[AUTH CALLBACK] Adding role and id to JWT token:", { role: (user as any).role, id: user.id });
+      //   token.role = (user as any).role || UserRole.USER; // Assign role from user object
+      //   token.id = user.id; // Assign ID
+      // }
+      // console.log("[AUTH CALLBACK] Returning JWT token:", token);
+      // <<< END TEMPORARILY COMMENTED OUT >>>
       return token;
     },
 
-    // Session callback - Make token info available to client
-    async session({ session, token }: { session: Session, token: JWT }): Promise<Session> {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as UserRole;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-      }
+    // Session callback - Make custom claims available on session object
+    async session({ session, token, user }) {
+       console.log("[AUTH CALLBACK] Session Callback triggered");
+       // <<< TEMPORARILY COMMENTED OUT >>>
+      // if (token && session.user) {
+      //   console.log("[AUTH CALLBACK] Adding role and id to session object from token:", { role: token.role, id: token.id });
+      //   (session.user as any).role = token.role as UserRole; // Add role from token
+      //   (session.user as any).id = token.id as string; // Add ID from token
+      // } else {
+      //    console.log("[AUTH CALLBACK] Token or session.user missing, cannot add custom claims.");
+      // }
+      // console.log("[AUTH CALLBACK] Returning session object:", session);
+       // <<< END TEMPORARILY COMMENTED OUT >>>
       return session;
     },
   },
