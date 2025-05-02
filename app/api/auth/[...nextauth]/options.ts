@@ -63,6 +63,16 @@ const mockUserData = [
     name: "Admin User",
     role: UserRole.ADMIN, // Use enum
   },
+  // <<< ADDED Development User >>>
+  {
+    id: "dev-user-01", // Unique ID
+    email: "dev@loadup.com",
+    // bcrypt hash for the password "password" (cost factor 10)
+    password: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy", 
+    name: "Development User",
+    role: UserRole.ADMIN, // Assign appropriate role (e.g., ADMIN for full access)
+  },
+  // <<< END ADDED Development User >>>
   // Add other mock users if needed (e.g., driver)
 ];
 
