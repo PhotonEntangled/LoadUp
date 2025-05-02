@@ -233,27 +233,6 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
     // Set map loaded state to true
     setIsMapLoaded(true);
     
-    // Add truck icon image
-    if (!loadedMap.hasImage('truck-icon')) {
-      loadedMap.loadImage(
-        '/images/truck-marker.svg', // <<< CORRECTED PATH to SVG >>>
-        (error, image) => {
-          if (error) {
-             logger.error('[TrackingMap] Error loading truck icon:', error);
-             return;
-          }
-          if (image && !loadedMap.hasImage('truck-icon')) {
-             loadedMap.addImage('truck-icon', image, { sdf: true }); // <<< CHANGED: sdf: true for SVG >>>
-             logger.debug('[TrackingMap] Truck icon added to map style.');
-             // Force a re-render or update the source AFTER icon is loaded if needed
-             // This might involve updating state or re-triggering the effect that adds the layer
-          } else if (!image) {
-              logger.error('[TrackingMap] Truck icon image data is null or undefined after loading.');
-          }
-        }
-      );
-    }
-
     // Initial source/layer setup for planned route (if needed immediately)
     addRouteSourceAndLayer(loadedMap);
       
@@ -285,8 +264,8 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
               type: 'symbol',
               source: 'live-vehicle-source',
               layout: {
-                  'icon-image': 'truck-icon', // Reference the added image
-                  'icon-size': 0.75,
+                  'icon-image': 'marker-15',
+                  'icon-size': 1.5,
                   'icon-rotate': ['get', 'heading'], // Get rotation from feature properties
                   'icon-rotation-alignment': 'map',
                   'icon-allow-overlap': true,
@@ -562,8 +541,8 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
                     type="symbol"
                source="live-vehicle-source" // Link to source id
                     layout={{
-                 'icon-image': 'truck-icon', // Reference the added image
-                 'icon-size': 0.75,
+                 'icon-image': 'marker-15',
+                 'icon-size': 1.5,
                  'icon-rotate': ['get', 'heading'], // Get rotation from feature properties
                  'icon-rotation-alignment': 'map',
                         'icon-allow-overlap': true,
