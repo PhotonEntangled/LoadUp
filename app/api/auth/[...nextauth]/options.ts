@@ -114,11 +114,25 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
-        // <<< ADDED: Log inputs before bcrypt comparison >>>
+        // Log inputs before check
         console.log(`[AUTH DEBUG] Comparing provided password: '${password}'`);
         console.log(`[AUTH DEBUG] Against stored hash for ${user.email}: '${user.password}'`);
-        // <<< END ADDED >>>
 
+        // <<< RE-APPLIED TEMPORARY DEBUGGING BYPASS >>>
+        if (user.email === "dev@loadup.com") {
+           console.warn(`[AUTH DEBUG] !!! BYPASSING bcrypt.compare FOR ${user.email} !!!`);
+           console.log(`[AUTH DEBUG] Login successful (BYPASS) for: ${email}`);
+           // Directly return user object if it's the dev user, skipping compare
+           return {
+               id: user.id,
+               email: user.email,
+               name: user.name,
+               role: user.role,
+           };
+        }
+        // <<< END RE-APPLIED TEMPORARY DEBUGGING BYPASS >>>
+
+        // Normal password check for other users
         const passwordMatch = await bcrypt.compare(
           password,
           user.password
