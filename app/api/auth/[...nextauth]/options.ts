@@ -114,6 +114,20 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
+        // <<< TEMPORARY DEBUGGING BYPASS >>>
+        // If the user is the specific dev user, skip password check for now
+        if (user.email === "dev@loadup.com") {
+           console.warn(`[AUTH DEBUG] Bypassing password check for ${user.email}`);
+           console.log(`[AUTH DEBUG] Login successful (bypass) for: ${email}`);
+           return {
+               id: user.id,
+               email: user.email,
+               name: user.name,
+               role: user.role,
+           };
+        }
+        // <<< END TEMPORARY DEBUGGING BYPASS >>>
+
         const passwordMatch = await bcrypt.compare(
           password,
           user.password
