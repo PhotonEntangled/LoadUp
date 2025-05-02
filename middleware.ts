@@ -16,18 +16,6 @@ function isProtectedRoute(pathname: string): boolean {
   return protectedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
 }
 
-// This function is called by the middleware to check if the user has access to the requested route
-async function hasAccess(req: NextRequest) {
-  // Placeholder for actual access logic based on user session/role
-  // This needs to be implemented properly using next-auth session retrieval
-  // For now, assume false to trigger redirect if needed
-  console.warn('[hasAccess Check] Placeholder: Assuming user does NOT have access. Implement real check!');
-  // const session = await getToken({ req, secret: process.env.NEXTAUTH_SECRET }); // Example
-  // if (!session) return false;
-  // Check roles/permissions based on session and req.nextUrl.pathname
-  return false; 
-}
-
 export async function middleware(req: NextRequest) {
   // --- Force re-deploy comment ---
   console.log('--- MIDDLEWARE EXECUTION START ---');

@@ -191,30 +191,40 @@ export const authOptions: AuthOptions = {
     // Use broader type for incoming user, handle role conversion
     async jwt({ token, user, account, profile, isNewUser }) {
       console.log("[AUTH CALLBACK] JWT Callback triggered");
-      // <<< TEMPORARILY COMMENTED OUT >>>
-      // if (user) { // User object is available on initial sign in
-      //   console.log("[AUTH CALLBACK] Adding role and id to JWT token:", { role: (user as any).role, id: user.id });
-      //   token.role = (user as any).role || UserRole.USER; // Assign role from user object
-      //   token.id = user.id; // Assign ID
-      // }
-      // console.log("[AUTH CALLBACK] Returning JWT token:", token);
-      // <<< END TEMPORARILY COMMENTED OUT >>>
+      // <<< UNCOMMENTED AND FIXED >>>
+      if (user) { // User object is available on initial sign in
+        // Ensure CustomUser properties are correctly accessed and assigned
+        token.role = (user as CustomUser).role || UserRole.USER; // Assign role from user object
+        token.id = user.id; // Assign ID
+        token.email = user.email; // Ensure email is included
+        token.name = user.name;   // Ensure name is included
+        console.log("[AUTH CALLBACK] Added user data to JWT token:", { id: token.id, email: token.email, role: token.role, name: token.name });
+      }
+      // console.log("[AUTH CALLBACK] Returning JWT token:", token); // Keep this commented unless debugging JWT specifics
+      // <<< END UNCOMMENTED AND FIXED >>>
       return token;
     },
 
     // Session callback - Make custom claims available on session object
     async session({ session, token, user }) {
        console.log("[AUTH CALLBACK] Session Callback triggered");
-       // <<< TEMPORARILY COMMENTED OUT >>>
-      // if (token && session.user) {
-      //   console.log("[AUTH CALLBACK] Adding role and id to session object from token:", { role: token.role, id: token.id });
-      //   (session.user as any).role = token.role as UserRole; // Add role from token
-      //   (session.user as any).id = token.id as string; // Add ID from token
-      // } else {
-      //    console.log("[AUTH CALLBACK] Token or session.user missing, cannot add custom claims.");
-      // }
-      // console.log("[AUTH CALLBACK] Returning session object:", session);
-       // <<< END TEMPORARILY COMMENTED OUT >>>
+       // <<< UNCOMMENTED AND FIXED >>>
+      // Transfer properties from token to session.user
+      // Ensure the session.user object structure matches your type definition
+      if (token && session.user) {
+          (session.user as any).id = token.id as string;
+          (session.user as any).role = token.role as UserRole;
+          // Ensure standard fields are also present if needed, potentially from token
+          session.user.email = token.email as string; 
+          session.user.name = token.name as string; 
+          console.log("[AUTH CALLBACK] Added token data to session object:", { id: (session.user as any).id, email: session.user.email, role: (session.user as any).role, name: session.user.name });
+      } else {
+         console.log("[AUTH CALLBACK] Token or session.user missing, cannot add custom claims.");
+         if (!token) console.log("[AUTH CALLBACK] Reason: Token is missing/null.");
+         if (!session.user) console.log("[AUTH CALLBACK] Reason: session.user is missing/null.");
+      }
+      // console.log("[AUTH CALLBACK] Returning session object:", session); // Keep this commented unless debugging session specifics
+       // <<< END UNCOMMENTED AND FIXED >>>
       return session;
     },
   },
