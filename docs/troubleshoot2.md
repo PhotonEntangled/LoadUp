@@ -99,3 +99,21 @@
 13. **Next Step:** Deploy latest logging, user re-tests login, analyze logs for secret value and token result.
 
 ---
+
+## New Issue: Login Succeeds (Bypass Active) but Redirect Loop Back to Sign-in Page (Continued)
+
+**Date:** [Current Date/Time]
+
+**Context:** Despite previous fixes, middleware still reports "No token found" even though the session cookie is present and JWT callback *seems* to add data. The primary suspect remains a mismatch or misinterpretation of `NEXTAUTH_SECRET` between the API route runtime (where token is created) and the Edge middleware runtime (where token is read), or cookie configuration issues.
+
+**Troubleshooting Steps (Latest Attempt):**
+
+1.  **Explicitly Typed JWT:** Added `declare module "next-auth/jwt"` to `types/next-auth.d.ts` to ensure the JWT interface correctly defines custom claims (`id`, `role`). Rationale: Ensure type consistency doesn't cause silent issues during token processing. **(Done - commit pending)**
+2.  **Log Secret in API Route:** Added logging within the `jwt` callback in `app/api/auth/[...nextauth]/options.ts` to log the start and length of `process.env.NEXTAUTH_SECRET` used during token *creation*. Rationale: Allows direct comparison with the secret logged by the middleware during token *reading*. **(Done - commit pending)**
+3.  **Enforce Secure Cookies & Use Vercel Env Var:** 
+    *   Set `useSecureCookies: true` explicitly in `authOptions`.
+    *   Modified `cookies.sessionToken.options.secure` to use `process.env.VERCEL_ENV === 'production'`. 
+    Rationale: Eliminate potential inconsistencies in cookie handling between Node.js/Edge runtimes and rely on Vercel's standard environment variable for production checks. **(Done - commit pending)**
+4.  **Next Step:** Commit and deploy these changes. User re-tests login. Analyze Vercel logs for BOTH secret logs (from `options.ts` JWT callback and `middleware.ts`) to confirm an EXACT match. Verify if middleware now finds the token.
+
+---

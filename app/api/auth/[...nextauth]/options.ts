@@ -174,7 +174,10 @@ export const authOptions: AuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: nodeEnv === 'production',
+        // <<< MODIFIED: Use VERCEL_ENV for secure attribute >>>
+        secure: process.env.VERCEL_ENV === 'production',
+        // Fallback slightly less reliable: secure: nodeEnv === 'production',
+        // <<< END MODIFIED >>>
         // domain: // Optional: specify if needed for subdomains
       }
     }
@@ -191,6 +194,11 @@ export const authOptions: AuthOptions = {
     // Use broader type for incoming user, handle role conversion
     async jwt({ token, user, account, profile, isNewUser }) {
       console.log("[AUTH CALLBACK] JWT Callback triggered");
+      // <<< ADDED SECRET LOGGING >>>
+      const secret = process.env.NEXTAUTH_SECRET;
+      console.log(`[AUTH CALLBACK] JWT using secret starting: ${secret?.substring(0, 10)}... [Length: ${secret?.length}]`);
+      // <<< END ADDED SECRET LOGGING >>>
+
       // <<< UNCOMMENTED AND FIXED >>>
       if (user) { // User object is available on initial sign in
         // Ensure CustomUser properties are correctly accessed and assigned
@@ -231,4 +239,6 @@ export const authOptions: AuthOptions = {
   // Align fallback secret with .env.local value
   secret: process.env.NEXTAUTH_SECRET || "your_nextauth_secret_key_should_be_at_least_32_chars", 
   debug: process.env.NODE_ENV === 'development',
+  // <<< ADDED: Explicit useSecureCookies >>>
+  useSecureCookies: true, // Explicitly set to true for HTTPS environments like Vercel
 }; 
