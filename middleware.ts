@@ -8,21 +8,14 @@ const roleBasedAccess: Record<string, UserRole[]> = {
 
 // This function is called by the middleware to check if the user has access to the requested route
 async function hasAccess(req: NextRequest) {
-  // ... (original hasAccess function logic)
-  try {
-    const hasAccessResult = await hasAccess(req);
-    
-    // Redirect to sign-in page if not authenticated
-    if (!hasAccessResult && (req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname === '/')) {
-      console.log('Middleware: Redirecting to sign-in page from', req.nextUrl.pathname);
-      return NextResponse.redirect(new URL('/sign-in', req.nextUrl.origin));
-    }
-    
-    return NextResponse.next();
-  } catch (error) {
-    console.error('Middleware error:', error);
-    return NextResponse.next();
-  }
+  // Placeholder for actual access logic based on user session/role
+  // This needs to be implemented properly using next-auth session retrieval
+  // For now, assume false to trigger redirect if needed
+  console.warn('[hasAccess Check] Placeholder: Assuming user does NOT have access. Implement real check!');
+  // const session = await getToken({ req, secret: process.env.NEXTAUTH_SECRET }); // Example
+  // if (!session) return false;
+  // Check roles/permissions based on session and req.nextUrl.pathname
+  return false; 
 }
 
 export async function middleware(req: NextRequest) {
@@ -31,13 +24,45 @@ export async function middleware(req: NextRequest) {
     console.log('Middleware: Bypassing auth check due to NEXT_PUBLIC_BYPASS_AUTH=true');
     return NextResponse.next();
   } else {
-    // Auth checks would normally happen here, but user requested bypass for now.
-    console.log('Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.');
-    // console.log('Middleware: Auth bypass not enabled.', { // Original log for reference
-    //   bypassAuth: process.env.NEXT_PUBLIC_BYPASS_AUTH,
-    //   nodeEnv: process.env.NODE_ENV
-    // });
-    return NextResponse.next(); // Bypass auth regardless of env var as requested
+    // --- RE-ENABLED AUTH CHECK --- 
+    console.log('Middleware: Performing auth check...');
+    try {
+      // Check if user is authenticated and has access (using placeholder hasAccess for now)
+      // We need a real way to check authentication status here, 
+      // potentially redirecting based on session existence before even calling hasAccess.
+      // This needs integration with NextAuth session checking.
+      // For now, let's *assume* we need to check access for dashboard routes.
+      
+      const requiresAuth = req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname === '/';
+      const { pathname } = req.nextUrl;
+      
+      // Allow access to auth routes explicitly
+      if (pathname.startsWith('/api/auth') || pathname.startsWith('/auth')) {
+         console.log('Middleware: Allowing access to auth route:', pathname);
+         return NextResponse.next();
+      }
+
+      // Placeholder: Redirect to sign-in if trying to access a protected route
+      // This needs a proper session check!
+      if (requiresAuth) { // Simplified check for now
+         console.log('Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path:', pathname);
+         // TODO: Replace this with a proper check using next-auth session
+         // If no session -> redirect
+         // If session -> NextResponse.next()
+         const signInUrl = new URL('/auth/sign-in', req.nextUrl.origin);
+         // Optionally add callbackUrl
+         // signInUrl.searchParams.set('callbackUrl', req.nextUrl.pathname);
+         return NextResponse.redirect(signInUrl);
+      }
+      
+      console.log('Middleware: Route does not require auth or check is bypassed (placeholder). Path:', pathname);
+      return NextResponse.next(); // Allow access to non-protected routes
+    } catch (error) {
+      console.error('Middleware error during auth check:', error);
+      // Fallback: Allow request or redirect to an error page?
+      return NextResponse.next(); // Allow request in case of error for now
+    }
+    // --- END RE-ENABLED AUTH CHECK ---
   }
 }
 
