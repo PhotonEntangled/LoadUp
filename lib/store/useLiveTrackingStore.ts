@@ -20,7 +20,7 @@ import type { Map as MapboxMap } from 'mapbox-gl';
 // Assuming a singleton export `liveTrackingService` from the implementation file (Task 9.4)
 // This needs to be adjusted if a different pattern (DI, context) is used.
 // import { liveTrackingService } from '@/services/tracking/FirestoreLiveTrackingService'; // Placeholder import
-import { trackingService } from '@/services/tracking'; // Import from factory
+import { liveTrackingService } from '../../services/tracking/FirestoreLiveTrackingService'; // Using relative path
 import { logger } from '@/utils/logger'; // Use logger
 
 // --- State Interface ---
@@ -83,7 +83,7 @@ export const useLiveTrackingStore = create<LiveTrackingState & LiveTrackingActio
 
     try {
       // Call the actual service
-      const unsubscribe = trackingService.subscribeToVehicleLocation(
+      const unsubscribe = liveTrackingService.subscribeToVehicleLocation(
         shipmentId,
         // Pass internal actions as callbacks
         (update: LiveVehicleUpdate) => get()._handleLiveUpdate(update),

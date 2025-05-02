@@ -233,33 +233,20 @@ export const TrackingMap = React.memo(forwardRef<TrackingMapRef, TrackingMapProp
     // Set map loaded state to true
     setIsMapLoaded(true);
     
-    // Add truck icon image with fallback
+    // Add truck icon image
     if (!loadedMap.hasImage('truck-icon')) {
-      // Try SVG first
       loadedMap.loadImage(
-        '/images/truck-marker.svg',
+        '/images/truck-marker.svg', // <<< CORRECTED PATH to SVG >>>
         (error, image) => {
           if (error) {
-             logger.warn('[TrackingMap] Error loading SVG truck icon, trying PNG fallback:', error);
-             // Try PNG as fallback
-             loadedMap.loadImage(
-               '/images/truck-marker.png',
-               (fallbackError, fallbackImage) => {
-                 if (fallbackError) {
-                   logger.error('[TrackingMap] Error loading fallback truck icon:', fallbackError);
-                   return;
-                 }
-                 if (fallbackImage && !loadedMap.hasImage('truck-icon')) {
-                   loadedMap.addImage('truck-icon', fallbackImage, { sdf: false });
-                   logger.debug('[TrackingMap] Fallback truck icon (PNG) added to map style.');
-                 }
-               }
-             );
+             logger.error('[TrackingMap] Error loading truck icon:', error);
              return;
           }
           if (image && !loadedMap.hasImage('truck-icon')) {
-             loadedMap.addImage('truck-icon', image, { sdf: false });
-             logger.debug('[TrackingMap] Truck icon (SVG) added to map style.');
+             loadedMap.addImage('truck-icon', image, { sdf: true }); // <<< CHANGED: sdf: true for SVG >>>
+             logger.debug('[TrackingMap] Truck icon added to map style.');
+             // Force a re-render or update the source AFTER icon is loaded if needed
+             // This might involve updating state or re-triggering the effect that adds the layer
           } else if (!image) {
               logger.error('[TrackingMap] Truck icon image data is null or undefined after loading.');
           }
