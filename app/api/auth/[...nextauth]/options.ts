@@ -128,11 +128,11 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
-  pages: {
-    signIn: "/sign-in",
-    signOut: "/sign-out",
-    error: "/error",
-  },
+  // pages: {
+  //   signIn: "/sign-in",
+  //   signOut: "/sign-out",
+  //   error: "/error",
+  // },
   callbacks: {
     // JWT callback - Add custom claims
     // Use broader type for incoming user, handle role conversion

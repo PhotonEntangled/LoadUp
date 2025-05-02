@@ -1,348 +1,327 @@
-May 02 16:51:59.64
+
+May 02 17:00:42.71
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-up
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
 2
-Middleware: Allowing access to auth route: /auth/sign-up
-May 02 16:51:59.63
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:42.42
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:42.33
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
 2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:59.58
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:42.33
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/
+2
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
+May 02 17:00:42.33
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:42.33
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:42.04
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:42.01
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:41.99
+GET
+307
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /dashboard/settings
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/settings
-May 02 16:51:59.55
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/settings
+May 02 17:00:41.98
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:41.97
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /dashboard/reports
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/reports
-May 02 16:51:59.54
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:59.54
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/reports
+May 02 17:00:41.94
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /dashboard/drivers
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/drivers
-May 02 16:51:59.53
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/drivers
+May 02 17:00:41.93
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:41.88
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:41.88
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:41.41
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:41.37
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:41.34
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /dashboard/customers
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/customers
-May 02 16:51:59.48
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/customers
+May 02 17:00:41.34
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:41.28
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:59.46
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /simulation
 2
 Middleware: Route does not require auth or check is bypassed (placeholder). Path: /simulation
-May 02 16:51:59.45
+May 02 17:00:41.28
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /documents
 2
 Middleware: Route does not require auth or check is bypassed (placeholder). Path: /documents
-May 02 16:51:59.45
+May 02 17:00:41.28
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /dashboard/shipments
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/shipments
-May 02 16:51:59.45
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
-May 02 16:51:59.26
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/shipments
+May 02 17:00:41.28
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/loadup-logo.svg
-2
-Middleware: Route does not require auth or check is bypassed (placeholder). Path: /loadup-logo.svg
-May 02 16:51:59.14
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
-May 02 16:51:59.08
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:59.04
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
-May 02 16:51:59.02
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:58.93
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
-May 02 16:51:58.59
-POST
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/api/auth/login
-3
-Login API: Redirecting to: /dashboard
-May 02 16:51:43.59
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:43.55
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:43.51
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-up
-2
-Middleware: Allowing access to auth route: /auth/sign-up
-May 02 16:51:43.51
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:43.47
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:43.36
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:43.35
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard/settings
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/settings
-May 02 16:51:43.35
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard/reports
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/reports
-May 02 16:51:43.30
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard/drivers
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/drivers
-May 02 16:51:43.25
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard/customers
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/customers
-May 02 16:51:43.25
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:43.18
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/documents
-2
-Middleware: Route does not require auth or check is bypassed (placeholder). Path: /documents
-May 02 16:51:43.18
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/simulation
-2
-Middleware: Route does not require auth or check is bypassed (placeholder). Path: /simulation
-May 02 16:51:43.18
-GET
-307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard/shipments
-2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/shipments
-May 02 16:51:43.18
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /tracking-stabilized
 2
 Middleware: Route does not require auth or check is bypassed (placeholder). Path: /tracking-stabilized
-May 02 16:51:43.18
+May 02 17:00:41.28
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /dashboard
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
-May 02 16:51:43.16
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard
+May 02 17:00:41.27
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /api/auth/session
-May 02 16:51:42.93
+May 02 17:00:39.95
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/loadup-logo.svg
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
 2
-Middleware: Route does not require auth or check is bypassed (placeholder). Path: /loadup-logo.svg
-May 02 16:51:42.84
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:39.07
 GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:42.80
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:38.93
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
-May 02 16:51:42.75
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
+May 02 17:00:18.18
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/favicon.png
 2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:51:42.68
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /favicon.png
+May 02 17:00:17.95
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 17:00:17.67
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 17:00:17.52
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
-May 02 16:51:42.64
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
+May 02 16:56:06.73
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 16:56:06.73
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 16:56:06.73
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 16:56:06.73
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 16:56:06.73
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/dashboard
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
-May 02 16:51:42.23
-POST
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/api/auth/login
-3
-Login API: Redirecting to: /dashboard
-May 02 16:51:12.45
-POST
-401
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/api/auth/login
-2
-Login API: Invalid credentials for: dev@loadup.com
-May 02 16:50:22.92
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:50:22.89
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-up
-2
-Middleware: Allowing access to auth route: /auth/sign-up
-May 02 16:50:22.89
-GET
-200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
-2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:50:22.85
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
+May 02 16:56:06.59
 GET
 307
-load-9ycbj53cb-photonentangleds-projects.vercel.app
+load-hwc5mgte1-photonentangleds-projects.vercel.app
 /dashboard/settings
 2
-Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/settings
-May 02 16:50:22.85
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/settings
+May 02 16:56:06.55
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 16:56:06.53
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
 2
-Middleware: Allowing access to auth route: /auth/sign-in
-May 02 16:50:22.81
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 16:56:06.52
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 16:56:06.49
 GET
 200
-load-9ycbj53cb-photonentangleds-projects.vercel.app
-/auth/sign-in
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/sign-in
 2
-Middleware: Allowing access to auth route: /auth/sign-in
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /sign-in
+May 02 16:56:06.49
+GET
+307
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/dashboard/reports
+2
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/reports
+May 02 16:56:06.46
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 16:56:06.45
+GET
+307
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/dashboard/drivers
+2
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/drivers
+May 02 16:56:06.34
+GET
+307
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/dashboard/customers
+2
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /dashboard/customers
+May 02 16:56:06.34
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 16:56:06.29
+GET
+302
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 16:56:06.20
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/documents
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /documents
+May 02 16:56:06.19
+GET
+200
+load-hwc5mgte1-photonentangleds-projects.vercel.app
+/tracking-stabilized
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /tracking-stabilized
+
+
+
+
+
+
+
+
