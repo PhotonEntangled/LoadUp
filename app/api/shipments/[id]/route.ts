@@ -71,6 +71,7 @@ export async function GET(
   try {
     // --- Fetch the core shipment --- 
     logger.info(`[API /shipments/${shipmentId} GET] Fetching core shipment...`);
+    
     const coreShipmentResult = await db
         .select({
             // Select core fields using correct schema names
@@ -86,8 +87,8 @@ export async function GET(
             // pickupId: shipmentsErd.pickupId, // Not needed directly if fetching pickups separately
             // dropoffId: shipmentsErd.dropoffId, // Not needed directly if fetching dropoffs separately
             shipmentDescription: shipmentsErd.shipmentDescription, // Keep for mapping
-            isActive: shipmentsErd.isActive, // Keep if needed
-            lastKnownBearing: shipmentsErd.lastKnownBearing // <<< ADDED: Select bearing >>>
+            isActive: shipmentsErd.isActive // Keep if needed
+            // Removed: lastKnownBearing to prevent column errors
             // Missing: loadNumber, bolNumber, poNumber, organizationId - likely in related tables
         })
         .from(shipmentsErd)
@@ -149,30 +150,33 @@ export async function GET(
     }
     // --- End Check ---
 
+    // Create the coreInfo part with conditional bearing handling
+    const coreInfo = {
+        id: coreShipment.id,
+        documentId: coreShipment.sourceDocumentId ?? '', // Use empty string if null to satisfy string type
+        status: coreShipment.status,
+        loadNumber: customDetails?.sovyJobNo ?? null,
+        poNumber: destinationInfo?.dropoffs?.customerPoNumbers ?? null,
+        orderNumber: null, // Placeholder
+        totalWeight: null, // Placeholder
+        totalWeightUnit: null, // Placeholder
+        totalVolume: null, // Placeholder
+        totalVolumeUnit: null, // Placeholder
+        totalItems: null, // Placeholder
+        promisedShipDate: null, // Placeholder - Needs data source
+        actualPickupArrival: null, // Placeholder - Needs data source (from pickups?)
+        actualPickupDeparture: null, // Placeholder - Needs data source (from pickups?)
+        actualDeliveryArrival: null, // Placeholder - Needs data source (from dropoffs?)
+        actualDeliveryDeparture: null, // Placeholder - Needs data source (from dropoffs?)
+        plannedDeliveryDate: toISOStringOrNull(destinationInfo?.dropoffs?.dropoff_date) ?? toISOStringOrNull(coreShipment.shipmentDateCreated) ?? new Date(0).toISOString(),
+        lastKnownLatitude: toFloatOrNull(coreShipment.lastKnownLatitude),
+        lastKnownLongitude: toFloatOrNull(coreShipment.lastKnownLongitude),
+        lastKnownTimestamp: toISOStringOrNull(coreShipment.lastKnownTimestamp),
+        lastKnownBearing: null // Always set to null as column doesn't exist yet
+    };
+
     const apiShipmentDetail: ApiShipmentDetail = {
-        coreInfo: {
-            id: coreShipment.id,
-            documentId: coreShipment.sourceDocumentId ?? '', // Use empty string if null to satisfy string type
-            status: coreShipment.status,
-            loadNumber: customDetails?.sovyJobNo ?? null,
-            poNumber: destinationInfo?.dropoffs?.customerPoNumbers ?? null,
-            orderNumber: null, // Placeholder
-            totalWeight: null, // Placeholder
-            totalWeightUnit: null, // Placeholder
-            totalVolume: null, // Placeholder
-            totalVolumeUnit: null, // Placeholder
-            totalItems: null, // Placeholder
-            promisedShipDate: null, // Placeholder - Needs data source
-            actualPickupArrival: null, // Placeholder - Needs data source (from pickups?)
-            actualPickupDeparture: null, // Placeholder - Needs data source (from pickups?)
-            actualDeliveryArrival: null, // Placeholder - Needs data source (from dropoffs?)
-            actualDeliveryDeparture: null, // Placeholder - Needs data source (from dropoffs?)
-            plannedDeliveryDate: toISOStringOrNull(destinationInfo?.dropoffs?.dropoff_date) ?? toISOStringOrNull(coreShipment.shipmentDateCreated) ?? new Date(0).toISOString(),
-            lastKnownLatitude: toFloatOrNull(coreShipment.lastKnownLatitude),
-            lastKnownLongitude: toFloatOrNull(coreShipment.lastKnownLongitude),
-            lastKnownTimestamp: toISOStringOrNull(coreShipment.lastKnownTimestamp), // CORRECTED Field Name
-            lastKnownBearing: toFloatOrNull(coreShipment.lastKnownBearing) // <<< ADDED: Map bearing >>>
-        },
+        coreInfo,
         originAddress: originInfo?.addresses ? {
             id: originInfo.addresses.id,
             fullAddress: originInfo.addresses.rawInput ?? null,
@@ -329,7 +333,6 @@ export async function GET(
 
     logger.info(`[API /shipments/${shipmentId} GET] Successfully fetched and mapped shipment details.`);
     return NextResponse.json(apiShipmentDetail); // Return the single mapped object
-
   } catch (error) {
     // --- REAL ERROR HANDLING --- 
     logger.error(`[API /shipments/${shipmentId} GET] Error fetching shipment:`, error);
