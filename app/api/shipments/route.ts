@@ -418,106 +418,89 @@ export async function GET(request: NextRequest) {
       }
       logger.debug(`Found ${shipmentIds.length} shipmentIds for documentId ${documentId}: ${shipmentIds.join(', ')}`);
 
-      try {
-        // 1. Fetch Core Shipments using explicit join - with error handling for missing columns
-        logger.debug(`Fetching core shipment data with trip join for shipmentIds: ${shipmentIds.join(', ')}`);
-        const coreShipmentsAndTrips: CoreShipmentWithTripQueryResult[] = await db
-          .select()
-          .from(schema.shipmentsErd)
-          .leftJoin(schema.trips, eq(schema.shipmentsErd.tripId, schema.trips.id))
-          .where(inArray(schema.shipmentsErd.id, shipmentIds));
+      // 1. Fetch Core Shipments using explicit join
+      logger.debug(`Fetching core shipment data with trip join for shipmentIds: ${shipmentIds.join(', ')}`);
+      const coreShipmentsAndTrips: CoreShipmentWithTripQueryResult[] = await db
+        .select()
+        .from(schema.shipmentsErd)
+        .leftJoin(schema.trips, eq(schema.shipmentsErd.tripId, schema.trips.id))
+        .where(inArray(schema.shipmentsErd.id, shipmentIds));
 
-        if (!coreShipmentsAndTrips || coreShipmentsAndTrips.length === 0) {
-          logger.error(`No shipment core data found for any shipmentIds linked to doc ${documentId}`);
-          return NextResponse.json([]);
-        }
-        logger.debug(`Fetched ${coreShipmentsAndTrips.length} core shipment/trip records.`);
-
-        // 2. Fetch Other Related Data (using correct key for shipment IDs)
-        const actualShipmentIds = coreShipmentsAndTrips.map(item => item.shipments_erd.id); // Use lowercase key
-        const bookingIds = coreShipmentsAndTrips.map(item => item.shipments_erd.bookingId).filter(id => id !== null) as string[]; // Use lowercase key
-
-        const [ relatedCustomDetailsList, relatedPickups, relatedDropoffs, relatedItemsList, relatedDocument, relatedBookings ] = await Promise.all([
-          db.query.customShipmentDetails.findMany({ where: inArray(schema.customShipmentDetails.shipmentId, actualShipmentIds) }),
-          db.query.pickups.findMany({ where: inArray(schema.pickups.shipmentId, actualShipmentIds), with: { address: true } }),
-          db.query.dropoffs.findMany({ where: inArray(schema.dropoffs.shipmentId, actualShipmentIds), with: { address: true } }),
-          db.query.items.findMany({ where: inArray(schema.items.shipmentId, actualShipmentIds) }),
-          db.query.documents.findFirst({ where: eq(schema.documents.id, documentId), columns: { filename: true } }), 
-          bookingIds.length > 0 ? db.query.bookings.findMany({ where: inArray(schema.bookings.id, bookingIds) }) : Promise.resolve([]) 
-        ]);
-        
-        // 3. Prepare Data Maps 
-        logger.debug(`Preparing data maps for multiple shipments`);
-        const customDetailsMap = relatedCustomDetailsList.reduce((map, detail) => {
-            if (detail.shipmentId) map.set(detail.shipmentId, detail); // Assuming one custom detail per shipment
-            return map;
-        }, new Map<string, ShipmentCustomDetails>());
-
-        const pickupsMap = relatedPickups.reduce((map, pickup) => {
-            if (pickup.shipmentId) {
-                if (!map.has(pickup.shipmentId)) map.set(pickup.shipmentId, []);
-                map.get(pickup.shipmentId)!.push(pickup);
-            }
-            return map;
-        }, new Map<string, ShipmentPickup[]>());
-
-        const dropoffsMap = relatedDropoffs.reduce((map, dropoff) => {
-            if (dropoff.shipmentId) {
-                if (!map.has(dropoff.shipmentId)) map.set(dropoff.shipmentId, []);
-                map.get(dropoff.shipmentId)!.push(dropoff);
-            }
-            return map;
-        }, new Map<string, ShipmentDropoff[]>());
-
-        const itemsMap = relatedItemsList.reduce((map, item) => {
-            if (item.shipmentId) {
-                if (!map.has(item.shipmentId)) map.set(item.shipmentId, []);
-                map.get(item.shipmentId)!.push(item);
-            }
-            return map;
-        }, new Map<string, ShipmentItem[]>());
-
-        const bookingsMap = relatedBookings.reduce((map, booking) => {
-            map.set(booking.id, booking);
-            return map;
-        }, new Map<string, ShipmentBooking>());
-
-        const sourceFilename = relatedDocument?.filename ?? null; 
-
-        // 4. Map each shipment to API format
-        logger.debug(`Mapping ${coreShipmentsAndTrips.length} results to API format for document ${documentId}`);
-        const apiShipmentDetails = coreShipmentsAndTrips.map(queryResult => {
-            // Pass the entire joined result object to the mapper
-            return mapDbShipmentToApi(
-                queryResult, 
-                customDetailsMap, 
-                pickupsMap, 
-                dropoffsMap, 
-                itemsMap, 
-                bookingsMap, 
-                sourceFilename, 
-                documentId
-            );
-        }).filter(detail => detail !== null) as ApiShipmentDetail[]; 
-
-        logger.debug(`Returning ${apiShipmentDetails.length} mapped shipment details for documentId: ${documentId}`);
-        return NextResponse.json(apiShipmentDetails); 
-      } catch (error) {
-        // Handle specific database errors gracefully
-        logger.error("Database error when fetching shipments:", error);
-        
-        // If the error is related to a missing column, handle it specially
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
-          logger.warn("Database schema appears to be out of sync. Continuing with partial data.");
-          
-          // Return empty list as a fallback
-          return NextResponse.json([]);
-        }
-        
-        // Re-throw for general handling
-        throw error;
+      if (!coreShipmentsAndTrips || coreShipmentsAndTrips.length === 0) {
+        logger.error(`No shipment core data found for any shipmentIds linked to doc ${documentId}`);
+        return NextResponse.json([]);
       }
+      logger.debug(`Fetched ${coreShipmentsAndTrips.length} core shipment/trip records.`);
+
+      // 2. Fetch Other Related Data (using correct key for shipment IDs)
+      const actualShipmentIds = coreShipmentsAndTrips.map(item => item.shipments_erd.id); // Use lowercase key
+      const bookingIds = coreShipmentsAndTrips.map(item => item.shipments_erd.bookingId).filter(id => id !== null) as string[]; // Use lowercase key
+
+      const [ relatedCustomDetailsList, relatedPickups, relatedDropoffs, relatedItemsList, relatedDocument, relatedBookings ] = await Promise.all([
+        db.query.customShipmentDetails.findMany({ where: inArray(schema.customShipmentDetails.shipmentId, actualShipmentIds) }),
+        db.query.pickups.findMany({ where: inArray(schema.pickups.shipmentId, actualShipmentIds), with: { address: true } }),
+        db.query.dropoffs.findMany({ where: inArray(schema.dropoffs.shipmentId, actualShipmentIds), with: { address: true } }),
+        db.query.items.findMany({ where: inArray(schema.items.shipmentId, actualShipmentIds) }),
+        db.query.documents.findFirst({ where: eq(schema.documents.id, documentId), columns: { filename: true } }), 
+        bookingIds.length > 0 ? db.query.bookings.findMany({ where: inArray(schema.bookings.id, bookingIds) }) : Promise.resolve([]) 
+      ]);
+      
+      // 3. Prepare Data Maps 
+      logger.debug(`Preparing data maps for multiple shipments`);
+      const customDetailsMap = relatedCustomDetailsList.reduce((map, detail) => {
+          if (detail.shipmentId) map.set(detail.shipmentId, detail); // Assuming one custom detail per shipment
+          return map;
+      }, new Map<string, ShipmentCustomDetails>());
+
+      const pickupsMap = relatedPickups.reduce((map, pickup) => {
+          if (pickup.shipmentId) {
+              if (!map.has(pickup.shipmentId)) map.set(pickup.shipmentId, []);
+              map.get(pickup.shipmentId)!.push(pickup);
+          }
+          return map;
+      }, new Map<string, ShipmentPickup[]>());
+
+      const dropoffsMap = relatedDropoffs.reduce((map, dropoff) => {
+          if (dropoff.shipmentId) {
+              if (!map.has(dropoff.shipmentId)) map.set(dropoff.shipmentId, []);
+              map.get(dropoff.shipmentId)!.push(dropoff);
+          }
+          return map;
+      }, new Map<string, ShipmentDropoff[]>());
+
+      const itemsMap = relatedItemsList.reduce((map, item) => {
+          if (item.shipmentId) {
+              if (!map.has(item.shipmentId)) map.set(item.shipmentId, []);
+              map.get(item.shipmentId)!.push(item);
+          }
+          return map;
+      }, new Map<string, ShipmentItem[]>());
+
+      const bookingsMap = relatedBookings.reduce((map, booking) => {
+          map.set(booking.id, booking);
+          return map;
+      }, new Map<string, ShipmentBooking>());
+
+      const sourceFilename = relatedDocument?.filename ?? null; 
+
+      // 4. Map each shipment to API format
+      logger.debug(`Mapping ${coreShipmentsAndTrips.length} results to API format for document ${documentId}`);
+      const apiShipmentDetails = coreShipmentsAndTrips.map(queryResult => {
+          // Pass the entire joined result object to the mapper
+          return mapDbShipmentToApi(
+              queryResult, 
+              customDetailsMap, 
+              pickupsMap, 
+              dropoffsMap, 
+              itemsMap, 
+              bookingsMap, 
+              sourceFilename, 
+              documentId
+          );
+      }).filter(detail => detail !== null) as ApiShipmentDetail[]; 
+
+      logger.debug(`Returning ${apiShipmentDetails.length} mapped shipment details for documentId: ${documentId}`);
+      return NextResponse.json(apiShipmentDetails); 
 
     } else {
       // --- Paginated List of ALL Shipments ---

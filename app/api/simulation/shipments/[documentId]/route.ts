@@ -233,110 +233,98 @@ export async function GET(
 
     try {
         // Fetch core shipment data
-        try {
-            const shipmentRecords = await db.select()
-                .from(shipments)
-                .where(eq(shipments.sourceDocumentId, documentId))
-                .orderBy(shipments.shipmentDocumentNumber);
+        const shipmentRecords = await db.select()
+            .from(shipments)
+            .where(eq(shipments.sourceDocumentId, documentId))
+            .orderBy(shipments.shipmentDocumentNumber);
 
-            if (!shipmentRecords || shipmentRecords.length === 0) {
-                logger.warn(`[API /sim/shipments GET] No shipments found for documentId: ${documentId}`);
-                return NextResponse.json([], { status: 200 });
-            }
-
-            logger.debug(`[API /sim/shipments GET] Found ${shipmentRecords.length} shipment records.`);
-
-            // --- REVISED: Fetch related data for ALL shipments efficiently ---
-            const shipmentIds = shipmentRecords.map(s => s.id);
-
-            if (shipmentIds.length === 0) {
-                // This should not happen if shipmentRecords is not empty, but good safety check
-                logger.warn(`[API /sim/shipments GET] Extracted zero shipment IDs from records.`);
-                 return NextResponse.json([], { status: 200 });
-            }
-
-            // Note: We now fetch all related data together AFTER getting all core shipments
-             const [relatedPickups, relatedDropoffs, relatedItems, relatedCustomDetails] = await Promise.all([
-                 db.query.pickups.findMany({
-                     where: inArray(pickups.shipmentId, shipmentIds),
-                     with: { address: true },
-                     orderBy: [asc(pickups.shipmentId), asc(pickups.pickup_position)] // Order for predictable first pickup
-                 }),
-                 db.query.dropoffs.findMany({
-                     where: inArray(dropoffs.shipmentId, shipmentIds),
-                     with: { address: true },
-                     orderBy: [asc(dropoffs.shipmentId), asc(dropoffs.dropoff_position)] // Order for predictable first dropoff
-                 }),
-                 db.query.items.findMany({
-                     where: inArray(items.shipmentId, shipmentIds)
-                 }),
-                 db.query.customShipmentDetails.findMany({
-                     where: inArray(customShipmentDetails.shipmentId, shipmentIds)
-                 })
-             ]);
-
-             // --- Organize related data into maps for efficient lookup ---
-             const pickupsMap = relatedPickups.reduce((map, p) => {
-                 if (p.shipmentId) { 
-                     if (!map.has(p.shipmentId)) map.set(p.shipmentId, []);
-                     map.get(p.shipmentId)!.push(p);
-                 }
-                 return map;
-             }, new Map<string, (typeof pickups.$inferSelect & { address: typeof addresses.$inferSelect | null })[]>());
-
-             const dropoffsMap = relatedDropoffs.reduce((map, d) => {
-                 if (d.shipmentId) {
-                     if (!map.has(d.shipmentId)) map.set(d.shipmentId, []);
-                     map.get(d.shipmentId)!.push(d);
-                 }
-                 return map;
-             }, new Map<string, (typeof dropoffs.$inferSelect & { address: typeof addresses.$inferSelect | null })[]>());
-
-             const itemsMap = relatedItems.reduce((map, i) => {
-                 if (i.shipmentId) {
-                     if (!map.has(i.shipmentId)) map.set(i.shipmentId, []);
-                     map.get(i.shipmentId)!.push(i);
-                 }
-                 return map;
-             }, new Map<string, (typeof items.$inferSelect)[]>());
-
-             const customDetailsMap = relatedCustomDetails.reduce((map, cd) => {
-                 if (cd.shipmentId) {
-                    map.set(cd.shipmentId, cd);
-                 }
-                 return map;
-             }, new Map<string, typeof customShipmentDetails.$inferSelect>());
-
-            // Map each core shipment record using the prepared maps
-            const apiShipments: ApiShipmentDetail[] = shipmentRecords.map(shipment => {
-                 const shipmentPickups = pickupsMap.get(shipment.id) || [];
-                 const shipmentDropoffs = dropoffsMap.get(shipment.id) || [];
-                 const shipmentItems = itemsMap.get(shipment.id) || [];
-                 const shipmentCustomDetails = customDetailsMap.get(shipment.id) || null;
-                 
-                 return mapShipmentDataToApi(
-                     shipment, // Pass the core shipment record (includes bearing now)
-                     shipmentItems,
-                     shipmentPickups[0] || null, // Pass the primary pickup (first in sorted list)
-                     shipmentDropoffs[0] || null, // Pass the primary dropoff (first in sorted list)
-                     shipmentCustomDetails
-                 );
-             });
-
-            logger.info(`[API /sim/shipments GET] Successfully fetched and mapped ${apiShipments.length} shipments for documentId: ${documentId}`);
-            return NextResponse.json(apiShipments);
-        } catch (error) {
-            // Handle database column errors specifically
-            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-            if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
-                logger.warn(`[API /sim/shipments GET] Database schema issue: ${errorMessage}`);
-                logger.warn("[API /sim/shipments GET] Continuing with a fallback empty response");
-                return NextResponse.json([], { status: 200 });
-            }
-            
-            // Re-throw for other errors
-            throw error;
+        if (!shipmentRecords || shipmentRecords.length === 0) {
+            logger.warn(`[API /sim/shipments GET] No shipments found for documentId: ${documentId}`);
+            return NextResponse.json([], { status: 200 });
         }
+
+        logger.debug(`[API /sim/shipments GET] Found ${shipmentRecords.length} shipment records.`);
+
+        // --- REVISED: Fetch related data for ALL shipments efficiently ---
+        const shipmentIds = shipmentRecords.map(s => s.id);
+
+        if (shipmentIds.length === 0) {
+            // This should not happen if shipmentRecords is not empty, but good safety check
+            logger.warn(`[API /sim/shipments GET] Extracted zero shipment IDs from records.`);
+             return NextResponse.json([], { status: 200 });
+        }
+
+        // Note: We now fetch all related data together AFTER getting all core shipments
+         const [relatedPickups, relatedDropoffs, relatedItems, relatedCustomDetails] = await Promise.all([
+             db.query.pickups.findMany({
+                 where: inArray(pickups.shipmentId, shipmentIds),
+                 with: { address: true },
+                 orderBy: [asc(pickups.shipmentId), asc(pickups.pickup_position)] // Order for predictable first pickup
+             }),
+             db.query.dropoffs.findMany({
+                 where: inArray(dropoffs.shipmentId, shipmentIds),
+                 with: { address: true },
+                 orderBy: [asc(dropoffs.shipmentId), asc(dropoffs.dropoff_position)] // Order for predictable first dropoff
+             }),
+             db.query.items.findMany({
+                 where: inArray(items.shipmentId, shipmentIds)
+             }),
+             db.query.customShipmentDetails.findMany({
+                 where: inArray(customShipmentDetails.shipmentId, shipmentIds)
+             })
+         ]);
+
+         // --- Organize related data into maps for efficient lookup ---
+         const pickupsMap = relatedPickups.reduce((map, p) => {
+             if (p.shipmentId) { 
+                 if (!map.has(p.shipmentId)) map.set(p.shipmentId, []);
+                 map.get(p.shipmentId)!.push(p);
+             }
+             return map;
+         }, new Map<string, (typeof pickups.$inferSelect & { address: typeof addresses.$inferSelect | null })[]>());
+
+         const dropoffsMap = relatedDropoffs.reduce((map, d) => {
+             if (d.shipmentId) {
+                 if (!map.has(d.shipmentId)) map.set(d.shipmentId, []);
+                 map.get(d.shipmentId)!.push(d);
+             }
+             return map;
+         }, new Map<string, (typeof dropoffs.$inferSelect & { address: typeof addresses.$inferSelect | null })[]>());
+
+         const itemsMap = relatedItems.reduce((map, i) => {
+             if (i.shipmentId) {
+                 if (!map.has(i.shipmentId)) map.set(i.shipmentId, []);
+                 map.get(i.shipmentId)!.push(i);
+             }
+             return map;
+         }, new Map<string, (typeof items.$inferSelect)[]>());
+
+         const customDetailsMap = relatedCustomDetails.reduce((map, cd) => {
+             if (cd.shipmentId) {
+                map.set(cd.shipmentId, cd);
+             }
+             return map;
+         }, new Map<string, typeof customShipmentDetails.$inferSelect>());
+
+        // Map each core shipment record using the prepared maps
+        const apiShipments: ApiShipmentDetail[] = shipmentRecords.map(shipment => {
+             const shipmentPickups = pickupsMap.get(shipment.id) || [];
+             const shipmentDropoffs = dropoffsMap.get(shipment.id) || [];
+             const shipmentItems = itemsMap.get(shipment.id) || [];
+             const shipmentCustomDetails = customDetailsMap.get(shipment.id) || null;
+             
+             return mapShipmentDataToApi(
+                 shipment, // Pass the core shipment record (includes bearing now)
+                 shipmentItems,
+                 shipmentPickups[0] || null, // Pass the primary pickup (first in sorted list)
+                 shipmentDropoffs[0] || null, // Pass the primary dropoff (first in sorted list)
+                 shipmentCustomDetails
+             );
+         });
+
+        logger.info(`[API /sim/shipments GET] Successfully fetched and mapped ${apiShipments.length} shipments for documentId: ${documentId}`);
+        return NextResponse.json(apiShipments);
+
     } catch (error: any) {
         logger.error(`[API /sim/shipments GET] Error fetching shipments for document ${documentId}:`, error);
         return NextResponse.json(
