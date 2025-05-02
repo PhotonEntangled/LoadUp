@@ -174,10 +174,10 @@ export const authOptions: AuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        // <<< MODIFIED: Use VERCEL_ENV for secure attribute >>>
-        secure: process.env.VERCEL_ENV === 'production',
-        // Fallback slightly less reliable: secure: nodeEnv === 'production',
-        // <<< END MODIFIED >>>
+        // <<< REVERTED: Rely on default NODE_ENV check for secure attribute >>>
+        secure: process.env.NODE_ENV === 'production',
+        // secure: process.env.VERCEL_ENV === 'production',
+        // <<< END REVERTED >>>
         // domain: // Optional: specify if needed for subdomains
       }
     }
@@ -239,6 +239,4 @@ export const authOptions: AuthOptions = {
   // Align fallback secret with .env.local value
   secret: process.env.NEXTAUTH_SECRET || "your_nextauth_secret_key_should_be_at_least_32_chars", 
   debug: process.env.NODE_ENV === 'development',
-  // <<< ADDED: Explicit useSecureCookies >>>
-  useSecureCookies: true, // Explicitly set to true for HTTPS environments like Vercel
 }; 
