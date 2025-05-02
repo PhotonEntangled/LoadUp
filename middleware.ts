@@ -50,9 +50,10 @@ export async function middleware(req: NextRequest) {
     const cookieNames = cookieHeader ? cookieHeader.split(';').map(c => c.split('=')[0].trim()) : [];
     console.log(`Middleware: Incoming cookie names: ${JSON.stringify(cookieNames)}`);
 
-    // <<< ADDED: Log before getToken >>>
-    console.log(`Middleware: About to call getToken with secret starting: ${secret?.substring(0, 5)}...`);
-    // <<< END ADDED >>>
+    // Log before getToken
+    // <<< MODIFIED: Log more of the secret for verification >>>
+    console.log(`Middleware: About to call getToken with secret starting: ${secret?.substring(0, 10)}... [Length: ${secret?.length}]`);
+    // <<< END MODIFIED >>>
 
     const token = await getToken({ req, secret });
 

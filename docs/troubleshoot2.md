@@ -88,10 +88,14 @@
 2.  Added more verbose logging to `middleware.ts` before `getToken` call. **(Done)**
 3.  Added explicit cookie config in `options.ts`. **(Done)**
 4.  Forced middleware re-deploy with trivial change. **(Done)**
-5.  **Action:** User to **reset/re-verify** `NEXTAUTH_SECRET` in Vercel project environment variables (for *all* relevant environments - Preview/Production), ensuring exact match with `.env.local` and no extra characters. **(Pending User Action)**
-6.  **Action:** User to trigger a Vercel re-deploy after fixing secret. **(Pending User Action)**
-7.  Removed temporary password bypass from `options.ts`. **(Done)**
-8.  Re-test login using correct password (`password`) after secret verification and redeploy. **(Next Step)**
-9.  Analyze Vercel logs again. Expect `Token found...` message if secret is correct.
+5.  **Action:** User to **reset/re-verify** `NEXTAUTH_SECRET` in Vercel project environment variables (for *all* relevant environments - Preview/Production), ensuring exact match with `.env.local` and no extra characters. **(Done by user - Issue persists)**
+6.  **Action:** User to trigger a Vercel re-deploy after fixing secret. **(Done by user - Issue persists)**
+7.  Removed temporary password bypass from `options.ts`. **(Done - Re-applied bypass for isolation test in commit 1ea68eb)**
+8.  Re-test login using correct password (`password`) after secret verification and redeploy. **(Tested - Failed with Password Mismatch - commit f413879)**
+9.  Added logging before bcrypt compare. **(Done - commit 5d61159)**
+10. Re-applied bypass to isolate bcrypt vs session issue. **(Done - commit 1ea68eb)**
+11. **Current Status:** Login bypass works, but middleware logs show `getToken` returns null despite seeing the session cookie. `NEXTAUTH_SECRET` *should* be correct per user update.
+12. Added middleware logging for first 10 chars + length of `NEXTAUTH_SECRET` being used by Edge runtime. **(Done - commit pending)**
+13. **Next Step:** Deploy latest logging, user re-tests login, analyze logs for secret value and token result.
 
 ---
