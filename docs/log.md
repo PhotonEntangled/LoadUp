@@ -1,104 +1,138 @@
-May 02 22:37:27.30
+
+May 02 22:53:01.21
 GET
 200
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /api/auth/signin
-May 02 22:37:26.95
+May 02 22:53:01.18
 GET
 307
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /
 5
 Middleware: No token found. Redirecting to sign-in page.
-May 02 22:37:26.37
+May 02 22:53:00.91
 POST
 302
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /api/auth/callback/credentials
 7
 [AUTH DEBUG] !!! BYPASSING bcrypt.compare FOR dev@loadup.com !!!
-May 02 22:37:16.05
+May 02 22:52:47.27
 GET
 200
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /api/auth/signin
-May 02 22:37:15.90
+May 02 22:52:47.20
 GET
 307
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /
 5
 Middleware: No token found. Redirecting to sign-in page.
-May 02 22:36:57.97
+May 02 22:52:12.61
 GET
 200
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 22:52:12.56
+GET
+307
+load-kqdg70u6s-photonentangleds-projects.vercel.app
+/
+5
+Middleware: No token found. Redirecting to sign-in page.
+May 02 22:52:11.97
+POST
+302
+load-kqdg70u6s-photonentangleds-projects.vercel.app
+/api/auth/callback/credentials
+7
+[AUTH DEBUG] !!! BYPASSING bcrypt.compare FOR dev@loadup.com !!!
+May 02 22:51:53.56
+GET
+200
+load-kqdg70u6s-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 22:51:53.44
+GET
+307
+load-kqdg70u6s-photonentangleds-projects.vercel.app
+/
+5
+Middleware: No token found. Redirecting to sign-in page.
+May 02 22:51:44.24
+GET
+200
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /favicon.png
 --- MIDDLEWARE EXECUTION START ---
-May 02 22:36:57.61
+May 02 22:51:43.86
 GET
 200
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /api/auth/signin
 [AUTH OPTIONS] Determined session cookie name for NODE_ENV='production': __Secure-next-auth.session-token
-May 02 22:36:57.51
+May 02 22:51:43.77
 GET
 307
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /
 5
 Middleware: No token found. Redirecting to sign-in page.
-May 02 22:35:15.18
+May 02 22:50:31.29
 GET
 200
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /api/auth/signin
-May 02 22:35:15.14
+May 02 22:50:31.15
 GET
 307
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /
 5
 Middleware: No token found. Redirecting to sign-in page.
-May 02 22:35:14.80
+May 02 22:50:30.70
 GET
 200
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /api/auth/signin
-May 02 22:35:14.67
+May 02 22:50:30.67
 GET
 307
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /
 5
 Middleware: No token found. Redirecting to sign-in page.
-May 02 22:35:14.09
+May 02 22:50:30.00
 GET
 200
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
-/api/auth/signin
-[AUTH OPTIONS] Determined session cookie name for NODE_ENV='production': __Secure-next-auth.session-token
-May 02 22:35:14.08
-GET
-200
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /api/auth/signin
 2
 Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
-May 02 22:35:13.86
+May 02 22:50:29.96
+GET
+200
+load-kqdg70u6s-photonentangleds-projects.vercel.app
+/api/auth/signin
+[AUTH OPTIONS] Determined session cookie name for NODE_ENV='production': __Secure-next-auth.session-token
+May 02 22:50:29.76
 GET
 307
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /
 5
 Middleware: No token found. Redirecting to sign-in page.
-May 02 22:35:13.80
+May 02 22:50:29.75
 GET
 307
-load-bxyjd0ogp-photonentangleds-projects.vercel.app
+load-kqdg70u6s-photonentangleds-projects.vercel.app
 /
 5
 Middleware: No token found. Redirecting to sign-in page.
+
+
 
 
 
@@ -114,6 +148,7 @@ Middleware: No token found. Redirecting to sign-in page.
   role: 'admin',
   name: 'Development User'
 }
+
 
 
 

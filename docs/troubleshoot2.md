@@ -108,7 +108,8 @@
 
 **Troubleshooting Steps (Latest Attempt):**
 
-1.  **Simplify Cookie Config:** Reverted cookie settings in `app/api/auth/[...nextauth]/options.ts` to default behavior. Removed explicit `useSecureCookies: true` and changed `secure` attribute check back to `process.env.NODE_ENV === 'production'`. Rationale: Eliminate possibility that overrides were causing conflicts with default NextAuth secure cookie handling or environment detection between Node/Edge runtimes. **(Done - commit pending)**
-2.  **Next Step:** Commit and deploy. User re-tests login. Analyze Vercel logs to see if simplifying cookie config resolved the `getToken` failure. If not, consider logging the raw token value after `getToken` in middleware (even if null) and adding logs to the Session callback. 
+1.  **Simplify Cookie Config:** Reverted cookie settings in `app/api/auth/[...nextauth]/options.ts` to default behavior. Removed explicit `useSecureCookies: true` and changed `secure` attribute check back to `process.env.NODE_ENV === 'production'`. Rationale: Eliminate possibility that overrides were causing conflicts with default NextAuth secure cookie handling or environment detection between Node/Edge runtimes. **(Done - Failed)**
+2.  **Add Detailed Token Logging:** Added `console.log` for the raw value returned by `getToken` in `middleware.ts` and for the `token` object received by the `session` callback in `options.ts`. Rationale: Observe the exact state of the token object at different points to pinpoint where the data loss or invalidation occurs. **(Done - commit pending)**
+3.  **Next Step:** Commit and deploy. User re-tests login. Analyze Vercel logs for the new detailed token logs in both middleware and session callback. Compare the logged token structure/values.
 
 ---

@@ -45,6 +45,10 @@ export async function middleware(req: NextRequest) {
 
     const token = await getToken({ req, secret });
 
+    // <<< ADDED: Log the raw token value >>>
+    console.log(`Middleware: getToken returned: ${JSON.stringify(token)}`);
+    // <<< END ADDED >>>
+
     if (!token) {
       // No token found, user is not authenticated
       console.log('Middleware: No token found. Redirecting to sign-in page.');
