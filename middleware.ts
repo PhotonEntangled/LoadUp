@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserRole } from './lib/auth';
+import { getToken } from 'next-auth/jwt';
 
 // Define role-based route access
 const roleBasedAccess: Record<string, UserRole[]> = {
   // ... (original role config)
 };
+
+const protectedRoutes = ['/', '/dashboard', '/documents', '/shipments', '/tracking', '/simulation', '/settings', '/admin']; // Define protected base paths
+const authRoutes = ['/api/auth']; // NextAuth's own routes
+
+// Helper function to check if a route is protected
+function isProtectedRoute(pathname: string): boolean {
+  // Check if the path starts with any of the protected routes exactly or with a trailing slash
+  return protectedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
+}
 
 // This function is called by the middleware to check if the user has access to the requested route
 async function hasAccess(req: NextRequest) {
@@ -19,50 +29,37 @@ async function hasAccess(req: NextRequest) {
 }
 
 export async function middleware(req: NextRequest) {
-  // For development bypassing auth (controlled by env var)
-  if (process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' && process.env.NODE_ENV === 'development') {
-    console.log('Middleware: Bypassing auth check due to NEXT_PUBLIC_BYPASS_AUTH=true');
-    return NextResponse.next();
-  } else {
-    // --- RE-ENABLED AUTH CHECK --- 
-    console.log('Middleware: Performing auth check...');
-    try {
-      // Check if user is authenticated and has access (using placeholder hasAccess for now)
-      // We need a real way to check authentication status here, 
-      // potentially redirecting based on session existence before even calling hasAccess.
-      // This needs integration with NextAuth session checking.
-      // For now, let's *assume* we need to check access for dashboard routes.
-      
-      const requiresAuth = req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname === '/';
-      const { pathname } = req.nextUrl;
-      
-      // Allow access to auth routes explicitly
-      if (pathname.startsWith('/api/auth') || pathname.startsWith('/auth')) {
-         console.log('Middleware: Allowing access to auth route:', pathname);
-         return NextResponse.next();
-      }
+  const { pathname } = req.nextUrl;
+  const secret = process.env.NEXTAUTH_SECRET;
 
-      // Placeholder: Redirect to sign-in if trying to access a protected route
-      // This needs a proper session check!
-      if (requiresAuth) { // Simplified check for now
-         console.log('Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path:', pathname);
-         // TODO: Replace this with a proper check using next-auth session
-         // If no session -> redirect
-         // If session -> NextResponse.next()
-         const signInUrl = new URL('/api/auth/signin', req.nextUrl.origin);
-         // Optionally add callbackUrl to redirect back after login
-         signInUrl.searchParams.set('callbackUrl', req.nextUrl.href);
-         return NextResponse.redirect(signInUrl);
-      }
-      
-      console.log('Middleware: Route does not require auth or check is bypassed (placeholder). Path:', pathname);
-      return NextResponse.next(); // Allow access to non-protected routes
-    } catch (error) {
-      console.error('Middleware error during auth check:', error);
-      // Fallback: Allow request or redirect to an error page?
-      return NextResponse.next(); // Allow request in case of error for now
+  // Skip checks for NextAuth's own API routes and static assets
+  if (pathname.startsWith('/_next') || pathname.startsWith('/api/auth') || pathname.includes('.')) { // Basic check for static files
+    return NextResponse.next();
+  }
+
+  // Check if the route is protected
+  const requiresAuth = isProtectedRoute(pathname);
+
+  if (requiresAuth) {
+    console.log(`Middleware: Checking auth for protected route: ${pathname}`);
+    const token = await getToken({ req, secret });
+
+    if (!token) {
+      // No token found, user is not authenticated
+      console.log('Middleware: No token found. Redirecting to sign-in page.');
+      const signInUrl = new URL('/api/auth/signin', req.nextUrl.origin);
+      signInUrl.searchParams.set('callbackUrl', req.nextUrl.href); 
+      return NextResponse.redirect(signInUrl);
+    } else {
+      // Token found, user is authenticated
+      console.log(`Middleware: Token found for ${token.email}. Allowing access.`);
+      // TODO: Implement role-based access checks here based on token.role if needed
+      return NextResponse.next(); // Allow access
     }
-    // --- END RE-ENABLED AUTH CHECK ---
+  } else {
+    // Route does not require authentication
+    console.log(`Middleware: Route ${pathname} does not require auth. Allowing access.`);
+    return NextResponse.next();
   }
 }
 

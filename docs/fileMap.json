@@ -308,6 +308,11 @@
         "keyImports": ["next-auth", "@/app/api/auth/[...nextauth]/options"],
         "relatedFiles": ["lib/auth.ts", "app/api/auth/[...nextauth]/options.ts"]
     },
+    "middleware.ts": {
+        "description": "Next.js middleware to handle authentication checks. Redirects unauthenticated users attempting to access protected routes to the NextAuth sign-in page. Uses getToken to verify session.",
+        "keyImports": ["next/server", "next-auth/jwt"],
+        "relatedFiles": ["app/api/auth/[...nextauth]/options.ts", ".env.local"]
+    },
     "app/tracking/test-combined": { "status": "deleted" },
     "app/tracking/test-new-map": { "status": "deleted" },
     "app/tracking/test-vehicle-list": { "status": "deleted" },

@@ -1,129 +1,99 @@
-
-May 02 18:07:07.46
+May 02 18:14:12.64
 GET
 200
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /api/auth/signin
-May 02 18:07:07.16
-GET
-302
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/error
-May 02 18:07:06.69
-POST
-302
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/callback/credentials
-Password mismatch for email: admin@loadup.com
-May 02 18:06:13.97
-GET
-200
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/signin
-May 02 18:06:13.72
-GET
-302
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/error
-May 02 18:06:12.93
-POST
-302
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/callback/credentials
-No user found for email: driver@loadup.com
-May 02 18:06:07.20
-GET
-200
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/signin
-May 02 18:06:06.95
-GET
-302
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/error
-May 02 18:06:06.05
-POST
-302
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/callback/credentials
-Password mismatch for email: dev@loadup.com
-May 02 18:05:40.15
-GET
-200
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/signin
-May 02 18:05:40.01
+May 02 18:14:12.53
 GET
 307
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /
 2
 Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
-May 02 18:05:31.19
+May 02 18:14:11.93
+POST
+302
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
+/api/auth/callback/credentials
+3
+[AUTH DEBUG] Bypassing password check for dev@loadup.com
+May 02 18:13:49.65
 GET
 200
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 18:13:49.51
+GET
+307
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
+/
+2
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
+May 02 18:13:27.60
+GET
+200
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /favicon.png
 2
 Middleware: Route does not require auth or check is bypassed (placeholder). Path: /favicon.png
-May 02 18:05:30.80
+May 02 18:13:27.20
 GET
 200
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /api/auth/signin
-May 02 18:05:30.75
+May 02 18:13:27.11
 GET
 307
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /
 2
 Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
-May 02 18:04:50.99
+May 02 18:11:42.65
 GET
 200
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /api/auth/signin
-May 02 18:04:50.95
+May 02 18:11:42.59
 GET
 307
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /
 2
 Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
-May 02 18:04:50.57
+May 02 18:11:42.18
 GET
 200
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /api/auth/signin
-May 02 18:04:50.52
+May 02 18:11:41.99
 GET
 307
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /
 2
 Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
-May 02 18:04:49.99
+May 02 18:11:40.84
 GET
 200
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
+/api/auth/signin
+May 02 18:11:40.66
+GET
+307
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
+/
+2
+Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
+May 02 18:11:40.63
+GET
+200
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /api/auth/signin
 Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
-May 02 18:04:49.89
-GET
-200
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/api/auth/signin
-May 02 18:04:49.78
+May 02 18:11:40.36
 GET
 307
-load-dxodssxfk-photonentangleds-projects.vercel.app
-/
-2
-Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
-May 02 18:04:49.66
-GET
-307
-load-dxodssxfk-photonentangleds-projects.vercel.app
+load-4jlk4tsgf-photonentangleds-projects.vercel.app
 /
 2
 Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path: /
