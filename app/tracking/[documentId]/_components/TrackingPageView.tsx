@@ -8,6 +8,7 @@ import ShipmentCard from '@/components/shipments/ShipmentCard';
 import { TrackingMap, TrackingMapRef } from '@/components/map/TrackingMap';
 import { TrackingControls } from '@/components/map/TrackingControls';
 import { useLiveTrackingStore } from '@/lib/store/useLiveTrackingStore';
+import { trackingService } from '@/services/tracking';
 import { getShipmentsForDocumentContaining, getRouteGeometryAction } from '@/lib/actions/trackingActions';
 import { shipmentStatusEnum } from '@/lib/database/schema';
 
