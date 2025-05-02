@@ -45,13 +45,13 @@ export async function middleware(req: NextRequest) {
       // Placeholder: Redirect to sign-in if trying to access a protected route
       // This needs a proper session check!
       if (requiresAuth) { // Simplified check for now
-         console.log('Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path:', pathname);
+         console.log('Middleware: Route requires auth. Redirecting to default NextAuth sign-in page. Path:', pathname);
          // TODO: Replace this with a proper check using next-auth session
          // If no session -> redirect
          // If session -> NextResponse.next()
-         const signInUrl = new URL('/auth/sign-in', req.nextUrl.origin);
-         // Optionally add callbackUrl
-         // signInUrl.searchParams.set('callbackUrl', req.nextUrl.pathname);
+         const signInUrl = new URL('/api/auth/signin', req.nextUrl.origin);
+         // Optionally add callbackUrl to redirect back after login
+         signInUrl.searchParams.set('callbackUrl', req.nextUrl.href);
          return NextResponse.redirect(signInUrl);
       }
       

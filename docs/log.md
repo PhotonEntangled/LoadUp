@@ -1,266 +1,348 @@
-
-May 02 14:36:18.59
+May 02 16:51:59.64
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/images/truck-marker.svg
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:36:13.88
-POST
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/tracking/18b4434e-ded4-44b8-9534-86b8f8941055
-10
-[INFO] [Action getShipmentsForDocumentContaining] Successfully fetched 6 shipment details for sourceDocumentId: 18b4434e-ded4-44b8-9534-86b8f8941055
-May 02 14:36:12.95
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/tracking/18b4434e-ded4-44b8-9534-86b8f8941055
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-up
 2
-[INFO] [TrackingPage] Rendering for documentId: 18b4434e-ded4-44b8-9534-86b8f8941055
-May 02 14:36:10.40
+Middleware: Allowing access to auth route: /auth/sign-up
+May 02 16:51:59.63
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/tracking/18b4434e-ded4-44b8-9534-86b8f8941055
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
 2
-Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
-May 02 14:36:10.40
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:59.58
 GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/shipments/18b4434e-ded4-44b8-9534-86b8f8941055
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:36:10.00
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/api/documents
-10
-[INFO] API: Returning 1 mapped and filtered documents.
-May 02 14:36:07.97
-POST
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/api/documents
-256
-[WARN] [parserUtils:extractDateField:ENTRY] Field: 'promisedShipDate', Type: string, Value: "1/16/25"
-May 02 14:36:01.42
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/api/documents
-6
-[INFO] API: Found 0 documents matching basic criteria.
-May 02 14:36:00.66
-DELETE
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/api/documents/1877d642-5584-41cc-bd8a-09cc7e13966d
-4
-[INFO] API: Successfully executed delete statement for document ID: 1877d642-5584-41cc-bd8a-09cc7e13966d
-May 02 14:35:56.71
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/tracking/1877d642-5584-41cc-bd8a-09cc7e13966d
-2
-Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
-May 02 14:35:56.71
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/shipments/1877d642-5584-41cc-bd8a-09cc7e13966d
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:54.87
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/api/documents
-14
-[INFO] API: Returning 1 mapped and filtered documents.
-May 02 14:35:46.35
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /dashboard/settings
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:46.30
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/settings
+May 02 16:51:59.55
 GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /dashboard/reports
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:46.26
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/reports
+May 02 16:51:59.54
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:59.54
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /dashboard/drivers
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:46.21
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/drivers
+May 02 16:51:59.53
 GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /dashboard/customers
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:45.91
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/customers
+May 02 16:51:59.48
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:59.46
+GET
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /simulation
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:45.91
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /simulation
+May 02 16:51:59.45
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/dashboard/shipments
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:45.91
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /documents
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:45.91
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /documents
+May 02 16:51:59.45
 GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard/shipments
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/shipments
+May 02 16:51:59.45
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /dashboard
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:45.91
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
+May 02 16:51:59.26
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/tracking-stabilized
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:45.88
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/loadup-logo.svg
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /loadup-logo.svg
+May 02 16:51:59.14
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
+May 02 16:51:59.08
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/api/auth/session
-May 02 14:35:44.32
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:59.04
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
+May 02 16:51:59.02
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:41.53
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:58.93
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
+May 02 16:51:58.59
+POST
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/api/auth/login
+3
+Login API: Redirecting to: /dashboard
+May 02 16:51:43.59
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/favicon.png
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:35:41.34
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:43.55
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.48
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:43.51
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-up
+2
+Middleware: Allowing access to auth route: /auth/sign-up
+May 02 16:51:43.51
+GET
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:43.47
+GET
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:43.36
+GET
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:43.35
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard/settings
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/settings
+May 02 16:51:43.35
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard/reports
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/reports
+May 02 16:51:43.30
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard/drivers
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/drivers
+May 02 16:51:43.25
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /dashboard/customers
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.43
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/customers
+May 02 16:51:43.25
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/dashboard/customers
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.39
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:43.18
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/simulation
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.39
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /documents
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.38
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /documents
+May 02 16:51:43.18
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/tracking-stabilized
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.38
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/dashboard/shipments
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.38
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/dashboard
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.36
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/api/auth/session
-May 02 14:34:32.32
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/documents
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.32
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /simulation
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.32
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /simulation
+May 02 16:51:43.18
 GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/tracking-stabilized
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.32
-GET
-200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /dashboard/shipments
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.32
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/shipments
+May 02 16:51:43.18
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/tracking-stabilized
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /tracking-stabilized
+May 02 16:51:43.18
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /dashboard
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:32.30
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
+May 02 16:51:43.16
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
+load-9ycbj53cb-photonentangleds-projects.vercel.app
 /api/auth/session
-Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
-May 02 14:34:31.67
+May 02 16:51:42.93
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:31.66
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/loadup-logo.svg
+2
+Middleware: Route does not require auth or check is bypassed (placeholder). Path: /loadup-logo.svg
+May 02 16:51:42.84
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:31.19
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:42.80
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
+May 02 16:51:42.75
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
-May 02 14:34:31.16
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:51:42.68
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
+May 02 16:51:42.64
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard
+May 02 16:51:42.23
+POST
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/api/auth/login
+3
+Login API: Redirecting to: /dashboard
+May 02 16:51:12.45
+POST
+401
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/api/auth/login
+2
+Login API: Invalid credentials for: dev@loadup.com
+May 02 16:50:22.92
 GET
 200
-load-1aag4qi7z-photonentangleds-projects.vercel.app
-/
-Middleware: Auth bypass ENV VAR not set/false OR NODE_ENV is not development, but bypassing auth checks anyway as requested.
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:50:22.89
+GET
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-up
+2
+Middleware: Allowing access to auth route: /auth/sign-up
+May 02 16:50:22.89
+GET
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:50:22.85
+GET
+307
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/dashboard/settings
+2
+Middleware: Route requires auth. Redirecting to sign-in (placeholder logic). Path: /dashboard/settings
+May 02 16:50:22.85
+GET
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
+May 02 16:50:22.81
+GET
+200
+load-9ycbj53cb-photonentangleds-projects.vercel.app
+/auth/sign-in
+2
+Middleware: Allowing access to auth route: /auth/sign-in
