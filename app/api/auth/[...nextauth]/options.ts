@@ -67,7 +67,7 @@ const mockUserData = [
   {
     id: "dev-user-01", // Unique ID
     email: "dev@loadup.com",
-    // bcrypt hash for the password "password" (cost factor 10)
+    // bcrypt hash for the password "password" (cost factor 10) - Ensure this is correct
     password: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy", 
     name: "Development User",
     role: UserRole.ADMIN, // Assign appropriate role (e.g., ADMIN for full access)
