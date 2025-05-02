@@ -64,3 +64,28 @@
     - Check Firestore console to confirm mock sender is writing data to the expected path (`/active_vehicles/{shipmentId}`).
 
 ---
+
+## New Issue: Login Succeeds (Bypass Active) but Redirect Loop Back to Sign-in Page
+
+**Date:** [Current Date/Time]
+
+**Symptoms:**
+- After entering credentials for `dev@loadup.com` (with password bypass active), the user is redirected back to `/api/auth/signin` instead of the dashboard.
+- Vercel logs show `[AUTH DEBUG] Bypassing password check...` followed immediately by `Middleware: No token found. Redirecting to sign-in page.` on the subsequent request.
+
+**Context:**
+- Middleware was updated to use `getToken` for session verification.
+- The `authorize` function *is* returning the user object.
+
+**Hypotheses:**
+1.  **`NEXTAUTH_SECRET` Mismatch:** The environment variable might differ between the API route runtime and the Edge middleware runtime in Vercel.
+2.  **Cookie Issue:** NextAuth might not be setting the cookie correctly, or the middleware can't read it (path/domain/HttpOnly issue).
+3.  **Edge Runtime Issue:** Potential subtle problem with `getToken` on the Edge.
+
+**Troubleshooting Steps:**
+1.  Added logging to `middleware.ts` to print incoming cookie names. **(Done)**
+2.  **Action:** User to verify `NEXTAUTH_SECRET` is correctly set and available in Vercel project environment variables (for both Production/Preview/Development environments as applicable).
+3.  Deploy logging changes and re-test login.
+4.  Analyze Vercel logs for cookie names present when "No token found" is logged.
+
+---

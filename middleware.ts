@@ -42,6 +42,12 @@ export async function middleware(req: NextRequest) {
 
   if (requiresAuth) {
     console.log(`Middleware: Checking auth for protected route: ${pathname}`);
+    
+    // Log cookie names for debugging
+    const cookieHeader = req.headers.get('cookie');
+    const cookieNames = cookieHeader ? cookieHeader.split(';').map(c => c.split('=')[0].trim()) : [];
+    console.log(`Middleware: Incoming cookie names: ${JSON.stringify(cookieNames)}`);
+
     const token = await getToken({ req, secret });
 
     if (!token) {
