@@ -114,6 +114,11 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
+        // <<< ADDED: Log inputs before bcrypt comparison >>>
+        console.log(`[AUTH DEBUG] Comparing provided password: '${password}'`);
+        console.log(`[AUTH DEBUG] Against stored hash for ${user.email}: '${user.password}'`);
+        // <<< END ADDED >>>
+
         const passwordMatch = await bcrypt.compare(
           password,
           user.password
