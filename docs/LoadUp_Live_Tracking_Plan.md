@@ -659,9 +659,43 @@ graph LR
     *   **Goal:** Verify the end-to-end functionality, error handling, and user experience of the live tracking feature **(Post-Refactoring)**.
     *   **Prerequisite:** Phase 9.R Refactoring must be complete.
     *   **Note:** A Vercel build failure occurred after pushing Phase 9.7/9.8 changes due to `prefer-const` ESLint errors in `lib/actions/trackingActions.ts`. These errors have been fixed. A re-push is required.
-    *   [ ] **Task 9.9.1: Prepare Test Environment.**
-        *   [ ] **Action:** Ensure Vercel deployment (triggered by push after fixing build errors) is successful.
-        *   [ ] **Action:** Verify Firebase project (`loadup-logistics-dev`) is accessible.
+    *   [X] **Task 9.9.1: Prepare Test Environment.**
+        *   [X] **Action:** Ensure Vercel deployment (triggered by push after fixing build errors and map marker issue) is successful.
+        *   [X] **Action:** Verify Firebase project (`loadup-logistics-dev`) is accessible.
+        *   [X] **Action:** Confirm mock sender (`tools/mock-tracker`) is running and writing data to Firestore for a known `shipmentId`.
+        *   [X] **Action:** Confirm user can log in via NextAuth using development credentials (`dev@loadup.com`).
+    *   [ ] **Task 9.9.2: Functional Testing (Happy Path).**
+        *   [ ] **Action:** Navigate to the document list page.
+        *   [ ] **Action:** Click "Live Tracking" for a document containing the shipment being updated by the mock sender.
+        *   [ ] **Action:** Verify the shipment list loads correctly.
+        *   [ ] **Action:** Select the target shipment from the list.
+        *   [ ] **Expected Result:** Map loads, displays origin/destination, planned route (dashed). Vehicle marker (default 'marker-15') appears and moves smoothly, reflecting updates from the mock sender. Shipment card shows correct details. Controls show accurate timestamp (not stale).
+    *   [ ] **Task 9.9.3: Error Handling Testing (Subscription/Data).**
+        *   [ ] **Action:** Stop the mock sender.
+        *   [ ] **Expected Result:** Marker stops moving. Stale data indicator appears on map/controls after threshold. No errors thrown.
+        *   [ ] **Action:** Restart mock sender.
+        *   [ ] **Expected Result:** Marker resumes movement, stale indicator disappears.
+        *   [ ] **Action:** Test subscribing to a shipment ID *not* being updated by the mock sender (or delete the Firestore doc).
+        *   [ ] **Expected Result:** Appropriate error message displayed on map overlay ("Tracking data not found..." or similar). Retry mechanism should appear.
+        *   [ ] **Action (Requires Rule Change):** Temporarily modify Firestore rules to deny reads for the logged-in user.
+        *   [ ] **Expected Result:** Subscription error overlay appears with permission denied message. Retry fails until rules are fixed.
+    *   [ ] **Task 9.9.4: Error Handling Testing (Static Fetch).**
+        *   [ ] **Action (Requires Code Change):** Temporarily modify `getStaticTrackingDetails` server action to throw an error.
+        *   [ ] **Expected Result:** Page-level error displayed instead of map/list. Retry button appears and functions after code fix.
+    *   [ ] **Task 9.9.5: UI/UX Testing.**
+        *   [ ] **Action:** Test selecting different shipments in the list.
+        *   [ ] **Expected Result:** Map updates correctly, previous subscription is cleaned up, new subscription starts.
+        *   [ ] **Action:** Test map controls (zoom, pan, follow toggle).
+        *   [ ] **Expected Result:** Controls function as expected. Follow mode keeps marker centered; manual interaction disables it.
+        *   [ ] **Action:** Test navigation away from the page and back.
+        *   [ ] **Expected Result:** Subscription is cleaned up on navigation away, restarts correctly on return.
+        *   [ ] **Action:** Check responsiveness on different screen sizes (if applicable).
+        *   [ ] **Expected Result:** Layout remains usable.
+    *   [ ] **Task 9.9.6: Security Rule Verification.**
+        *   [ ] **Action:** Attempt to access the tracking page/subscribe while logged out.
+        *   [ ] **Expected Result:** Redirected to login or prevented by middleware/page logic.
+        *   [ ] **Action (If possible):** Attempt to access Firestore data directly using client console while logged out or logged in as non-admin (if such a role exists).
+        *   [ ] **Expected Result:** Access denied by Firestore rules.
 
 ## 🚨 4. Risk Assessment & Mitigation (Neurotic Deep Dive)
 
@@ -724,9 +758,43 @@ graph LR
     *   **Goal:** Verify the end-to-end functionality, error handling, and user experience of the live tracking feature **(Post-Refactoring)**.
     *   **Prerequisite:** Phase 9.R Refactoring must be complete.
     *   **Note:** A Vercel build failure occurred after pushing Phase 9.7/9.8 changes due to `prefer-const` ESLint errors in `lib/actions/trackingActions.ts`. These errors have been fixed. A re-push is required.
-    *   [ ] **Task 9.9.1: Prepare Test Environment.**
-        *   [ ] **Action:** Ensure Vercel deployment (triggered by push after fixing build errors) is successful.
-        *   [ ] **Action:** Verify Firebase project (`loadup-logistics-dev`) is accessible.
+    *   [X] **Task 9.9.1: Prepare Test Environment.**
+        *   [X] **Action:** Ensure Vercel deployment (triggered by push after fixing build errors and map marker issue) is successful.
+        *   [X] **Action:** Verify Firebase project (`loadup-logistics-dev`) is accessible.
+        *   [X] **Action:** Confirm mock sender (`tools/mock-tracker`) is running and writing data to Firestore for a known `shipmentId`.
+        *   [X] **Action:** Confirm user can log in via NextAuth using development credentials (`dev@loadup.com`).
+    *   [ ] **Task 9.9.2: Functional Testing (Happy Path).**
+        *   [ ] **Action:** Navigate to the document list page.
+        *   [ ] **Action:** Click "Live Tracking" for a document containing the shipment being updated by the mock sender.
+        *   [ ] **Action:** Verify the shipment list loads correctly.
+        *   [ ] **Action:** Select the target shipment from the list.
+        *   [ ] **Expected Result:** Map loads, displays origin/destination, planned route (dashed). Vehicle marker (default 'marker-15') appears and moves smoothly, reflecting updates from the mock sender. Shipment card shows correct details. Controls show accurate timestamp (not stale).
+    *   [ ] **Task 9.9.3: Error Handling Testing (Subscription/Data).**
+        *   [ ] **Action:** Stop the mock sender.
+        *   [ ] **Expected Result:** Marker stops moving. Stale data indicator appears on map/controls after threshold. No errors thrown.
+        *   [ ] **Action:** Restart mock sender.
+        *   [ ] **Expected Result:** Marker resumes movement, stale indicator disappears.
+        *   [ ] **Action:** Test subscribing to a shipment ID *not* being updated by the mock sender (or delete the Firestore doc).
+        *   [ ] **Expected Result:** Appropriate error message displayed on map overlay ("Tracking data not found..." or similar). Retry mechanism should appear.
+        *   [ ] **Action (Requires Rule Change):** Temporarily modify Firestore rules to deny reads for the logged-in user.
+        *   [ ] **Expected Result:** Subscription error overlay appears with permission denied message. Retry fails until rules are fixed.
+    *   [ ] **Task 9.9.4: Error Handling Testing (Static Fetch).**
+        *   [ ] **Action (Requires Code Change):** Temporarily modify `getStaticTrackingDetails` server action to throw an error.
+        *   [ ] **Expected Result:** Page-level error displayed instead of map/list. Retry button appears and functions after code fix.
+    *   [ ] **Task 9.9.5: UI/UX Testing.**
+        *   [ ] **Action:** Test selecting different shipments in the list.
+        *   [ ] **Expected Result:** Map updates correctly, previous subscription is cleaned up, new subscription starts.
+        *   [ ] **Action:** Test map controls (zoom, pan, follow toggle).
+        *   [ ] **Expected Result:** Controls function as expected. Follow mode keeps marker centered; manual interaction disables it.
+        *   [ ] **Action:** Test navigation away from the page and back.
+        *   [ ] **Expected Result:** Subscription is cleaned up on navigation away, restarts correctly on return.
+        *   [ ] **Action:** Check responsiveness on different screen sizes (if applicable).
+        *   [ ] **Expected Result:** Layout remains usable.
+    *   [ ] **Task 9.9.6: Security Rule Verification.**
+        *   [ ] **Action:** Attempt to access the tracking page/subscribe while logged out.
+        *   [ ] **Expected Result:** Redirected to login or prevented by middleware/page logic.
+        *   [ ] **Action (If possible):** Attempt to access Firestore data directly using client console while logged out or logged in as non-admin (if such a role exists).
+        *   [ ] **Expected Result:** Access denied by Firestore rules.
 
 ## 🔮 6. Future Enhancements & Refactoring Opportunities
 

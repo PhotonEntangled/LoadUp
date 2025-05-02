@@ -42,3 +42,25 @@
 **Next Step:** Proceed immediately to Phase 9.9 (Testing) to rigorously verify the refactored implementation, paying close attention to potential side effects from the refactoring process and the manual file system changes.
 
 ---
+
+## New Issue: Map not displaying on live tracking page (`/tracking/[documentId]`), shipment cards show N/A, no markers/route. Errors related to SVG loading and potential Firestore subscription failures.
+
+**Date:** [Current Date/Time]
+
+**Context:** Occurred after integrating `last_known_bearing` and attempting to use a custom SVG map marker. Firestore rules might also be blocking reads due to lack of authentication context.
+
+**Troubleshooting Steps:**
+1.  Removed custom SVG loading in `TrackingMap.tsx`, reverted to default `'marker-15'` icon. **(Done)**
+2.  Identified that Firestore rules require authenticated user (`request.auth != null`).
+3.  Confirmed NextAuth Credentials provider has a development user (`dev@loadup.com`). **(Done)**
+4.  Confirmed Firebase Project ID (`loadup-logistics-dev`) is correct in `.env.local`. **(Done)**
+5.  Verified Firestore Security rules allow reads for authenticated users. **(Done - Rules provided by user)**
+6.  Confirmed `FirestoreLiveTrackingService.ts` reads from correct path (`/active_vehicles/{shipmentId}`). **(Done)**
+7.  **Next Steps:**
+    - Deploy latest fix (default marker).
+    - Verify user can log in using dev credentials.
+    - Test live tracking page again while authenticated.
+    - Check browser console logs and network tab for Firestore connection/read errors *after* logging in.
+    - Check Firestore console to confirm mock sender is writing data to the expected path (`/active_vehicles/{shipmentId}`).
+
+---
