@@ -191,3 +191,46 @@ The persistence of the `TypeError` on the original route, despite using the Neon
 4. **Further Drizzle Investigation (If Alt Fails):** If even direct SQL fails, there might be a more fundamental issue with database connectivity or permissions in the Vercel environment that needs investigation (e.g., environment variable propagation, Neon role permissions).
 
 ---
+
+## Update on Database Integration Issue (May 03 - Continued)
+
+**Date:** 2025-05-03
+
+**Test Results:**
+
+We deployed the UI fix and the alternate upload endpoint (`/api/documents/alt-upload`) which uses direct SQL via `@neondatabase/serverless`.
+
+- **UI:** The "Use alternate upload method (direct SQL)" checkbox appeared correctly.
+- **Alternate Endpoint Test:** Uploading using the alternate endpoint **still resulted in an HTTP 500 error**.
+
+**Server Log Analysis (alt-upload):**
+
+The Vercel logs for the `/api/documents/alt-upload` failure show:
+
+```
+POST 500 load-i87len66e-photonentangleds-projects.vercel.app /api/documents/alt-upload 2
+⨯ TypeError: (0 , d.I8) is not a function at f (/var/task/.next/server/app/api/documents/alt-upload/route.js:1:1952)
+```
+
+**CRITICAL FINDING:** This error is virtually identical in nature and location pattern to the errors encountered with the original `/api/documents` route using Drizzle ORM's `insert().values()`.
+
+**Revised Technical Analysis:**
+The failure of *both* the Drizzle ORM pattern *and* the direct Neon `sql` tag pattern with the same underlying `TypeError` strongly indicates the issue is **not specific to the Drizzle `insert()` method**. 
+
+Instead, it points to a more fundamental incompatibility or conflict within the Vercel serverless function environment affecting the `@neondatabase/serverless` driver itself. The Vercel build process, potentially influenced by other project dependencies (like `next-auth` or others added recently), seems to be breaking the Neon driver's internal functionality during compilation/bundling.
+
+**Next Steps (Revising Strategy):**
+
+1.  **Dependency Review & Isolation:**
+    *   Carefully review `package.json` for any recently added or updated dependencies that might conflict or influence the build process (especially anything related to Node internals, fetch, or networking).
+    *   **Crucial Test:** Temporarily **remove `next-auth` and related dependencies** (`@auth/drizzle-adapter`, etc.) entirely from the project, redeploy, and test *both* the original `/api/documents` and `/api/documents/alt-upload` endpoints. This will definitively confirm if `next-auth`'s presence in the dependency tree is somehow corrupting the Neon driver during the build.
+
+2.  **Vercel Build Log Analysis:** Examine the Vercel deployment build logs (not just runtime logs) for any warnings or errors related to module resolution, tree-shaking, or bundling, particularly concerning `@neondatabase/serverless` or related packages.
+
+3.  **Try `postgres.js` Driver Again:** Given the Neon driver seems fundamentally broken in this Vercel build, revisit using the `postgres.js` driver (`drizzle-orm/postgres-js`). While it failed before, the context might have changed, or we might configure it differently. This adapter is generally more robust in standard Node environments.
+
+4.  **Minimal Reproduction:** If the above steps don't reveal the cause, create a *minimal* new Next.js project with only `@neondatabase/serverless`, Drizzle, and the simplest possible API route performing an insert, deployed to Vercel. See if the error occurs there. This helps isolate the issue from other project complexities.
+
+We will start with **Step 1: Removing `next-auth`** as the most direct way to test the dependency conflict hypothesis.
+
+---
