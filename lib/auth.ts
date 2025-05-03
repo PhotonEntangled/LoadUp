@@ -5,6 +5,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from 'bcryptjs';
 import { users } from './database/schema';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from "next-auth/next";
+import { logger } from '@/utils/logger';
 
 // Define user roles (Consider moving to a dedicated types file)
 export enum UserRole {
@@ -31,7 +33,17 @@ declare module "next-auth" {
 
 // --- ACTUAL AUTH OPTIONS --- 
 export const authOptions: NextAuthOptions = { 
-  adapter: DrizzleAdapter(db),
+  adapter: (() => { 
+      logger.info("[Auth Options] Initializing DrizzleAdapter...");
+      const adapter = DrizzleAdapter(db);
+      logger.info("[Auth Options] DrizzleAdapter initialized.");
+      return adapter;
+  })(),
+  session: {
+    strategy: "database", // Explicitly set strategy if using adapter
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -40,123 +52,155 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
-          return null;
+        logger.info(`[Authorize] Attempting authorization for email: ${credentials?.email}`);
+        if (!credentials?.email || !credentials?.password) {
+          logger.warn('[Authorize] Missing email or password.');
+          return null; // Or throw appropriate error
         }
-        
-        const user = await db.query.users.findFirst({
-          where: eq(users.email, credentials.email as string)
-        });
+
+        let user = null;
+        try {
+          logger.debug(`[Authorize] Querying database for user: ${credentials.email}`);
+          user = await db.query.users.findFirst({
+            where: eq(users.email, credentials.email),
+          });
+          logger.debug(`[Authorize] Database query result for ${credentials.email}: ${user ? 'User Found' : 'Not Found'}`);
+        } catch (dbError: any) {
+          logger.error(`[Authorize] Database error querying user ${credentials.email}: ${dbError.message}`, { stack: dbError.stack });
+          return null; // Return null on DB error during auth
+        }
 
         if (!user) {
-          console.log(`[Authorize] User not found: ${credentials.email}`);
+          logger.warn(`[Authorize] No user found for email: ${credentials.email}`);
           return null;
         }
         
         // If password bypass is active
         if (process.env.NEXTAUTH_PASSWORD_BYPASS === "true") {
-             console.log(`[AUTH DEBUG] Bypassing password check for ${credentials.email}`);
-             // Use existing fields from schema
-             return { 
+             logger.warn(`[Authorize] Bypassing password check for ${credentials.email}`);
+             const userToReturn = { 
                  id: user.id,
                  name: user.name,
                  email: user.email,
                  role: user.role as UserRole, // Ensure role matches enum
-                 // image: user.image // REMOVED: image column doesn't exist in schema
-             }; 
+                 // image: user.image // Schema doesn't have image
+             };
+             logger.info(`[Authorize] Bypass successful. Returning user: ${JSON.stringify(userToReturn)}`);
+             return userToReturn;
         }
 
         // Regular password check
-        // Use the 'password' field from schema, assuming it holds the hash
         if (!user.password) { 
-            console.log(`[Authorize] User ${credentials.email} has no password set.`);
-            return null;
+          logger.error(`[Authorize] User ${credentials.email} found but has no password hash set.`);
+          return null; // Cannot authenticate if user has no password
         }
 
-        const passwordMatch = await bcrypt.compare(credentials.password as string, user.password);
-        console.log(`[Authorize] Password match for ${credentials.email}: ${passwordMatch}`);
+        let isValidPassword = false;
+        try {
+          logger.debug(`[Authorize] Comparing provided password with hash for ${credentials.email}`);
+          isValidPassword = await bcrypt.compare(credentials.password, user.password);
+          logger.debug(`[Authorize] Password validation result for ${credentials.email}: ${isValidPassword}`);
+        } catch (compareError: any) {
+             logger.error(`[Authorize] Error comparing password hash for ${credentials.email}: ${compareError.message}`, { stack: compareError.stack });
+             return null; // Return null on hash comparison error
+        }
 
-        if (passwordMatch) {
-          // Return the user object expected by NextAuth, using fields from schema
-          return { 
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role as UserRole, // Ensure role matches enum
-            // image: user.image // REMOVED: image column doesn't exist in schema
-          }; 
+        if (isValidPassword) {
+          const userToReturn = { 
+              id: user.id, 
+              name: user.name, 
+              email: user.email,
+              role: user.role as UserRole 
+          };
+          logger.info(`[Authorize] Password valid. Returning user: ${JSON.stringify(userToReturn)}`);
+          return userToReturn;
         } else {
+          logger.warn(`[Authorize] Invalid password for email: ${credentials.email}`);
           return null;
         }
       }
     })
-    // Add other providers like Google, etc. if needed
   ],
-  session: { strategy: "jwt" }, // Use JWT for session strategy
-  pages: {
-    signIn: '/auth/sign-in', 
-    // error: '/auth/error', // Optional: Custom error page
-    // verifyRequest: '/auth/verify-request', // Optional: Email verification page
-    // newUser: '/auth/new-user' // Optional: Redirect new users
-  },
   callbacks: {
     async jwt({ token, user }) {
-      // If user object exists (occurs on sign in), add custom properties to the token
-      if (user) {
-        token.id = user.id;
-        token.role = (user as any).role; // Role might be directly on user or need casting
-      }
-      return token;
+        logger.debug(`[Callback JWT] Fired. User present: ${!!user}, Token received: ${JSON.stringify(token)}`);
+        // This callback is typically used with JWT strategy
+        // If using DB strategy, user info should be added in the session callback
+        if (user) {
+          // On sign in, add user properties to the token
+          token.id = user.id;
+          token.role = user.role;
+          logger.debug(`[Callback JWT] Adding user info to token: ${JSON.stringify({id: user.id, role: user.role})}`);
+        }
+        logger.debug(`[Callback JWT] Returning token: ${JSON.stringify(token)}`);
+        return token;
     },
-    async session({ session, token }) {
-      // Add custom properties from the token to the session object
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as UserRole;
+    async session({ session, token, user }) {
+      // The `user` object here comes from the adapter based on session ID
+      // The `token` object is only available if using JWT strategy (and jwt callback)
+      logger.info(`[Callback Session] Fired. Session received: ${JSON.stringify(session)}, User object (from adapter): ${JSON.stringify(user)}, Token object (JWT only): ${JSON.stringify(token)}`);
+
+      // Ensure session.user exists
+      if (session.user) {
+          // Add id and role from the user object (fetched by adapter) to the session
+          if (user) { // Check if user object from adapter exists
+            session.user.id = user.id;
+            session.user.role = user.role as UserRole | null;
+            logger.debug(`[Callback Session] Added id/role from adapter user: ${JSON.stringify({ id: user.id, role: user.role })}`);
+          } else {
+            // This case might happen if adapter fails or if JWT strategy is somehow mixed?
+            logger.warn(`[Callback Session] User object from adapter was missing. Session ID might be invalid or adapter failed.`);
+            // We might want to invalidate the session here by returning null or an empty session?
+            // For now, just log, session might still contain basic info like email/name
+          }
+      } else {
+         logger.warn(`[Callback Session] Received session object without 'user' property.`);
       }
+      
+      logger.info(`[Callback Session] Returning session: ${JSON.stringify(session)}`);
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
-  // debug: process.env.NODE_ENV === 'development', // Enable debug logs in dev
-};
+  pages: {
+    signIn: '/auth/sign-in', 
+    // signOut: '/auth/sign-out',
+    // error: '/auth/error', // Optional
+    // verifyRequest: '/auth/verify-request', // Optional
+    // newUser: '/auth/new-user' // Optional
+  },
+  debug: process.env.NODE_ENV !== 'production', // Enable debug logs in dev
+  // Add events for logging if needed
+  events: {
+    async signIn(message) { logger.info(`[Event SignIn] User signed in: ${JSON.stringify(message)}`) },
+    async signOut(message) { logger.info(`[Event SignOut] User signed out: ${JSON.stringify(message)}`) },
+    async createUser(message) { logger.info(`[Event CreateUser] User created: ${JSON.stringify(message)}`) },
+    async updateUser(message) { logger.info(`[Event UpdateUser] User updated: ${JSON.stringify(message)}`) },
+    async linkAccount(message) { logger.info(`[Event LinkAccount] Account linked: ${JSON.stringify(message)}`) },
+    async session(message) { logger.debug(`[Event Session] Session event: ${JSON.stringify(message)}`) }, // Debug level for potentially noisy session events
+  }
+}; 
 
-// --- Get Server Session --- 
-// Standard way to get session in Server Components / API Routes
-import { getServerSession } from "next-auth/next"
+// Export handlers, signIn, signOut
+// logger.debug("[lib/auth] Initializing NextAuth handlers...");
+export const { handlers, signIn: nextAuthSignIn, signOut: nextAuthSignOut } = NextAuth(authOptions);
+// logger.debug("[lib/auth] NextAuth handlers initialized.");
 
-export const auth = () => getServerSession(authOptions);
+// Re-export signIn and signOut for potential use in Server Actions
+// (Ensure these are not confused with client-side imports from next-auth/react)
+export { nextAuthSignIn as signIn, nextAuthSignOut as signOut };
 
-// --- Authentication Functions --- 
-// Use the actual NextAuth handlers/functions
-const { handlers, signIn, signOut } = NextAuth(authOptions);
+/**
+ * Wrapper for `getServerSession` to simplify usage
+ * IMPORTANT: Use this in Server Components and Route Handlers
+ */
+export async function auth() {
+  // logger.debug("[auth func] Calling getServerSession...");
+  const session = await getServerSession(authOptions);
+  // logger.debug(`[auth func] getServerSession returned: ${session ? JSON.stringify(session) : 'null'}`);
+  return session;
+}
 
-export { handlers, signIn, signOut };
-
-// Remaining helper functions (getCurrentUser, isAdmin, etc.) can stay the same
-// or be slightly adapted if needed based on the final Session type.
-
-// REMOVE the old stub/mock logic
-/*
-// Define a type for the auth object to ensure consistency
-type AuthFunctions = {
-// ... stubs ... 
-};
-// Default object if auth is not initialized (prevents runtime errors)
-const defaultAuthObject: AuthFunctions = {
-// ... stubs ... 
-};
-// Attempt to initialize auth, but catch errors if dependencies are missing
-let realAuthObject: AuthFunctions | null = null;
-// ... try/catch with stubs ... 
-// Export the correct auth functions (either real or stubs)
-const selectedAuth = realAuthObject || defaultAuthObject;
-// export const auth = selectedAuth.auth; // Already defined above
-export const signIn = selectedAuth.signIn;
-export const signOut = selectedAuth.signOut;
-*/
-
-// ... Keep getCurrentUser, isAdmin, createBypassAuth etc. ... 
+// ... rest of file (isAdmin, getCurrentUser etc.)
 
 export async function getCurrentUser(): Promise<{ id: string; name: string; email: string; role: UserRole } | null> {
   // Get session data using the real auth function
@@ -170,7 +214,7 @@ export async function getCurrentUser(): Promise<{ id: string; name: string; emai
     id: session.user.id, // Should now be correctly typed from Session augmentation
     name: session.user.name ?? 'N/A',
     email: session.user.email ?? 'N/A',
-    role: session.user.role ?? UserRole.USER, // Provide default if role is unexpectedly null
+    role: session.user.role ?? UserRole.USER, 
   };
 }
 
