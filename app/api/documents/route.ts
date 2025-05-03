@@ -177,8 +177,11 @@ function calculateAggregateStatus(
 
 // GET handler for /api/documents
 export async function GET(request: NextRequest) {
-  logger.info("API: GET /api/documents called");
+  logger.info("API: GET /api/documents called (MINIMAL TEST)");
 
+  // --- START MINIMAL TEST --- 
+  // Comment out all original logic to isolate the issue
+  /*
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -187,37 +190,22 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id;
 
-    // Fetch user from the database to ensure they exist (Optional, but good practice)
-    // Corrected: Use imported 'users' table
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });
-    // Add check if user actually exists if needed
-    // if (!user) { ... handle user not found ... }
 
-  const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     const searchQuery = searchParams.get('search')?.trim();
-    const statusFilter = searchParams.get('status')?.trim(); // Frontend status filter
+    const statusFilter = searchParams.get('status')?.trim();
 
     logger.info(`API: Filtering with search: '${searchQuery || 'N/A'}', status: '${statusFilter || 'N/A'}`);
 
-    // --- Construct Drizzle Query Conditions ---
-    // Corrected: Use the actual foreign key column name
     const baseCondition = eq(documents.uploadedById, userId);
     const conditions: SQL[] = [baseCondition];
-  if (searchQuery) {
+    if (searchQuery) {
       conditions.push(like(documents.filename, `%${searchQuery}%`));
     }
 
-    // Note: Status filtering might need adjustment.
-    // Do we filter by the *new* aggregate status or the old document DB status?
-    // For now, let's assume filtering happens *after* fetching and calculating.
-    // If performance is an issue, we'll need to filter directly in the DB query,
-    // which requires translating frontend statuses back to potential DB statuses or
-    // storing the aggregate status in the DB.
-
-    // --- Execute Query to get Documents ---
-    // Select necessary document fields
     const documentQuery = db
       .select({
         id: documents.id,
@@ -228,24 +216,19 @@ export async function GET(request: NextRequest) {
         createdAt: documents.createdAt
       })
       .from(documents)
-      // Corrected: Use and() helper correctly within where()
       .where(and(...conditions))
-      .orderBy(desc(documents.createdAt)); // Sort by creation date
+      .orderBy(desc(documents.createdAt));
 
     logger.debug("Executing Drizzle document query:", documentQuery.toSQL());
-    // Apply explicit type
     const dbDocuments: SelectedDocument[] = await documentQuery;
     logger.info(`API: Found ${dbDocuments.length} documents matching basic criteria.`);
 
     if (dbDocuments.length === 0) {
-      return NextResponse.json([]); // No documents found, return early
+      return NextResponse.json([]);
     }
 
-    // Add explicit type for 'doc' parameter
     const documentIds = dbDocuments.map((doc: SelectedDocument) => doc.id);
 
-    // --- Execute Query to get Shipment Statuses for these Documents ---
-    // Fetch shipment statuses linked to the retrieved documents
     const shipmentStatusQuery = db
         .select({
             documentId: shipmentsErd.sourceDocumentId,
@@ -258,27 +241,22 @@ export async function GET(request: NextRequest) {
     const dbShipmentStatuses = await shipmentStatusQuery;
     logger.info(`API: Found ${dbShipmentStatuses.length} shipment status entries for ${documentIds.length} documents.`);
 
-    // Group shipment statuses by document ID for efficient lookup
     const statusesByDocumentId: Record<string, (ShipmentStatus | null)[]> = {};
     for (const shipment of dbShipmentStatuses) {
         if (shipment.documentId) {
             if (!statusesByDocumentId[shipment.documentId]) {
                 statusesByDocumentId[shipment.documentId] = [];
             }
-            // Map the raw DB status before adding
             statusesByDocumentId[shipment.documentId].push(mapDbShipmentStatus(shipment.status));
         }
     }
 
-    // --- Map results to DocumentMetadata including Aggregate Status ---
-    // Add explicit type for 'doc' parameter
     let mappedResults: DocumentMetadata[] = dbDocuments.map((doc: SelectedDocument) => {
         const shipmentStatuses = statusesByDocumentId[doc.id] || [];
         const aggregateStatus = calculateAggregateStatus(shipmentStatuses, doc.status);
 
         return {
             id: doc.id,
-            // Handle potential null filename safely
             filename: doc.filename || 'Unknown Filename',
             dateParsed: formatDate(doc.parsedDate),
             shipments: doc.shipmentCount ?? 0,
@@ -286,8 +264,7 @@ export async function GET(request: NextRequest) {
         };
     });
 
-    // --- Apply Frontend Status Filter (Post-Calculation) ---
-  if (statusFilter && statusFilter !== 'all') {
+    if (statusFilter && statusFilter !== 'all') {
        logger.info(`API: Applying frontend status filter: '${statusFilter}'`);
        mappedResults = mappedResults.filter(doc =>
            doc.shipmentSummaryStatus.toLowerCase() === statusFilter.toLowerCase()
@@ -302,6 +279,11 @@ export async function GET(request: NextRequest) {
     logger.error(`API: Error fetching documents: ${error.message}`, { stack: error.stack });
     return NextResponse.json({ message: 'Error fetching documents', error: error.message }, { status: 500 });
   }
+  */
+  // --- END MINIMAL TEST --- 
+
+  // Return empty array for testing purposes
+  return NextResponse.json([]);
 }
 
 // Helper function to determine DocumentType from filename
