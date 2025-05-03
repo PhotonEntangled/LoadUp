@@ -329,7 +329,8 @@ export async function POST(request: NextRequest) {
   let finalStatus: typeof documentStatusEnum.enumValues[number] = 'ERROR'; // Default to error
   let processedCount = 0;
   let failedCount = 0;
-  const processingErrors: string[] = []; // Store specific bundle errors
+  const processingErrors: string[] = [];
+  let parsedBundles: ParsedShipmentBundle[] = []; // Initialize
 
   try {
     const formData = await request.formData();
@@ -346,22 +347,16 @@ export async function POST(request: NextRequest) {
 
     logger.info(`API: Received file: ${filename}, Type: ${fileType}, Size: ${fileSize} bytes`);
 
-    // Read file content
     const fileBuffer = await file.arrayBuffer();
 
-    // TODO: Implement actual file storage (e.g., S3, Azure Blob) and get filePath
-    // const filePath = `uploads/${filename}`; // Placeholder path
-
-    // 1. Create initial Document record
+    // 1. Create initial Document record (KEEP THIS)
     logger.info(`API: Creating initial document record for ${filename}`);
     const newDocument = await db.insert(documents).values({
       filename: filename,
-      // filePath: filePath,
       fileType: fileType,
       fileSize: fileSize,
-      status: 'PROCESSING', // Start with processing status
-      uploadedById: userId, // CORRECT: This will now use the userId from the session
-      // batchId: null, // Assign later if part of a batch upload
+      status: 'PROCESSING',
+      uploadedById: userId,
     }).returning({ insertedId: documents.id });
 
     if (!newDocument || newDocument.length === 0 || !newDocument[0]?.insertedId) {
@@ -371,22 +366,19 @@ export async function POST(request: NextRequest) {
     docId = newDocument[0].insertedId;
     logger.info(`API: Created document record with ID: ${docId}`);
 
-    // --- Parsing and Transaction Logic ---
-    // 2. Instantiate Parser Service
+    // 2. Instantiate Parser Service (KEEP THIS)
     const parser = new ExcelParserService();
 
-    // 3. Call Parser Service
+    // 3. Call Parser Service (KEEP THIS)
     logger.info(`API: Starting parsing for document ${docId}`);
-    // Ensure parseExcelFile returns the correct type: ParsedShipmentBundle[]
     const detectedDocumentType = determineDocumentType(filename);
-    // Ensure parseExcelFile returns the correct type: ParsedShipmentBundle[]
-    const parsedBundles: ParsedShipmentBundle[] = await parser.parseExcelFile(fileBuffer, {
-      documentType: detectedDocumentType, // Pass the detected type
-      fileName: filename // Pass the filename for context/logging within parser
+    parsedBundles = await parser.parseExcelFile(fileBuffer, {
+      documentType: detectedDocumentType,
+      fileName: filename
     });
     logger.info(`API: Parsed ${parsedBundles.length} shipment bundles from document ${docId} (Detected Type: ${detectedDocumentType})`);
 
-    // ---- BEGIN DEBUG: Save parser output ----
+    // --- DEBUG SAVE OUTPUT (KEEP THIS) ---
     try {
       const debugOutputDir = path.resolve(process.cwd(), '.debug_output');
       // <<< CHANGE: Add timestamp to filename >>>
@@ -434,96 +426,99 @@ export async function POST(request: NextRequest) {
     }
     // ---- END DEBUG: Save parser output ----
 
-    // Check if parsing produced any bundles before starting transaction
+    // --- START ISOLATION: Comment out bundle processing --- 
+    /*
     if (parsedBundles.length === 0) {
       logger.warn(`API: No shipment bundles were parsed from ${filename}. Updating document status to PROCESSED (with 0 shipments).`);
       finalStatus = 'PROCESSED';
       processedCount = 0;
-      // Skip transaction block if nothing to process
     } else {
-      // 4. Process bundles sequentially (calling insertShipmentBundle for each)
       logger.info(`API: Processing ${parsedBundles.length} bundles for document ${docId}...`);
       let successfulInserts = 0;
       const failedBundleIndices: number[] = [];
 
-      // <<<< RESTORE DB INSERTION LOOP >>>>
-      // Loop through all parsed bundles
       for (let index = 0; index < parsedBundles.length; index++) {
         const bundle = parsedBundles[index];
-        const bundleNumber = index + 1; // 1-based index for logging
+        const bundleNumber = index + 1;
         
         try {
-          // Use 1-based index for logging clarity
           logger.debug(`API: Attempting to insert Bundle ${bundleNumber}/${parsedBundles.length}... Document ID: ${docId}`); 
           
-          // Ensure sourceDocumentId is set on the bundle before inserting
           if (!bundle.metadata) {
-              logger.warn(`API: Bundle ${bundleNumber} is missing metadata. Initializing.`);
-              bundle.metadata = { originalRowData: {}, originalRowIndex: -1 }; // Ensure metadata exists
+              bundle.metadata = { originalRowData: {}, originalRowIndex: -1 };
           }
           if (!bundle.metadata.sourceDocumentId) {
-              logger.debug(`API: Setting sourceDocumentId ${docId} on Bundle ${bundleNumber}`);
               bundle.metadata.sourceDocumentId = docId;
           }
           
-          // Assume insertShipmentBundle returns { success: boolean, shipmentId?: string, error?: string }
-          const insertionResult = await insertShipmentBundle(bundle); // Call the transactional inserter
+          // ***** COMMENTING OUT THE ACTUAL INSERT CALL *****
+          // const insertionResult = await insertShipmentBundle(bundle);
+          // Simulate success for testing the update step
+          const insertionResult = { success: true, shipmentId: `simulated-${bundleNumber}` }; 
           
-          if (insertionResult.success && insertionResult.shipmentId) { // Check for success and shipmentId
+          if (insertionResult.success && insertionResult.shipmentId) {
               successfulInserts++;
-               logger.info(`API: Successfully inserted Bundle ${bundleNumber}/${parsedBundles.length}. Shipment ID: ${insertionResult.shipmentId}`); // Use result.shipmentId
+               logger.info(`API: Successfully SIMULATED insertion for Bundle ${bundleNumber}/${parsedBundles.length}. Sim Shipment ID: ${insertionResult.shipmentId}`);
           } else {
-               // Insertion failed or didn't return expected ID
-               logger.warn(`API: Failed to insert Bundle ${bundleNumber}. Reason: ${insertionResult.error || 'insertShipmentBundle returned success=false or missing shipmentId'}.`); // Log error from result
-               failedBundleIndices.push(index); // Use 0-based index for internal tracking
+               logger.warn(`API: Failed to SIMULATE insert Bundle ${bundleNumber}.`);
+               failedBundleIndices.push(index);
           }
         } catch (insertError: any) {
-          // Log with specific bundle number that failed
-          logger.error(`API: Error inserting Bundle ${bundleNumber}/${parsedBundles.length} for document ${docId}: ${insertError.message}`, { stack: insertError.stack, bundleIndex: index }); 
-          failedBundleIndices.push(index); // Use 0-based index for internal tracking
-          // Continue processing other bundles
+          logger.error(`API: Error SIMULATING insert Bundle ${bundleNumber}/${parsedBundles.length}: ${insertError.message}`, { stack: insertError.stack, bundleIndex: index }); 
+          failedBundleIndices.push(index);
         }
-      } // ---> END OF LOOP <--- 
+      } 
 
-      logger.info(`API: Insertion loop complete for document ${docId}. Successful Inserts: ${successfulInserts}, Failed Bundles: ${failedBundleIndices.length} (Indices: ${failedBundleIndices.join(', ')})`); // Added failed indices
-      // <<<< END RESTORE >>>>
+      logger.info(`API: SIMULATED Insertion loop complete for document ${docId}. Successful: ${successfulInserts}, Failed: ${failedBundleIndices.length}`);
 
-      // Determine final status based on bundle processing results
       if (failedBundleIndices.length === 0) {
           finalStatus = 'PROCESSED';
           processedCount = successfulInserts;
-          logger.info(`API: All ${processedCount} bundles processed successfully for document ${docId}.`);
+          logger.info(`API: All ${processedCount} bundles SIMULATED successfully for document ${docId}.`);
       } else {
           finalStatus = 'ERROR';
           processedCount = successfulInserts; 
           failedCount = failedBundleIndices.length;
-          // Store specific error messages from failed bundles
-          processingErrors.push(...failedBundleIndices.map(idx => `Bundle ${idx + 1} failed: ${parsedBundles[idx]?.metadata?.processingErrors?.join(', ') || 'Unknown error'}`));
-          logger.warn(`API: Partially processed document ${docId}. Success: ${processedCount}, Failed: ${failedCount}.`);
+          processingErrors.push(...failedBundleIndices.map(idx => `Bundle ${idx + 1} failed simulation: ${parsedBundles[idx]?.metadata?.processingErrors?.join(', ') || 'Unknown error'}`));
+          logger.warn(`API: Partially SIMULATED document ${docId}. Success: ${processedCount}, Failed: ${failedCount}.`);
       }
-      
-    } // End of else block (parsedBundles.length > 0)
+    }
+    */
+    // --- END ISOLATION --- 
 
-    // 5. Update Document Status (outside transaction)
-    logger.info(`API: Updating final status for document ${docId} to ${finalStatus} with ${processedCount} shipments.`);
+    // Determine final status based ONLY on parsing success for this test
+    if (parsedBundles.length > 0) {
+        finalStatus = 'PROCESSED'; // Assume processed if parsing yielded bundles
+        processedCount = 0; // But set count to 0 as we didn't insert
+        failedCount = parsedBundles.length;
+        processingErrors.push('Bundle insertion skipped for testing.');
+        logger.info(`API: Test Mode - Skipping bundle insertion. Marking as PROCESSED if bundles exist.`);
+    } else {
+        finalStatus = 'PROCESSED'; // Also processed if 0 bundles
+        processedCount = 0;
+         logger.warn(`API: Test Mode - No bundles parsed. Marking as PROCESSED.`);
+    }
+
+    // 5. Update Document Status (KEEP THIS - tests db.update)
+    logger.info(`API: Updating final status for document ${docId} to ${finalStatus} with ${processedCount} shipments (NOTE: Bundle insertion was SKIPPED).`);
     await db.update(documents)
       .set({
         status: finalStatus,
-        shipmentCount: processedCount,
+        shipmentCount: processedCount, // Will be 0
         parsedDate: new Date(), 
-        errorMessage: processingErrors.join('; ') || null // Store concatenated errors
+        errorMessage: processingErrors.join('; ') || null
       })
       .where(eq(documents.id, docId));
 
-    // 6. Return success response
+    // 6. Return success response (Modified for testing)
     return NextResponse.json({
-      message: `Document processed. Status: ${finalStatus}`,
+      message: `Document processed (TEST MODE - INSERTION SKIPPED). Status: ${finalStatus}`,
       documentId: docId,
       filename: filename,
       totalBundlesFound: parsedBundles.length,
       processedShipments: processedCount,
-      failedShipments: failedCount, 
-      errors: processingErrors, // Include detailed errors
+      failedShipments: failedCount,
+      errors: processingErrors,
     }, { status: 200 });
 
   } catch (error: any) {
