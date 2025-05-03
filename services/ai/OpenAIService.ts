@@ -32,35 +32,6 @@ interface ImageTextExtractionResult {
   error?: string;
 }
 
-// Initialize the OpenAI client for server-side usage
-let openaiClient: OpenAI | null = null;
-
-// Safely get the API key, checking all possible environment variable formats
-const getApiKey = () => {
-  if (typeof process !== 'undefined' && process.env) {
-    // Check different environment variable formats
-    return process.env.OPENAI_API_KEY || 
-           process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
-           process.env.REACT_APP_OPENAI_API_KEY;
-  }
-  return null;
-};
-
-// Only initialize if the API key is available
-const apiKey = getApiKey();
-if (apiKey) {
-  try {
-    openaiClient = new OpenAI({
-      apiKey: apiKey,
-    });
-    console.log('[OpenAIService] Successfully initialized OpenAI client');
-  } catch (error) {
-    console.error('[OpenAIService] Failed to initialize OpenAI client:', error);
-  }
-} else {
-  console.warn('[OpenAIService] No OpenAI API key found in environment variables');
-}
-
 // Create a formatted schema reference for prompts
 const schemaReference = Object.entries(ERD_SCHEMA_FIELDS)
   .map(([field, description]) => `${field}: ${description}`)
@@ -69,10 +40,46 @@ const schemaReference = Object.entries(ERD_SCHEMA_FIELDS)
 export class OpenAIService {
   private mappingCache: MappingCache = {};
   private cacheTTL: number = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
+  private openaiClientInstance: OpenAI | null = null; // Store the instance once created
   
   constructor() {
     // Load cache from persistent storage if available
     this.loadCache();
+  }
+  
+  // Private method to get/initialize the OpenAI client lazily
+  private _getOpenAIClient(): OpenAI {
+    // Return existing instance if available
+    if (this.openaiClientInstance) {
+      return this.openaiClientInstance;
+    }
+
+    // Safely get the API key, checking all possible environment variable formats
+    const getApiKey = () => {
+      if (typeof process !== 'undefined' && process.env) {
+        return process.env.OPENAI_API_KEY || 
+               process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
+               process.env.REACT_APP_OPENAI_API_KEY;
+      }
+      return null;
+    };
+    
+    const apiKey = getApiKey();
+
+    if (!apiKey) {
+      logger.error('[OpenAIService] OpenAI API key is missing from environment variables.');
+      throw new Error('OpenAI API key is missing. Cannot initialize client.');
+    }
+
+    try {
+      logger.info('[OpenAIService] Lazily initializing OpenAI client...');
+      this.openaiClientInstance = new OpenAI({ apiKey: apiKey });
+      logger.info('[OpenAIService] OpenAI client initialized successfully.');
+      return this.openaiClientInstance;
+    } catch (error) {
+      logger.error('[OpenAIService] Failed to initialize OpenAI client:', error);
+      throw new Error('Failed to initialize OpenAI client.');
+    }
   }
   
   /**
@@ -83,9 +90,7 @@ export class OpenAIService {
    */
   async extractTextFromImage(imageBase64: string, includeSchema: boolean = true): Promise<ImageTextExtractionResult> {
     try {
-      console.log('[OpenAIService] Calling Vision API for image text extraction');
-      
-      // Call the Next.js API endpoint when in browser
+      // Use client-side fetch pattern remains the same
       if (typeof window !== 'undefined') {
         const response = await fetch('/api/ai/image-extraction', {
           method: 'POST',
@@ -100,16 +105,14 @@ export class OpenAIService {
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`[OpenAIService] API error (${response.status}): ${errorText}`);
+          logger.error(`[OpenAIService] Client-side API error (${response.status}): ${errorText}`);
           throw new Error(`API error (${response.status}): ${errorText}`);
         }
         
-        // Parse the response
         const result = await response.json();
         
-        // Validate the result
         if (!result.text) {
-          console.error('[OpenAIService] Invalid response format from API:', result);
+          logger.error('[OpenAIService] Invalid response format from client-side API:', result);
           throw new Error("Invalid response format from API");
         }
         
@@ -120,168 +123,94 @@ export class OpenAIService {
         };
       }
       
-      // In a Node.js environment (SSR or API routes), use the OpenAI client directly
-      if (!openaiClient) {
-        console.error('[OpenAIService] OpenAI client not initialized - API key may be missing');
-        return {
-          text: '',
-          confidence: 0,
-          error: "OpenAI client not initialized. Check API key configuration."
-        };
-      }
+      // --- Server-Side Logic --- 
+      logger.info('[OpenAIService] Processing image directly in server environment');
+      const client = this._getOpenAIClient(); // Get client instance lazily
       
-      console.log('[OpenAIService] Processing image directly with OpenAI Vision API in server environment');
-      
-      // Ensure the image data is properly formatted
       const formattedImageData = imageBase64.startsWith('data:image/')
         ? imageBase64
         : `data:image/jpeg;base64,${imageBase64}`;
       
-      // Create system prompt with or without schema
-      let systemPrompt = `You are an expert OCR system specializing in logistics documents. 
-Extract all text content from the provided image, preserving the structure as much as possible.
-If tables are present, try to maintain the tabular format using | as column separators.`;
+      let systemPrompt = `You are an expert OCR system specializing in logistics documents...`; // Keep prompt concise here
       
       if (includeSchema) {
-        systemPrompt += `\n\nThe extracted text will be used to identify the following types of information from our logistics ERD schema:
-${schemaReference}`;
+        systemPrompt += `\n\nThe extracted text will be used to identify...schema:\n${schemaReference}`;
       }
       
-      try {
-        // Call the OpenAI Vision API
-        const response = await openaiClient.chat.completions.create({
-          model: 'gpt-4o',
-          max_tokens: 4096,
-          temperature: 0.1,
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: [
-                { 
-                  type: 'text', 
-                  text: 'Extract all text from this logistics document image, preserving the structure as much as possible.' 
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: formattedImageData,
-                  },
-                },
-              ],
-            },
-          ],
-        });
-        
-        // Extract the content from the response
-        const content = response.choices[0]?.message?.content?.trim();
-        
-        if (!content) {
-          console.error('[OpenAIService] Empty response from OpenAI Vision API');
-          return {
-            text: '',
-            confidence: 0,
-            error: "Failed to extract text from image - empty response"
-          };
-        }
-        
-        // For structured extraction, make a second call to extract specific fields
-        // Use the first extracted text to build a structured JSON
-        const structureResponse = await openaiClient.chat.completions.create({
-          model: 'gpt-3.5-turbo',
-          temperature: 0.1,
-          messages: [
-            {
-              role: 'system',
-              content: `You are an expert in logistics data extraction. Given the text extracted from a document image, 
-identify and extract key logistics information according to the following schema:
+      // Call the OpenAI Vision API
+      const response = await client.chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: 4096,
+        temperature: 0.1,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Extract text from image.' },
+              { type: 'image_url', image_url: { url: formattedImageData } },
+            ],
+          },
+        ],
+      });
 
-${schemaReference}
-
-Return your response as a VALID JSON object with the following structure:
-{
-  "loadNumber": "...",
-  "orderNumber": "...",
-  "promisedShipDate": "...",
-  "shipToCustomer": "...",
-  "shipToAddress": "...",
-  "shipToState": "...",
-  "contactNumber": "...",
-  "poNumber": "...",
-  "remarks": "...",
-  "items": [
-    {
-      "itemNumber": "...",
-      "description": "...",
-      "quantity": "...",
-      "weight": "..."
-    }
-  ]
-}
-
-If you can't identify a field, use null or an empty string. Only include fields you can identify with reasonable confidence.`,
-            },
-            {
-              role: 'user',
-              content: `Extract structured data from this OCR text:\n\n${content}`,
-            },
-          ],
-        });
+      const content = response.choices[0]?.message?.content?.trim();
         
-        const structuredContent = structureResponse.choices[0]?.message?.content?.trim();
-        let shipmentData = null;
-        
-        if (structuredContent) {
-          try {
-            shipmentData = JSON.parse(structuredContent);
-          } catch (error) {
-            console.error('[OpenAIService] Error parsing structured data:', error);
-          }
-        }
-        
-        return {
-          text: content,
-          confidence: 0.85, // Estimated confidence for GPT-4 Vision
-          shipmentData,
-        };
-        
-      } catch (openaiError) {
-        console.error('[OpenAIService] OpenAI API error:', openaiError);
-        let errorMessage = "Error calling OpenAI Vision API";
-        
-        // Try to extract the specific error message from OpenAI's error response
-        if (openaiError instanceof Error) {
-          errorMessage = openaiError.message;
-          
-          // Check for common API errors
-          if (errorMessage.includes('429')) {
-            errorMessage = "OpenAI API rate limit exceeded. Please try again later.";
-          } else if (errorMessage.includes('401')) {
-            errorMessage = "OpenAI API authentication failed. Please check your API key.";
-          } else if (errorMessage.includes('insufficient_quota')) {
-            errorMessage = "OpenAI API quota exceeded. Please check your billing status.";
-          } else if (errorMessage.includes('deprecated')) {
-            errorMessage = "The OpenAI model configuration needs to be updated. Please contact support.";
-          }
-        }
-        
+      if (!content) {
+        logger.error('[OpenAIService] Empty response from OpenAI Vision API');
+        // Return error structure
         return {
           text: '',
           confidence: 0,
-          error: errorMessage
+          error: "Failed to extract text from image - empty response"
         };
       }
-    } catch (error) {
-      console.error('[OpenAIService] Error calling AI image extraction API:', error);
-      
-      // Return a fallback response
+        
+      // Second call for structured data
+      const structureResponse = await client.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        temperature: 0.1,
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert in logistics data extraction...Return your response as a VALID JSON object...${schemaReference}...`,
+           },
+          {
+            role: 'user',
+            content: `Extract structured data from this OCR text:\n\n${content}`,
+          },
+        ],
+        response_format: { type: "json_object" }, // Request JSON output
+      });
+
+      const structuredContent = structureResponse.choices[0]?.message?.content?.trim();
+      let shipmentData = null;
+        
+      if (structuredContent) {
+        try {
+          shipmentData = JSON.parse(structuredContent);
+        } catch (parseError) {
+          logger.error('[OpenAIService] Error parsing structured JSON data:', parseError);
+          // Decide: return partial data or error? Let's return partial for now.
+        }
+      }
+        
+      return {
+        text: content,
+        confidence: 0.85, // Placeholder confidence
+        shipmentData,
+      };
+      // --- End Server-Side Logic ---
+
+    } catch (error: any) {
+      logger.error(`[OpenAIService] Error in extractTextFromImage: ${error.message}`, { stack: error.stack });
       return {
         text: '',
         confidence: 0,
-        error: error instanceof Error ? error.message : "Error occurred during image extraction"
+        error: `Failed to extract text: ${error.message}`
       };
     }
   }
@@ -293,78 +222,71 @@ If you can't identify a field, use null or an empty string. Only include fields 
    * @returns Mapping result with confidence score and reasoning
    */
   async mapField(originalField: string, potentialMatches?: string[]): Promise<FieldMappingResult> {
-    // Check cache first to avoid unnecessary API calls
-    const cachedResult = this.getCachedMapping(originalField);
-    if (cachedResult) {
-      console.log(`[OpenAIService] Using cached mapping for "${originalField}" → "${cachedResult.mappedField}" (${cachedResult.confidence})`);
-      return {
-        mappedField: cachedResult.mappedField,
-        confidence: cachedResult.confidence,
-        reasoning: "Retrieved from cache"
-      };
+    const cacheKey = `${originalField}:${(potentialMatches || []).sort().join(',')}`;
+    const cached = this.getCachedMapping(cacheKey);
+    if (cached) {
+      logger.info(`[OpenAIService] Cache hit for field mapping: "${originalField}"`);
+      return { ...cached, reasoning: "Retrieved from cache." };
     }
-    
+
+    logger.info(`[OpenAIService] Performing AI field mapping for: "${originalField}"`);
+    const client = this._getOpenAIClient();
+
+    const formattedPotentialMatches = this.formatPotentialMatches(potentialMatches);
+
+    const systemPrompt = `You are an expert field mapping assistant... Provide your response as a JSON object...
+Schema:
+${schemaReference}
+
+Potential Matches:
+${formattedPotentialMatches || 'N/A'}
+
+Format: {"mappedField": "schema_field_name", "confidence": 0.0-1.0, "reasoning": "brief explanation"}`; 
+
+    const userPrompt = `Map the field "${originalField}" to the most appropriate field in the provided schema.`;
+
     try {
-      console.log(`[OpenAIService] Calling AI field mapping API for: "${originalField}"`);
-      
-      // Check if running in browser environment
-      if (typeof window !== 'undefined') {
-        // Call the Next.js API endpoint when in browser
-        const response = await fetch('/api/ai/field-mapping', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            originalField,
-            potentialMatches: this.formatPotentialMatchesArray(potentialMatches),
-          }),
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[OpenAIService] API error (${response.status}): ${errorText}`);
-          throw new Error(`API error (${response.status}): ${errorText}`);
-        }
-        
-        // Parse the response
-        const result = await response.json();
-        
-        // Validate the result
-        if (!result.field && !result.mappedField) {
-          console.error('[OpenAIService] Invalid response format from API:', result);
-          throw new Error("Invalid response format from API");
-        }
-        
-        // Normalize the response format
-        const normalizedResult: FieldMappingResult = {
-          mappedField: result.field || result.mappedField,
-          confidence: result.confidence || 0,
-          reasoning: result.reasoning || "Provided by API"
-        };
-        
-        // Cache the result
-        this.cacheMapping(originalField, normalizedResult.mappedField, normalizedResult.confidence);
-        
-        console.log(`[OpenAIService] AI mapped "${originalField}" → "${normalizedResult.mappedField}" (${normalizedResult.confidence})`);
-        return normalizedResult;
-      } else {
-        // In a Node.js environment (SSR or API routes), do not attempt to use fetch for API
-        console.warn('[OpenAIService] Running in Node.js environment - direct API calls not supported');
-        return {
-          mappedField: "unknown",
-          confidence: 0,
-          reasoning: "AI mapping not available in server environment"
-        };
+      const response = await client.chat.completions.create({ 
+        model: "gpt-3.5-turbo", 
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.2,
+        max_tokens: 150,
+        response_format: { type: "json_object" }, // Request JSON output
+      });
+
+      const content = response.choices[0]?.message?.content?.trim();
+      if (!content) {
+        throw new Error("Received empty content from OpenAI API.");
       }
-    } catch (error) {
-      console.error('[OpenAIService] Error calling AI field mapping API:', error);
-      
-      // Return a fallback response
+
+      const result = JSON.parse(content) as FieldMappingResult;
+      if (!result.mappedField || typeof result.confidence !== 'number') {
+        throw new Error("Invalid JSON structure received from OpenAI API.");
+      }
+
+      // Validate mapped field against schema
+      if (!ERD_SCHEMA_FIELDS[result.mappedField]) {
+          logger.warn(`[OpenAIService] AI mapped to an invalid schema field: "${result.mappedField}". Falling back to 'unknown'.`);
+          result.mappedField = 'unknown';
+          result.confidence = 0.1; // Low confidence for fallback
+      }
+
+      // Cache the validated result
+      this.cacheMapping(cacheKey, result.mappedField, result.confidence);
+
+      logger.info(`[OpenAIService] Successfully mapped "${originalField}" -> "${result.mappedField}" with confidence ${result.confidence}`);
+      return result;
+
+    } catch (error: any) {
+      logger.error(`[OpenAIService] Error during field mapping for "${originalField}": ${error.message}`, { stack: error.stack });
+      // Return a fallback response on error
       return {
         mappedField: "unknown",
         confidence: 0,
-        reasoning: error instanceof Error ? error.message : "Error occurred during AI mapping"
+        reasoning: `Error during mapping: ${error.message}`
       };
     }
   }
@@ -373,64 +295,47 @@ If you can't identify a field, use null or an empty string. Only include fields 
    * Format potential matches for the prompt
    */
   private formatPotentialMatchesArray(potentialMatches?: string[]): string[] {
-    // If specific matches are provided, use those
-    if (potentialMatches && potentialMatches.length > 0) {
-      return potentialMatches;
+    if (!potentialMatches || potentialMatches.length === 0) {
+      return [];
     }
-    
-    // Otherwise use the standard ERD schema fields
-    return Object.keys(ERD_SCHEMA_FIELDS);
+    // Clean and normalize potential matches (e.g., lowercase, trim)
+    return potentialMatches.map(match => match.trim().toLowerCase()).filter(Boolean);
   }
   
   /**
    * Format potential matches as a string for display
    */
   private formatPotentialMatches(potentialMatches?: string[]): string {
-    // If specific matches are provided, use those
-    if (potentialMatches && potentialMatches.length > 0) {
-      return potentialMatches.map(field => `- ${field}`).join('\n');
-    }
-    
-    // Otherwise use the standard ERD schema fields
-    return Object.entries(ERD_SCHEMA_FIELDS)
-      .map(([field, description]) => `- ${field}: ${description}`)
-      .join('\n');
+    const formattedArray = this.formatPotentialMatchesArray(potentialMatches);
+    return formattedArray.length > 0 ? formattedArray.join('\n') : "No potential matches provided.";
   }
   
   /**
    * Get a cached mapping if it exists and is not expired
    */
-  private getCachedMapping(originalField: string): { mappedField: string; confidence: number } | null {
-    const cacheKey = originalField.toLowerCase().trim();
-    const cached = this.mappingCache[cacheKey];
-    
-    if (cached) {
-      // Check if cache entry is expired
-      const now = Date.now();
-      if (now - cached.timestamp <= this.cacheTTL) {
-        return {
-          mappedField: cached.mappedField,
-          confidence: cached.confidence
-        };
-      }
+  private getCachedMapping(cacheKey: string): { mappedField: string; confidence: number } | null {
+    const cachedItem = this.mappingCache[cacheKey];
+    if (cachedItem && (Date.now() - cachedItem.timestamp < this.cacheTTL)) {
+      return { mappedField: cachedItem.mappedField, confidence: cachedItem.confidence };
     }
-    
+    // Clean up expired cache entry if found
+    if (cachedItem) {
+        delete this.mappingCache[cacheKey];
+        this.saveCache(); // Persist cache removal if applicable
+    }
     return null;
   }
   
   /**
    * Cache a field mapping result
    */
-  private cacheMapping(originalField: string, mappedField: string, confidence: number): void {
-    const cacheKey = originalField.toLowerCase().trim();
+  private cacheMapping(cacheKey: string, mappedField: string, confidence: number): void {
     this.mappingCache[cacheKey] = {
       mappedField,
       confidence,
       timestamp: Date.now()
     };
-    
-    // Save cache to persistent storage
-    this.saveCache();
+    this.saveCache(); // Persist cache update if applicable
   }
   
   /**
