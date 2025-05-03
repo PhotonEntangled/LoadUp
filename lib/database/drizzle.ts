@@ -1,39 +1,24 @@
 // import { neon } from '@neondatabase/serverless'; // Removed neon HTTP adapter import
 // import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http'; // Removed neon-http drizzle import
-import postgres from 'postgres'; // Added postgres import
-import { drizzle as drizzlePostgresJs } from 'drizzle-orm/postgres-js'; // Added postgres-js drizzle import
+// import postgres from 'postgres'; // Removed postgres import
+// import { drizzle as drizzlePostgresJs } from 'drizzle-orm/postgres-js'; // Removed postgres-js drizzle import
+import { sql } from '@vercel/postgres'; // Added vercel/postgres import
+import { drizzle } from 'drizzle-orm/vercel-postgres'; // Added vercel-postgres drizzle import
 import { logger } from '@/utils/logger';
 import * as schema from './schema'; // Import all schema objects
 
-// Ensure DATABASE_URL is defined
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not defined.');
-}
+// Note: DATABASE_URL is implicitly used by @vercel/postgres
+// We don't need to explicitly check/configure the client like with postgres.js or neon-http
 
-// Configure postgres client
-// logger.info('Attempting to connect to Neon database via postgres.js...'); // Log adapted
-const connectionString = process.env.DATABASE_URL;
+// logger.info('Attempting to initialize Drizzle with vercel-postgres adapter...');
 
-// --- postgres.js configuration ---
-// Disable prefetch as it is not supported for "Transaction" pool mode
-// TODO: Consider adjusting pool settings if needed, defaults are generally okay
-// const client = postgres(connectionString, { prepare: false }); 
-const client = postgres(connectionString, { 
-  prepare: false,
-  // Add SSL configuration if needed for Vercel/Neon, although usually handled by connection string
-  // ssl: 'require', // Example: uncomment if direct connection needs explicit SSL
-  // Consider connection pooling options if performance issues arise later
-  // max: 1 // Example: Limiting connections for serverless
-}); 
-// logger.info('postgres.js client configured.'); // Log adapted
+// Initialize Drizzle ORM with vercel-postgres adapter and schema
+// The `sql` object from `@vercel/postgres` handles the connection pooling automatically.
+export const db = drizzle(sql, { schema, logger: true });
 
-// Initialize Drizzle ORM with postgres.js adapter and schema
-// export const db = drizzleNeon(sqlNeon, { schema, logger: true }); // Original neon-http line
-export const db = drizzlePostgresJs(client, { schema, logger: true }); // Use postgres-js adapter
-// logger.info('Drizzle ORM initialized successfully with postgres.js adapter.'); // Log adapted
+logger.info('Database connection initialized using vercel-postgres adapter.');
 
-logger.info('Database connection initialized using postgres.js adapter.');
-
-// Optional: Add a simple connection test if desired (can be noisy)
-// db.execute(sql`select 1`).then(() => logger.info('Postgres.js connection test successful.'))
-//                        .catch(err => logger.error('Postgres.js connection test failed:', err)); 
+// Connection testing is less straightforward here as `sql` handles connections internally.
+// A simple query execution can serve as a test if needed during startup, but might add overhead.
+// db.execute(sql`select 1`).then(() => logger.info('Vercel-Postgres connection test successful.'))
+//                        .catch(err => logger.error('Vercel-Postgres connection test failed:', err)); 

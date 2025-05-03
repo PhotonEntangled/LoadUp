@@ -116,27 +116,28 @@
 
 **Symptoms:**
 *   Authentication is working.
-*   `/api/documents` (GET & POST) failing with HTTP 500 and `TypeError: S is not a function` in Vercel logs.
-*   Error appears related to Drizzle interaction in `app/api/documents/route.ts`.
+*   `/api/documents` (GET & POST) failing with HTTP 500 and `TypeError: S is not a function` (or equivalent) in Vercel logs.
+*   **Crucial Context:** This functionality (upload, processing, display) *was working correctly* on Vercel *before* `next-auth` integration.
 *   Error persists after removing conflicting DB drivers (`pg`, `postgres`) and reverting `shipmentInserter.ts` typing.
 *   Error occurs even when POST handler is simplified to only perform `db.insert(...).values(...)` without `.returning()`.
+*   Error occurs regardless of Drizzle adapter (`postgres.js` or `neon-http`).
 *   Detailed logging added before the insert call does not appear in Vercel logs, suggesting the error happens *during* the `insert` execution.
 
-**Hypothesis:** Error likely specific to the `@neondatabase/serverless` (Neon HTTP) adapter's interaction with the Vercel serverless runtime environment.
+**Hypothesis Updated:** The *runtime execution* of `next-auth` middleware is **not** the direct cause. The issue likely stems from the **Vercel build process** being altered by the *presence* of `next-auth` dependencies, causing corruption or incompatibility with how Drizzle/postgres.js is bundled or executed in the serverless function environment.
 
 **Troubleshooting Steps:**
-*   ... (Previous steps omitted for brevity) ...
-*   **Step:** Cleaned dependencies (`npm uninstall pg postgres`, deleted `node_modules`, `npm install`). **(Done)**
-*   **Step:** Isolated API POST handler step-by-step (commented out `insertShipmentBundle` loop, `db.update`, `db.insert().returning()`). Error persisted until only the simplified `db.insert().values(...)` remained. **(Done)**
-*   **Step:** Added detailed logging before the failing `db.insert` call. **(Done)**
-*   **Step:** Resolved ESLint `prefer-const` build error. **(Done)**
-*   **Step:** Verified Vercel logs show error still occurring *at* the simplified `db.insert` call, *before* detailed logs execute. **(Done)**
-*   **Action (Current):** Revert Drizzle adapter in `lib/database/drizzle.ts` back to `postgres.js` as a controlled experiment. Rationale: Isolate if the `neon-http` adapter is the specific cause of the failure in the Vercel environment. **(Done)**
-*   **Next Step:** Re-install `postgres` dependency (`npm install postgres`).
-*   **Next Step:** Run local build (`npm run build`).
-*   **Next Step:** Commit and push changes.
-*   **Next Step:** Test document upload on Vercel and analyze logs.
-    *   If POST succeeds: Confirms issue is with `neon-http` adapter on Vercel.
-    *   If POST still fails: Issue is likely deeper within Drizzle/Vercel interaction or potentially subtle data type issue during insert, regardless of adapter.
+*   ... (Steps up to adapter revert test omitted) ...
+*   **Action:** Reverted Drizzle adapter to `postgres.js`. **(Done)**
+*   **Action:** Re-installed `postgres` dependency. **(Done)**
+*   **Action:** Ran local build. **(Passed)**
+*   **Action:** Pushed changes. **(Done)**
+*   **Result:** Tested document upload on Vercel with `postgres.js`. **POST `/api/documents` still fails with HTTP 500.** **(Confirmed)**
+*   **Conclusion 1:** Issue is not adapter-specific.
+*   **Action (Isolation Test):** Temporarily disabled `next-auth` integration by modifying `middleware.ts` to bypass all auth logic. **(Done)**
+*   **Action:** Pushed "auth-disabled" version. **(Done)**
+*   **Result:** Tested document upload on Vercel with middleware bypassed. **POST `/api/documents` still fails with HTTP 500.** Vercel/Browser logs confirm 500 error (`TypeError: S is not a function`). **(Confirmed)**
+*   **Conclusion 2:** Middleware *runtime* execution is not the direct trigger. Problem likely lies in the build process/dependency interaction caused by adding `next-auth`.
+*   **Next Step:** Try the official Vercel Postgres adapter (`drizzle-orm/vercel-postgres` using `@vercel/postgres` package). Rationale: This adapter is specifically designed for the Vercel environment and might be more resilient to Vercel's build process nuances or handle the underlying connection/execution differently.
+*   **Contingency:** If `vercel-postgres` adapter also fails, investigate Vercel build output directly or create minimal reproduction.
 
 ---
