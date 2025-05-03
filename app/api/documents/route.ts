@@ -426,81 +426,82 @@ export async function POST(request: NextRequest) {
     }
     // ---- END DEBUG: Save parser output ----
 
-    // --- START ISOLATION: Comment out bundle processing --- 
+    // --- Bundle processing loop remains commented out --- 
     /*
     if (parsedBundles.length === 0) {
-      logger.warn(`API: No shipment bundles were parsed from ${filename}. Updating document status to PROCESSED (with 0 shipments).`);
-      finalStatus = 'PROCESSED';
-      processedCount = 0;
+        logger.warn(`API: No shipment bundles were parsed from ${filename}. Updating document status to PROCESSED (with 0 shipments).`);
+        finalStatus = 'PROCESSED';
+        processedCount = 0;
     } else {
-      logger.info(`API: Processing ${parsedBundles.length} bundles for document ${docId}...`);
-      let successfulInserts = 0;
-      const failedBundleIndices: number[] = [];
+        logger.info(`API: Processing ${parsedBundles.length} bundles for document ${docId}...`);
+        let successfulInserts = 0;
+        const failedBundleIndices: number[] = [];
 
-      for (let index = 0; index < parsedBundles.length; index++) {
-        const bundle = parsedBundles[index];
-        const bundleNumber = index + 1;
-        
-        try {
-          logger.debug(`API: Attempting to insert Bundle ${bundleNumber}/${parsedBundles.length}... Document ID: ${docId}`); 
+        for (let index = 0; index < parsedBundles.length; index++) {
+          const bundle = parsedBundles[index];
+          const bundleNumber = index + 1;
           
-          if (!bundle.metadata) {
-              bundle.metadata = { originalRowData: {}, originalRowIndex: -1 };
+          try {
+            logger.debug(`API: Attempting to insert Bundle ${bundleNumber}/${parsedBundles.length}... Document ID: ${docId}`); 
+            
+            if (!bundle.metadata) {
+                bundle.metadata = { originalRowData: {}, originalRowIndex: -1 };
+            }
+            if (!bundle.metadata.sourceDocumentId) {
+                bundle.metadata.sourceDocumentId = docId;
+            }
+            
+            // ***** COMMENTING OUT THE ACTUAL INSERT CALL *****
+            // const insertionResult = await insertShipmentBundle(bundle);
+            // Simulate success for testing the update step
+            const insertionResult = { success: true, shipmentId: `simulated-${bundleNumber}` }; 
+            
+            if (insertionResult.success && insertionResult.shipmentId) {
+                successfulInserts++;
+                 logger.info(`API: Successfully SIMULATED insertion for Bundle ${bundleNumber}/${parsedBundles.length}. Sim Shipment ID: ${insertionResult.shipmentId}`);
+            } else {
+                 logger.warn(`API: Failed to SIMULATE insert Bundle ${bundleNumber}.`);
+                 failedBundleIndices.push(index);
+            }
+          } catch (insertError: any) {
+            logger.error(`API: Error SIMULATING insert Bundle ${bundleNumber}/${parsedBundles.length}: ${insertError.message}`, { stack: insertError.stack, bundleIndex: index }); 
+            failedBundleIndices.push(index);
           }
-          if (!bundle.metadata.sourceDocumentId) {
-              bundle.metadata.sourceDocumentId = docId;
-          }
-          
-          // ***** COMMENTING OUT THE ACTUAL INSERT CALL *****
-          // const insertionResult = await insertShipmentBundle(bundle);
-          // Simulate success for testing the update step
-          const insertionResult = { success: true, shipmentId: `simulated-${bundleNumber}` }; 
-          
-          if (insertionResult.success && insertionResult.shipmentId) {
-              successfulInserts++;
-               logger.info(`API: Successfully SIMULATED insertion for Bundle ${bundleNumber}/${parsedBundles.length}. Sim Shipment ID: ${insertionResult.shipmentId}`);
-          } else {
-               logger.warn(`API: Failed to SIMULATE insert Bundle ${bundleNumber}.`);
-               failedBundleIndices.push(index);
-          }
-        } catch (insertError: any) {
-          logger.error(`API: Error SIMULATING insert Bundle ${bundleNumber}/${parsedBundles.length}: ${insertError.message}`, { stack: insertError.stack, bundleIndex: index }); 
-          failedBundleIndices.push(index);
+        } 
+
+        logger.info(`API: SIMULATED Insertion loop complete for document ${docId}. Successful: ${successfulInserts}, Failed: ${failedBundleIndices.length}`);
+
+        if (failedBundleIndices.length === 0) {
+            finalStatus = 'PROCESSED';
+            processedCount = successfulInserts;
+            logger.info(`API: All ${processedCount} bundles SIMULATED successfully for document ${docId}.`);
+        } else {
+            finalStatus = 'ERROR';
+            processedCount = successfulInserts; 
+            failedCount = failedBundleIndices.length;
+            processingErrors.push(...failedBundleIndices.map(idx => `Bundle ${idx + 1} failed simulation: ${parsedBundles[idx]?.metadata?.processingErrors?.join(', ') || 'Unknown error'}`));
+            logger.warn(`API: Partially SIMULATED document ${docId}. Success: ${processedCount}, Failed: ${failedCount}.`);
         }
-      } 
-
-      logger.info(`API: SIMULATED Insertion loop complete for document ${docId}. Successful: ${successfulInserts}, Failed: ${failedBundleIndices.length}`);
-
-      if (failedBundleIndices.length === 0) {
-          finalStatus = 'PROCESSED';
-          processedCount = successfulInserts;
-          logger.info(`API: All ${processedCount} bundles SIMULATED successfully for document ${docId}.`);
-      } else {
-          finalStatus = 'ERROR';
-          processedCount = successfulInserts; 
-          failedCount = failedBundleIndices.length;
-          processingErrors.push(...failedBundleIndices.map(idx => `Bundle ${idx + 1} failed simulation: ${parsedBundles[idx]?.metadata?.processingErrors?.join(', ') || 'Unknown error'}`));
-          logger.warn(`API: Partially SIMULATED document ${docId}. Success: ${processedCount}, Failed: ${failedCount}.`);
-      }
     }
     */
     // --- END ISOLATION --- 
 
-    // Determine final status based ONLY on parsing success for this test
+    // Determine final status based ONLY on parsing success
     if (parsedBundles.length > 0) {
-        finalStatus = 'PROCESSED'; // Assume processed if parsing yielded bundles
-        processedCount = 0; // But set count to 0 as we didn't insert
+        finalStatus = 'PROCESSED';
+        processedCount = 0; 
         failedCount = parsedBundles.length;
         processingErrors.push('Bundle insertion skipped for testing.');
         logger.info(`API: Test Mode - Skipping bundle insertion. Marking as PROCESSED if bundles exist.`);
     } else {
-        finalStatus = 'PROCESSED'; // Also processed if 0 bundles
+        finalStatus = 'PROCESSED';
         processedCount = 0;
-         logger.warn(`API: Test Mode - No bundles parsed. Marking as PROCESSED.`);
+        logger.warn(`API: Test Mode - No bundles parsed. Marking as PROCESSED.`);
     }
 
-    // 5. Update Document Status (KEEP THIS - tests db.update)
-    logger.info(`API: Updating final status for document ${docId} to ${finalStatus} with ${processedCount} shipments (NOTE: Bundle insertion was SKIPPED).`);
+    // 5. Update Document Status (COMMENTING OUT THIS BLOCK FOR ISOLATION)
+    /* 
+    logger.info(`API: Updating final status for document ${docId} to ${finalStatus} with ${processedCount} shipments (NOTE: Bundle insertion AND FINAL UPDATE was SKIPPED).`);
     await db.update(documents)
       .set({
         status: finalStatus,
@@ -509,10 +510,12 @@ export async function POST(request: NextRequest) {
         errorMessage: processingErrors.join('; ') || null
       })
       .where(eq(documents.id, docId));
+    */
+    logger.warn(`API: Test Mode - SKIPPING final db.update for document ${docId}`); // Add log
 
     // 6. Return success response (Modified for testing)
     return NextResponse.json({
-      message: `Document processed (TEST MODE - INSERTION SKIPPED). Status: ${finalStatus}`,
+      message: `Document processed (TEST MODE - INSERTION & FINAL UPDATE SKIPPED). Status: ${finalStatus}`,
       documentId: docId,
       filename: filename,
       totalBundlesFound: parsedBundles.length,
@@ -523,7 +526,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     logger.error(`API: Overall error in POST /api/documents: ${error.message}`, { stack: error.stack });
-    // If we have a docId, try to mark it as ERROR
+    // If we have a docId, try to mark it as ERROR (this update might also fail if update is the issue)
     if (docId) {
       try {
         logger.error(`API: Attempting to mark document ${docId} as ERROR due to overall failure.`);
