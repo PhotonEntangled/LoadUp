@@ -110,28 +110,33 @@
 
 ---
 
-## New Issue: API Failures After Fixing Auth (TypeError: $ is not a function)
+## New Issue: API Failures After Fixing Auth (TypeError: S is not a function)
 
 **Date:** [Current Date/Time]
 
 **Symptoms:**
 *   Authentication is working.
-*   `/api/documents` (GET & POST) failing with HTTP 500 and `TypeError: $ is not a function`.
-*   Error persists after forced redeploy, suggesting issue is not stale cache.
+*   `/api/documents` (GET & POST) failing with HTTP 500 and `TypeError: S is not a function` in Vercel logs.
+*   Error appears related to Drizzle interaction in `app/api/documents/route.ts`.
+*   Error persists after removing conflicting DB drivers (`pg`, `postgres`) and reverting `shipmentInserter.ts` typing.
+*   Error occurs even when POST handler is simplified to only perform `db.insert(...).values(...)` without `.returning()`.
+*   Detailed logging added before the insert call does not appear in Vercel logs, suggesting the error happens *during* the `insert` execution.
 
-**Hypothesis:** Error likely in `app/api/documents/route.ts` or its interaction with Drizzle/Neon. Potential causes:
-    *   Drizzle misconfiguration or version issue related to query building/execution.
-    *   Dependency conflict (Drizzle, Neon adapter, Next.js) in Vercel environment.
-    *   Build process error incorrectly transforming Drizzle code.
-    *   **Correction:** `lib/database/drizzle.ts` was using `postgres.js` adapter, not `@neondatabase/serverless` despite it being in `package.json`. This mismatch or the `postgres.js` adapter itself might cause issues in Vercel.
+**Hypothesis:** Error likely specific to the `@neondatabase/serverless` (Neon HTTP) adapter's interaction with the Vercel serverless runtime environment.
 
 **Troubleshooting Steps:**
-1.  **Code Review:** Reviewed `app/api/documents/route.ts`. Active code paths use `db.select/insert/update`, not `db.query`. **(Done)**
-2.  **Force Redeploy (Cache Clear):** Pushed trivial comment change to `app/api/documents/route.ts`. Error persisted. **(Done)**
-3.  **Inspect Imports & Init:** Reviewed imports in `api/documents/route.ts`, `lib/database/drizzle.ts`, `services/database/shipmentInserter.ts`. **(Done)**
-4.  **Check Dependencies:** Reviewed `package.json`. Noted multiple DB drivers (`@neondatabase/serverless`, `postgres`, `pg`). Identified `postgres.js` was the active adapter in `drizzle.ts`. **(Done)**
-5.  **Switch Drizzle Adapter:** Modified `lib/database/drizzle.ts` to use the `@neondatabase/serverless` (Neon HTTP) adapter. **(Done - commit bebd094)**
-6.  **Redeploy:** Pushed adapter change to trigger new Vercel deployment. **(Done)**
-7.  **Next Step:** User re-tests document GET/POST after deployment finishes. Check Vercel and browser logs for resolution of the `TypeError`. If error persists, further investigation into Drizzle query specifics or dependencies is needed.
+*   ... (Previous steps omitted for brevity) ...
+*   **Step:** Cleaned dependencies (`npm uninstall pg postgres`, deleted `node_modules`, `npm install`). **(Done)**
+*   **Step:** Isolated API POST handler step-by-step (commented out `insertShipmentBundle` loop, `db.update`, `db.insert().returning()`). Error persisted until only the simplified `db.insert().values(...)` remained. **(Done)**
+*   **Step:** Added detailed logging before the failing `db.insert` call. **(Done)**
+*   **Step:** Resolved ESLint `prefer-const` build error. **(Done)**
+*   **Step:** Verified Vercel logs show error still occurring *at* the simplified `db.insert` call, *before* detailed logs execute. **(Done)**
+*   **Action (Current):** Revert Drizzle adapter in `lib/database/drizzle.ts` back to `postgres.js` as a controlled experiment. Rationale: Isolate if the `neon-http` adapter is the specific cause of the failure in the Vercel environment. **(Done)**
+*   **Next Step:** Re-install `postgres` dependency (`npm install postgres`).
+*   **Next Step:** Run local build (`npm run build`).
+*   **Next Step:** Commit and push changes.
+*   **Next Step:** Test document upload on Vercel and analyze logs.
+    *   If POST succeeds: Confirms issue is with `neon-http` adapter on Vercel.
+    *   If POST still fails: Issue is likely deeper within Drizzle/Vercel interaction or potentially subtle data type issue during insert, regardless of adapter.
 
 ---

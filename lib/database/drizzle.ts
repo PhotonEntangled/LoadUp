@@ -1,46 +1,39 @@
-import { neon } from '@neondatabase/serverless'; // Import neon HTTP adapter
-import { drizzle } from 'drizzle-orm/neon-http'; // Use drizzle's neon-http adapter
-import * as schema from './schema'; // Import the schema we just created
-import { logger } from '@/utils/logger'; // Assuming logger exists
-// import ws from 'ws'; // No longer needed for HTTP
+// import { neon } from '@neondatabase/serverless'; // Removed neon HTTP adapter import
+// import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http'; // Removed neon-http drizzle import
+import postgres from 'postgres'; // Added postgres import
+import { drizzle as drizzlePostgresJs } from 'drizzle-orm/postgres-js'; // Added postgres-js drizzle import
+import { logger } from '@/utils/logger';
+import * as schema from './schema'; // Import all schema objects
 
-// WebSocket config is not needed for the HTTP adapter
-// neonConfig.webSocketConstructor = ws;
+// Ensure DATABASE_URL is defined
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not defined.');
+}
 
-// Validate DATABASE_URL environment variable
+// Configure postgres client
+// logger.info('Attempting to connect to Neon database via postgres.js...'); // Log adapted
 const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
-  logger.error('DATABASE_URL environment variable is not set.');
-  throw new Error('DATABASE_URL environment variable is not set.');
-}
+// --- postgres.js configuration ---
+// Disable prefetch as it is not supported for "Transaction" pool mode
+// TODO: Consider adjusting pool settings if needed, defaults are generally okay
+// const client = postgres(connectionString, { prepare: false }); 
+const client = postgres(connectionString, { 
+  prepare: false,
+  // Add SSL configuration if needed for Vercel/Neon, although usually handled by connection string
+  // ssl: 'require', // Example: uncomment if direct connection needs explicit SSL
+  // Consider connection pooling options if performance issues arise later
+  // max: 1 // Example: Limiting connections for serverless
+}); 
+// logger.info('postgres.js client configured.'); // Log adapted
 
-logger.info('Attempting to connect to Neon database via @neondatabase/serverless (HTTP)...');
+// Initialize Drizzle ORM with postgres.js adapter and schema
+// export const db = drizzleNeon(sqlNeon, { schema, logger: true }); // Original neon-http line
+export const db = drizzlePostgresJs(client, { schema, logger: true }); // Use postgres-js adapter
+// logger.info('Drizzle ORM initialized successfully with postgres.js adapter.'); // Log adapted
 
-let sql;
-try {
-  // Configure the Neon HTTP client
-  sql = neon(connectionString, {
-    // Optional fetch options:
-    // fetchOptions: {
-    //   cache: "no-store", // Prevent caching if needed
-    // }
-  });
-  logger.info('@neondatabase/serverless client configured.');
-} catch (error) {
-  logger.error('Failed to configure @neondatabase/serverless client:', error);
-  throw new Error('Failed to configure @neondatabase/serverless client');
-}
+logger.info('Database connection initialized using postgres.js adapter.');
 
-let dbInstance;
-try {
-  // Use the neon-http adapter for Drizzle
-  // Pass the configured sql instance directly
-  dbInstance = drizzle(sql, { schema, logger: true });
-  logger.info('Drizzle ORM initialized successfully with neon-http adapter.');
-} catch (error) {
-  logger.error('Failed to initialize Drizzle ORM with neon-http:', error);
-  throw new Error('Failed to initialize Drizzle ORM with neon-http');
-}
-
-export const db = dbInstance; 
+// Optional: Add a simple connection test if desired (can be noisy)
+// db.execute(sql`select 1`).then(() => logger.info('Postgres.js connection test successful.'))
+//                        .catch(err => logger.error('Postgres.js connection test failed:', err)); 
