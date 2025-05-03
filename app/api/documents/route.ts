@@ -318,19 +318,19 @@ function determineDocumentType(filename: string | undefined): DocumentType {
 export async function POST(request: NextRequest) {
   logger.info('API: POST /api/documents called');
 
-  // --- TEMPORARILY DISABLED AUTH CHECK ---
-  // const session = await auth();
-  // if (!session?.user?.id) {
-  //   logger.warn('API: Unauthorized upload attempt.');
-  //   return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  // }
-  // const userId = session.user.id;
-  const userId = 'mock-user-id-for-testing'; // Use a mock ID
-  logger.info(`[documents POST] Auth bypassed, using mock userId: ${userId}`);
-  // --- END TEMPORARY DISABLE ---
+  // --- RE-ENABLE AUTH CHECK ---
+  const session = await auth();
+  // Explicitly check session and session.user before accessing id
+  if (!session || !session.user || !session.user.id) { 
+    logger.warn('API: Unauthorized upload attempt (session or user missing).');
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+  // If we reach here, session, session.user, and session.user.id are guaranteed non-null
+  const userId = session.user.id;
+  // --- END RE-ENABLE ---
 
   // Use const as docId is not reassigned in this test configuration
-  const docId: string | undefined = undefined; 
+  const docId: string | undefined = undefined;
   let filename: string | undefined;
   let finalStatus: typeof documentStatusEnum.enumValues[number] = 'ERROR'; // Default to error
   let processedCount = 0;
@@ -359,8 +359,8 @@ export async function POST(request: NextRequest) {
       filename: filename,
       fileType: fileType,
       fileSize: fileSize,
-      status: 'PROCESSING' as const, 
-      uploadedById: userId,
+      status: 'PROCESSING' as const,
+      uploadedById: userId, // Use the actual userId from session
     };
     
     // *** ADD DETAILED LOGGING BEFORE INSERT ***

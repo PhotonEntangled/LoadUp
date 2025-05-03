@@ -24,18 +24,20 @@ export enum UserRole {
 export const auth = async () => {
   // In a real scenario, this would call `getServerSession(authOptions)` or similar
   // For testing without auth, return a mock session or null
-  console.warn("[lib/auth] Auth is disabled. Returning null session.");
-  return null; // Or return a mock session object if needed for UI testing
-  /*
+  // console.warn("[lib/auth] Auth is disabled. Returning null session.");
+  // return null; // Or return a mock session object if needed for UI testing
+  // /*
+  // Temporarily return the mock session object for testing API routes
   return {
     user: {
-      id: 'mock-user-id',
+      id: 'mock-user-id-uuid-format', // USE A VALID UUID format if needed by DB
       name: 'Mock User',
       email: 'mock@example.com',
       role: UserRole.ADMIN, // Or desired mock role
     },
-  };
-  */
+    // expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // Add expires if needed by Session type
+  }; 
+  // */
 };
 
 // Existing auth logic (if any) would go here or be imported
