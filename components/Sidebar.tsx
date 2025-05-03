@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "@/lib/auth";
+import { signOut } from "next-auth/react";
 
 // Navigation items
 export const navItems = [
