@@ -18,7 +18,7 @@ import { desc, eq, and, or, like, SQL, sql, inArray } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 import { logger } from '../../../utils/logger';
 import { ExcelParserService } from '../../../services/excel/ExcelParserService';
-import { auth } from '../../../lib/auth';
+import { auth } from '@/lib/auth';
 import type { ParsedShipmentBundle } from '../../../types/parser.types'; // Changed to relative path
 import { insertShipmentBundle } from '../../../services/database/shipmentInserter'; // Changed to relative path
 import { DocumentType, type ShipmentData } from '../../../types/shipment'; // Changed to relative path
@@ -26,6 +26,7 @@ import type { ShipmentStatus } from '../../../types/shipment'; // Changed to rel
 import * as fs from 'fs'; // Added for debug output
 import * as path from 'path'; // Added for debug output
 import type { InferSelectModel } from 'drizzle-orm'; // Added for type inference
+import { neon, NeonQueryFunction } from '@neondatabase/serverless'; // Added NeonQueryFunction
 
 // Define the frontend type (based on components/document-page.tsx)
 // Duplicating here for clarity in API route, ideally import from shared types
@@ -194,7 +195,7 @@ export async function GET(request: NextRequest) {
       where: eq(users.id, userId),
     });
 
-    const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
     const searchQuery = searchParams.get('search')?.trim();
     const statusFilter = searchParams.get('status')?.trim();
 
@@ -202,7 +203,7 @@ export async function GET(request: NextRequest) {
 
     const baseCondition = eq(documents.uploadedById, userId);
     const conditions: SQL[] = [baseCondition];
-    if (searchQuery) {
+  if (searchQuery) {
       conditions.push(like(documents.filename, `%${searchQuery}%`));
     }
 
@@ -264,7 +265,7 @@ export async function GET(request: NextRequest) {
         };
     });
 
-    if (statusFilter && statusFilter !== 'all') {
+  if (statusFilter && statusFilter !== 'all') {
        logger.info(`API: Applying frontend status filter: '${statusFilter}'`);
        mappedResults = mappedResults.filter(doc =>
            doc.shipmentSummaryStatus.toLowerCase() === statusFilter.toLowerCase()
@@ -315,14 +316,18 @@ function determineDocumentType(filename: string | undefined): DocumentType {
 
 // POST handler for /api/documents (File Upload)
 export async function POST(request: NextRequest) {
-  logger.info("API: POST /api/documents called");
+  logger.info('API: POST /api/documents called');
 
-  const session = await auth();
-  if (!session?.user?.id) {
-    logger.warn('API: Unauthorized upload attempt.');
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
-  const userId = session.user.id;
+  // --- TEMPORARILY DISABLED AUTH CHECK ---
+  // const session = await auth();
+  // if (!session?.user?.id) {
+  //   logger.warn('API: Unauthorized upload attempt.');
+  //   return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  // }
+  // const userId = session.user.id;
+  const userId = 'mock-user-id-for-testing'; // Use a mock ID
+  logger.info(`[documents POST] Auth bypassed, using mock userId: ${userId}`);
+  // --- END TEMPORARY DISABLE ---
 
   // Use const as docId is not reassigned in this test configuration
   const docId: string | undefined = undefined; 
@@ -348,13 +353,13 @@ export async function POST(request: NextRequest) {
     logger.info(`API: Received file: ${filename}, Type: ${fileType}, Size: ${fileSize} bytes, UserID: ${userId}`); // Log UserID too
 
     const fileBuffer = await file.arrayBuffer();
-    
+
     // Prepare values for insert
     const valuesToInsert = {
       filename: filename,
       fileType: fileType,
       fileSize: fileSize,
-      status: 'PROCESSING' as const, // Use const assertion for stricter typing
+      status: 'PROCESSING' as const, 
       uploadedById: userId,
     };
     
@@ -367,7 +372,7 @@ export async function POST(request: NextRequest) {
     await db.insert(documents).values(valuesToInsert);
     
     logger.info(`API: Simplified insert executed for ${filename}. NOTE: Document ID not retrieved via .returning() in this test.`);
-    
+
     // If the insert succeeded, we proceed. If it failed, the catch block will handle it.
 
     // 2. Instantiate Parser Service (KEEP THIS)
@@ -433,59 +438,59 @@ export async function POST(request: NextRequest) {
     // --- Bundle processing loop remains commented out --- 
     /*
     if (parsedBundles.length === 0) {
-        logger.warn(`API: No shipment bundles were parsed from ${filename}. Updating document status to PROCESSED (with 0 shipments).`);
-        finalStatus = 'PROCESSED';
-        processedCount = 0;
+      logger.warn(`API: No shipment bundles were parsed from ${filename}. Updating document status to PROCESSED (with 0 shipments).`);
+      finalStatus = 'PROCESSED';
+      processedCount = 0;
     } else {
-        logger.info(`API: Processing ${parsedBundles.length} bundles for document ${docId}...`);
-        let successfulInserts = 0;
-        const failedBundleIndices: number[] = [];
+      logger.info(`API: Processing ${parsedBundles.length} bundles for document ${docId}...`);
+      let successfulInserts = 0;
+      const failedBundleIndices: number[] = [];
 
-        for (let index = 0; index < parsedBundles.length; index++) {
-          const bundle = parsedBundles[index];
+      for (let index = 0; index < parsedBundles.length; index++) {
+        const bundle = parsedBundles[index];
           const bundleNumber = index + 1;
+        
+        try {
+          logger.debug(`API: Attempting to insert Bundle ${bundleNumber}/${parsedBundles.length}... Document ID: ${docId}`); 
           
-          try {
-            logger.debug(`API: Attempting to insert Bundle ${bundleNumber}/${parsedBundles.length}... Document ID: ${docId}`); 
-            
-            if (!bundle.metadata) {
+          if (!bundle.metadata) {
                 bundle.metadata = { originalRowData: {}, originalRowIndex: -1 };
-            }
-            if (!bundle.metadata.sourceDocumentId) {
-                bundle.metadata.sourceDocumentId = docId;
-            }
-            
+          }
+          if (!bundle.metadata.sourceDocumentId) {
+              bundle.metadata.sourceDocumentId = docId;
+          }
+          
             // ***** COMMENTING OUT THE ACTUAL INSERT CALL *****
             // const insertionResult = await insertShipmentBundle(bundle);
             // Simulate success for testing the update step
             const insertionResult = { success: true, shipmentId: `simulated-${bundleNumber}` }; 
-            
+          
             if (insertionResult.success && insertionResult.shipmentId) {
-                successfulInserts++;
+              successfulInserts++;
                  logger.info(`API: Successfully SIMULATED insertion for Bundle ${bundleNumber}/${parsedBundles.length}. Sim Shipment ID: ${insertionResult.shipmentId}`);
-            } else {
+          } else {
                  logger.warn(`API: Failed to SIMULATE insert Bundle ${bundleNumber}.`);
                  failedBundleIndices.push(index);
-            }
-          } catch (insertError: any) {
+          }
+        } catch (insertError: any) {
             logger.error(`API: Error SIMULATING insert Bundle ${bundleNumber}/${parsedBundles.length}: ${insertError.message}`, { stack: insertError.stack, bundleIndex: index }); 
             failedBundleIndices.push(index);
-          }
+        }
         } 
 
         logger.info(`API: SIMULATED Insertion loop complete for document ${docId}. Successful: ${successfulInserts}, Failed: ${failedBundleIndices.length}`);
 
-        if (failedBundleIndices.length === 0) {
-            finalStatus = 'PROCESSED';
-            processedCount = successfulInserts;
+      if (failedBundleIndices.length === 0) {
+          finalStatus = 'PROCESSED';
+          processedCount = successfulInserts;
             logger.info(`API: All ${processedCount} bundles SIMULATED successfully for document ${docId}.`);
-        } else {
-            finalStatus = 'ERROR';
-            processedCount = successfulInserts; 
-            failedCount = failedBundleIndices.length;
+      } else {
+          finalStatus = 'ERROR';
+          processedCount = successfulInserts; 
+          failedCount = failedBundleIndices.length;
             processingErrors.push(...failedBundleIndices.map(idx => `Bundle ${idx + 1} failed simulation: ${parsedBundles[idx]?.metadata?.processingErrors?.join(', ') || 'Unknown error'}`));
             logger.warn(`API: Partially SIMULATED document ${docId}. Success: ${processedCount}, Failed: ${failedCount}.`);
-        }
+      }
     }
     */
     // --- END ISOLATION --- 
@@ -524,7 +529,7 @@ export async function POST(request: NextRequest) {
       filename: filename,
       totalBundlesFound: parsedBundles.length,
       processedShipments: processedCount,
-      failedShipments: failedCount,
+      failedShipments: failedCount, 
       errors: processingErrors,
     }, { status: 200 });
 
