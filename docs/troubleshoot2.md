@@ -164,7 +164,7 @@ This change allows the application to run correctly in Vercel's serverless envir
 
 **Additional Findings:**
 
-After implementing the switch from Vercel Postgres adapter to Neon HTTP adapter, we're still seeing the same error in the logs:
+After implementing the switch from Vercel Postgres adapter to Neon HTTP adapter, we're still seeing the same error in the logs when using the *original* `/api/documents` endpoint:
 
 ```
 POST 500 load-rlaukx8xx-photonentangleds-projects.vercel.app /api/documents 2
@@ -172,36 +172,22 @@ POST 500 load-rlaukx8xx-photonentangleds-projects.vercel.app /api/documents 2
 ```
 
 **Key Observations:**
-1. The error continues to occur at the same position in the compiled code
-2. Our browser console logs show: `Attempting to POST file to /api/documents: all_status_test_shipments.xlsx`
-3. The error persists even with the simplified insert logic and our switch to Neon's HTTP adapter
+1. The error continues to occur at the same position in the compiled code, even with the Neon adapter.
+2. The browser console logs show the 500 error when attempting to upload.
+3. **UI Bug:** The checkbox to select the alternate upload method was missing because the logic was added to the wrong component (`components/shared/FileUploader.tsx`) instead of the actual uploader used on the page (`components/logistics/LogisticsDocumentUploader.tsx`).
+
+**Corrective Actions Taken:**
+1. Added the alternate endpoint toggle logic and state management to `components/logistics/LogisticsDocumentUploader.tsx`.
+2. Created the new `/api/documents/alt-upload/route.ts` which uses direct SQL queries via the Neon `sql` template tag, bypassing the Drizzle ORM `insert().values()` pattern.
 
 **Technical Analysis:**
-Looking at the POST handler in `app/api/documents/route.ts`, we can see the error occurs immediately after:
-```javascript
-await db.insert(documents).values(valuesToInsert);
-```
-
-This suggests that even with the simplified code without `.returning()`, there's still an incompatibility between:
-1. The minified Drizzle ORM code
-2. The serverless runtime in Vercel's environment
-3. The specific pattern of using `db.insert().values()` in server-side API routes
+The persistence of the `TypeError` on the original route, despite using the Neon adapter, strongly suggests a fundamental incompatibility between the `db.insert().values()` pattern in Drizzle ORM and the Vercel serverless runtime environment for this specific API route. The minification or bundling process likely disrupts Drizzle's internal function calls for this operation.
 
 **Next Steps:**
 
-1. **Direct SQL Approach**: Replace the Drizzle ORM query builder syntax with direct SQL queries using the Neon SQL template tag:
-   ```javascript
-   const sql = neon(connectionString);
-   await sql`INSERT INTO documents (filename, file_type, file_size, status, uploaded_by_id) 
-             VALUES (${filename}, ${fileType}, ${fileSize}, 'PROCESSING', ${userId})`;
-   ```
-
-2. **Alternative Handler**: Create a separate API route that uses a different pattern (e.g., `/api/documents/alt-upload`) to test if the issue is specific to that route or the bundling of that specific file.
-
-3. **Manual SQL Logging**: Add extensive logging of the generated SQL query before execution to help debug the error in production.
-
-4. **Remove Authentication**: Try a version without the authentication requirement to see if there's any interaction between NextAuth and Drizzle.
-
-We'll implement these changes and continue monitoring the logs to isolate the root cause.
+1. **Test Alternate Endpoint:** Push the latest changes (UI fix + alt-upload route) and thoroughly test document uploads using the newly available **"Use alternate upload method (direct SQL)" checkbox**.
+2. **Analyze Alternate Endpoint Logs:** If the alternate endpoint succeeds, confirm this approach works reliably. If it fails, analyze the Vercel logs specifically for `/api/documents/alt-upload` to diagnose the SQL-related error.
+3. **Adopt Direct SQL (If Successful):** If the alternate endpoint works, we should consider migrating the primary `/api/documents` POST logic entirely to use direct SQL for inserts, removing the problematic Drizzle ORM pattern.
+4. **Further Drizzle Investigation (If Alt Fails):** If even direct SQL fails, there might be a more fundamental issue with database connectivity or permissions in the Vercel environment that needs investigation (e.g., environment variable propagation, Neon role permissions).
 
 ---

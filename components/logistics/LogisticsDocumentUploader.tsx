@@ -2,11 +2,11 @@
 
 import type React from "react";
 import type { ForwardedRef } from "react";
-import { useState, useRef, forwardRef, useImperativeHandle } from "react";
-import { Upload, File, X, FileText, Camera } from "lucide-react";
+import { useState, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
+import { Upload, File, X, FileText, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { ShipmentData, ShipmentItem, LocationDetail, SourceInfo, ParsingMetadata, AIMappedField } from "@/types/shipment";
 import { useToast } from "@/hooks/use-toast";
@@ -31,10 +31,12 @@ const LogisticsDocumentUploader = forwardRef<
   const [activeTab, setActiveTab] = useState<"upload" | "scan">("upload");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [useAltEndpoint, setUseAltEndpoint] = useState(false);
 
   useImperativeHandle(ref, () => ({
     reset: () => {
       setFiles([]);
+      setUseAltEndpoint(false);
     },
   }));
 
@@ -68,6 +70,10 @@ const LogisticsDocumentUploader = forwardRef<
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const getUploadEndpoint = useCallback(() => {
+    return useAltEndpoint ? "/api/documents/alt-upload" : "/api/documents";
+  }, [useAltEndpoint]);
+
   const handleProcessDocument = async () => {
     if (files.length === 0) {
       toast({ title: "No File Selected", description: "Please select at least one file to process.", variant: "destructive" });
@@ -82,15 +88,17 @@ const LogisticsDocumentUploader = forwardRef<
 
     const formData = new FormData();
     formData.append("file", fileToProcess);
+    
+    const endpoint = getUploadEndpoint();
 
     try {
-      console.log("Attempting to POST file to /api/documents:", fileToProcess.name);
-      const response = await fetch("/api/documents", {
+      console.log(`Attempting to POST file to ${endpoint}:`, fileToProcess.name);
+      const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
       });
 
-      console.log("Received response from /api/documents:", response.status);
+      console.log(`Received response from ${endpoint}:`, response.status);
 
       if (!response.ok) {
         let errorDetails = `HTTP error ${response.status}`;
@@ -117,7 +125,7 @@ const LogisticsDocumentUploader = forwardRef<
       setFiles([]);
 
     } catch (error) {
-      console.error("Error during file upload fetch:", error);
+      console.error(`Error during file upload fetch to ${endpoint}:`, error);
       const errorMessage = error instanceof Error ? error.message : "Unknown upload error";
       toast({ title: "Upload Failed", description: errorMessage, variant: "destructive"});
       onProcessingError?.(
@@ -214,6 +222,19 @@ const LogisticsDocumentUploader = forwardRef<
               />
             </div>
           </div>
+          <div className="flex items-center space-x-2 mt-4">
+            <input
+              type="checkbox"
+              id="altEndpointToggleLDU"
+              checked={useAltEndpoint}
+              onChange={e => setUseAltEndpoint(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+              disabled={isProcessing}
+            />
+            <label htmlFor="altEndpointToggleLDU" className="text-sm text-gray-600">
+              Use alternate upload method (direct SQL)
+            </label>
+          </div>
         </TabsContent>
 
         <TabsContent value="scan" className="mt-4">
@@ -248,70 +269,49 @@ const LogisticsDocumentUploader = forwardRef<
                     {file.name}
                   </span>
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
                   onClick={() => handleRemoveFile(index)}
-                  className="text-muted-foreground hover:text-destructive"
-                  aria-label="Remove file"
+                  disabled={isProcessing}
                 >
-                  <X className="h-5 w-5" />
-                </button>
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </Button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div className="mt-6">
+      {files.length > 0 && (
         <Button
+          className="w-full mt-4"
           onClick={handleProcessDocument}
-          disabled={files.length === 0 || isProcessing}
-          className="w-full"
+          disabled={isProcessing}
         >
           {isProcessing ? (
             <>
-              <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Processing...
             </>
           ) : (
-            <>
-              <File className="h-5 w-5 mr-2" />
-              Process Document
-            </>
+            "Process Document"
           )}
         </Button>
-      </div>
+      )}
 
-      <div className="mt-4">
-        <h3 className="text-sm font-medium text-foreground mb-2">
-          Processing Tips
-        </h3>
-        <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
+      <Card className="mt-6 bg-secondary/50 border-secondary">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium">Processing Tips</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-1">
           <li>Ensure the file contains all shipment details</li>
           <li>Text files (.txt) work best for automated extraction</li>
           <li>Ensure the document is properly formatted for best results</li>
           <li>For large files, processing may take a few moments</li>
-        </ul>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 });
