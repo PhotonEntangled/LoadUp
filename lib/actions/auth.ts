@@ -4,7 +4,6 @@ import { signIn } from "@/lib/auth";
 import { signInSchema, signUpSchema } from "@/lib/validations";
 // TODO: Re-enable when Supabase integration is complete
 // import { signUpUser } from "@/lib/supabase";
-import { AuthError } from '@auth/core/errors';
 import { z } from "zod";
 
 export async function signInWithCredentials(formData: z.infer<typeof signInSchema>) {
@@ -28,18 +27,22 @@ export async function signInWithCredentials(formData: z.infer<typeof signInSchem
     return { success: true };
 
   } catch (error) {
-    // Check if it's an AuthError *before* accessing type/message
-    if (error instanceof AuthError) {
-      console.error(`AuthError during sign in for ${email}:`, error.type, error.message);
-      // Map specific error types if needed
-      switch (error.type) {
+    // Check if it's an AuthError by checking its name property (v4 style)
+    // Ensure error is an object and has a name property before checking
+    if (typeof error === 'object' && error !== null && 'name' in error) {
+      const errorName = (error as { name?: string }).name;
+      console.error(`Error during sign in for ${email}: Name: ${errorName}, Error:`, error);
+
+      switch (errorName) {
         case 'CredentialsSignin':
         case 'CallbackRouteError': // Might include db errors during authorize
           return { success: false, error: "Invalid email or password." };
         default:
+          // Consider logging the specific errorName for unknown AuthErrors
+          console.warn(`Unhandled AuthError type encountered during sign in: ${errorName}`);
           return { success: false, error: "Authentication failed. Please try again." };
       }
-    } 
+    }
     // Handle other unknown errors
     console.error('Unexpected error during signInWithCredentials:', error);
     // Instead of rethrowing, return a generic error for the client
@@ -87,10 +90,13 @@ export async function signUp(formData: z.infer<typeof signUpSchema>) {
     // return { success: true };
 
   } catch (error) {
-    // Check if it's an AuthError *before* accessing type/message
-    if (error instanceof AuthError) {
-       console.error(`AuthError during auto sign in for ${email}:`, error.type, error.message);
-      // Even if DB user created, sign-in failed
+    // Check if it's an AuthError by checking its name property (v4 style)
+    // Ensure error is an object and has a name property before checking
+    if (typeof error === 'object' && error !== null && 'name' in error) {
+       const errorName = (error as { name?: string }).name;
+       console.error(`Error during auto sign in for ${email}: Name: ${errorName}, Error:`, error);
+      // Even if DB user created, sign-in failed - map specific v4 names if needed
+      // For now, any AuthError here is treated similarly
       return { success: false, error: "Account created, but auto sign-in failed." };
     }
     // Handle other unknown errors
