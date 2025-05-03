@@ -199,18 +199,19 @@ export const authOptions: AuthOptions = {
       console.log(`[AUTH CALLBACK] JWT using secret starting: ${secret?.substring(0, 10)}... [Length: ${secret?.length}]`);
       // <<< END ADDED SECRET LOGGING >>>
 
-      // <<< UNCOMMENTED AND FIXED >>>
-      if (user) { // User object is available on initial sign in
-        // Ensure CustomUser properties are correctly accessed and assigned
-        token.role = (user as CustomUser).role || UserRole.USER; // Assign role from user object
-        token.id = user.id; // Assign ID
-        token.email = user.email; // Ensure email is included
-        token.name = user.name;   // Ensure name is included
-        console.log("[AUTH CALLBACK] Added user data to JWT token:", { id: token.id, email: token.email, role: token.role, name: token.name });
-      }
+      // <<< TEMPORARILY COMMENTED OUT ALL CUSTOM LOGIC >>>
+      // console.log("[AUTH CALLBACK] Adding user data to JWT token:", { id: token.id, email: token.email, role: token.role, name: token.name });
+      // if (user) { // User object is available on initial sign in
+      //   // Ensure CustomUser properties are correctly accessed and assigned
+      //   token.role = (user as CustomUser).role || UserRole.USER; // Assign role from user object
+      //   token.id = user.id; // Assign ID
+      //   token.email = user.email; // Ensure email is included
+      //   token.name = user.name;   // Ensure name is included
+      // }
       // console.log("[AUTH CALLBACK] Returning JWT token:", token); // Keep this commented unless debugging JWT specifics
-      // <<< END UNCOMMENTED AND FIXED >>>
-      return token;
+      // <<< END TEMPORARILY COMMENTED OUT >>>
+      console.log("[AUTH CALLBACK] JWT returning default token (custom logic bypassed).");
+      return token; // Return the default token without modifications
     },
 
     // Session callback - Make custom claims available on session object
