@@ -157,3 +157,51 @@ The error occurred because the minified function names in the compiled code for 
 This change allows the application to run correctly in Vercel's serverless environment while maintaining compatibility with the Neon Postgres database.
 
 ---
+
+## Update on Database Integration Issue (May 03)
+
+**Date:** 2025-05-03
+
+**Additional Findings:**
+
+After implementing the switch from Vercel Postgres adapter to Neon HTTP adapter, we're still seeing the same error in the logs:
+
+```
+POST 500 load-rlaukx8xx-photonentangleds-projects.vercel.app /api/documents 2
+⨯ TypeError: S is not a function at x (/var/task/.next/server/app/api/documents/route.js:1:2301)
+```
+
+**Key Observations:**
+1. The error continues to occur at the same position in the compiled code
+2. Our browser console logs show: `Attempting to POST file to /api/documents: all_status_test_shipments.xlsx`
+3. The error persists even with the simplified insert logic and our switch to Neon's HTTP adapter
+
+**Technical Analysis:**
+Looking at the POST handler in `app/api/documents/route.ts`, we can see the error occurs immediately after:
+```javascript
+await db.insert(documents).values(valuesToInsert);
+```
+
+This suggests that even with the simplified code without `.returning()`, there's still an incompatibility between:
+1. The minified Drizzle ORM code
+2. The serverless runtime in Vercel's environment
+3. The specific pattern of using `db.insert().values()` in server-side API routes
+
+**Next Steps:**
+
+1. **Direct SQL Approach**: Replace the Drizzle ORM query builder syntax with direct SQL queries using the Neon SQL template tag:
+   ```javascript
+   const sql = neon(connectionString);
+   await sql`INSERT INTO documents (filename, file_type, file_size, status, uploaded_by_id) 
+             VALUES (${filename}, ${fileType}, ${fileSize}, 'PROCESSING', ${userId})`;
+   ```
+
+2. **Alternative Handler**: Create a separate API route that uses a different pattern (e.g., `/api/documents/alt-upload`) to test if the issue is specific to that route or the bundling of that specific file.
+
+3. **Manual SQL Logging**: Add extensive logging of the generated SQL query before execution to help debug the error in production.
+
+4. **Remove Authentication**: Try a version without the authentication requirement to see if there's any interaction between NextAuth and Drizzle.
+
+We'll implement these changes and continue monitoring the logs to isolate the root cause.
+
+---
