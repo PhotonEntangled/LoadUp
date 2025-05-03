@@ -129,8 +129,9 @@ export const authOptions: NextAuthOptions = {
         if (user) {
           // On sign in, add user properties to the token
           token.id = user.id;
-          token.role = user.role;
-          logger.debug(`[Callback JWT] Adding user info to token: ${JSON.stringify({id: user.id, role: user.role})}`);
+          // Safely assign role, providing a default if null/undefined
+          token.role = user.role ?? UserRole.USER; 
+          logger.debug(`[Callback JWT] Adding user info to token: ${JSON.stringify({id: user.id, role: token.role})}`); // Log the assigned role
         }
         logger.debug(`[Callback JWT] Returning token: ${JSON.stringify(token)}`);
         return token;
