@@ -52,6 +52,19 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        // --- DB Connection Test --- 
+        try {
+          logger.info("[Authorize] Attempting simple DB query to test connection...");
+          // Perform a simple, non-critical query
+          await db.select({ id: users.id }).from(users).limit(1);
+          logger.info("[Authorize] DB connection test successful.");
+        } catch (dbConnectionError: any) {
+            logger.error(`[Authorize] FATAL: DB connection test failed: ${dbConnectionError.message}`, { stack: dbConnectionError.stack });
+            // Return null or throw an error to prevent further execution if DB fails
+            return null; 
+        }
+        // --- End DB Connection Test ---
+
         logger.info(`[Authorize] Attempting authorization for email: ${credentials?.email}`);
         if (!credentials?.email || !credentials?.password) {
           logger.warn('[Authorize] Missing email or password.');
