@@ -324,7 +324,7 @@ export async function POST(request: NextRequest) {
   }
   const userId = session.user.id;
 
-  let docId: string | undefined;
+  let docId: string | undefined = undefined; // Initialize as undefined
   let filename: string | undefined;
   let finalStatus: typeof documentStatusEnum.enumValues[number] = 'ERROR'; // Default to error
   let processedCount = 0;
@@ -344,46 +344,50 @@ export async function POST(request: NextRequest) {
     filename = file.name;
     const fileType = file.type;
     const fileSize = file.size;
-
-    logger.info(`API: Received file: ${filename}, Type: ${fileType}, Size: ${fileSize} bytes`);
+    logger.info(`API: Received file: ${filename}, Type: ${fileType}, Size: ${fileSize} bytes, UserID: ${userId}`); // Log UserID too
 
     const fileBuffer = await file.arrayBuffer();
-
-    // 1. Create initial Document record (KEEP THIS)
-    logger.info(`API: Creating initial document record for ${filename}`);
-    const newDocument = await db.insert(documents).values({
+    
+    // Prepare values for insert
+    const valuesToInsert = {
       filename: filename,
       fileType: fileType,
       fileSize: fileSize,
-      status: 'PROCESSING',
+      status: 'PROCESSING' as const, // Use const assertion for stricter typing
       uploadedById: userId,
-    }).returning({ insertedId: documents.id });
+    };
+    
+    // *** ADD DETAILED LOGGING BEFORE INSERT ***
+    logger.debug("API: Values prepared for initial document insert:", JSON.stringify(valuesToInsert));
+    logger.debug(`API: Data types - filename: ${typeof filename}, fileType: ${typeof fileType}, fileSize: ${typeof fileSize}, status: ${typeof valuesToInsert.status}, uploadedById: ${typeof userId}`);
 
-    if (!newDocument || newDocument.length === 0 || !newDocument[0]?.insertedId) {
-      logger.error('API: Failed to create initial document record in database.');
-      throw new Error('Database error creating document record.');
-    }
-    docId = newDocument[0].insertedId;
-    logger.info(`API: Created document record with ID: ${docId}`);
+    // 1. Create initial Document record (SIMPLIFIED INSERT - REMOVED .returning())
+    logger.info(`API: Attempting simplified initial document record insert for ${filename}`);
+    await db.insert(documents).values(valuesToInsert);
+    // .returning({ insertedId: documents.id }); <-- REMAINS REMOVED for testing
+    
+    logger.info(`API: Simplified insert executed for ${filename}. NOTE: Document ID not retrieved via .returning() in this test.`);
+    
+    // If the insert succeeded, we proceed. If it failed, the catch block will handle it.
 
     // 2. Instantiate Parser Service (KEEP THIS)
     const parser = new ExcelParserService();
 
     // 3. Call Parser Service (KEEP THIS)
-    logger.info(`API: Starting parsing for document ${docId}`);
+    logger.info(`API: Starting parsing for document ${docId || 'unknown_doc'}`);
     const detectedDocumentType = determineDocumentType(filename);
     parsedBundles = await parser.parseExcelFile(fileBuffer, {
       documentType: detectedDocumentType,
       fileName: filename
     });
-    logger.info(`API: Parsed ${parsedBundles.length} shipment bundles from document ${docId} (Detected Type: ${detectedDocumentType})`);
+    logger.info(`API: Parsed ${parsedBundles.length} shipment bundles from document ${docId || 'unknown_doc'}`); // Adjusted log
 
-    // --- DEBUG SAVE OUTPUT (KEEP THIS) ---
+    // --- DEBUG SAVE OUTPUT (Adjusted for potentially missing docId) ---
     try {
       const debugOutputDir = path.resolve(process.cwd(), '.debug_output');
-      // <<< CHANGE: Add timestamp to filename >>>
       const timestamp = Date.now();
-      const debugOutputPath = path.join(debugOutputDir, `parsed_output_${docId || 'unknown_doc'}_${timestamp}.json`); 
+      // Use a fallback name if docId wasn't retrieved
+      const debugOutputPath = path.join(debugOutputDir, `parsed_output_${docId || 'no_id_test'}_${timestamp}.json`); 
       
       // Attempt to delete existing file (less likely to exist now, but keep for safety)
       if (fs.existsSync(debugOutputPath)) {
@@ -424,7 +428,7 @@ export async function POST(request: NextRequest) {
     } catch (debugError: any) {
         logger.error(`[DEBUG] Failed to save parser output: ${debugError.message}`, debugError);
     }
-    // ---- END DEBUG: Save parser output ----
+    // ---- END DEBUG SAVE OUTPUT ----
 
     // --- Bundle processing loop remains commented out --- 
     /*
@@ -499,7 +503,7 @@ export async function POST(request: NextRequest) {
         logger.warn(`API: Test Mode - No bundles parsed. Marking as PROCESSED.`);
     }
 
-    // 5. Update Document Status (COMMENTING OUT THIS BLOCK FOR ISOLATION)
+    // --- Final db.update remains commented out --- 
     /* 
     logger.info(`API: Updating final status for document ${docId} to ${finalStatus} with ${processedCount} shipments (NOTE: Bundle insertion AND FINAL UPDATE was SKIPPED).`);
     await db.update(documents)
@@ -511,12 +515,12 @@ export async function POST(request: NextRequest) {
       })
       .where(eq(documents.id, docId));
     */
-    logger.warn(`API: Test Mode - SKIPPING final db.update for document ${docId}`); // Add log
+    logger.warn(`API: Test Mode - SKIPPING final db.update for document ${docId || 'unknown_doc'}`); 
 
     // 6. Return success response (Modified for testing)
     return NextResponse.json({
-      message: `Document processed (TEST MODE - INSERTION & FINAL UPDATE SKIPPED). Status: ${finalStatus}`,
-      documentId: docId,
+      message: `Document processed (TEST MODE - INSERTION SIMPLIFIED, BUNDLES/UPDATE SKIPPED). Status: ${finalStatus}`,
+      documentId: docId, // Will be undefined
       filename: filename,
       totalBundlesFound: parsedBundles.length,
       processedShipments: processedCount,
@@ -526,21 +530,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     logger.error(`API: Overall error in POST /api/documents: ${error.message}`, { stack: error.stack });
-    // If we have a docId, try to mark it as ERROR (this update might also fail if update is the issue)
-    if (docId) {
-      try {
-        logger.error(`API: Attempting to mark document ${docId} as ERROR due to overall failure.`);
-        await db.update(documents)
-          .set({ status: 'ERROR' })
-          .where(eq(documents.id, docId));
-      } catch (updateError) {
-        logger.error(`API: Failed to update document ${docId} status to ERROR after catching overall error:`, updateError);
-      }
-    }
+    // Cannot update document status here reliably without the ID
     return NextResponse.json({ 
         message: 'Error processing document upload', 
         error: error.message,
-        documentId: docId, 
+        documentId: docId, // Will be undefined 
         filename: filename 
     }, { status: 500 });
   }
