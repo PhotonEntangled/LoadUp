@@ -140,4 +140,20 @@
 *   **Next Step:** Try the official Vercel Postgres adapter (`drizzle-orm/vercel-postgres` using `@vercel/postgres` package). Rationale: This adapter is specifically designed for the Vercel environment and might be more resilient to Vercel's build process nuances or handle the underlying connection/execution differently.
 *   **Contingency:** If `vercel-postgres` adapter also fails, investigate Vercel build output directly or create minimal reproduction.
 
+## Solution Implemented
+
+After thorough investigation, we identified that the TypeErrors (`TypeError: S is not a function`, `TypeError: h is not a function`, etc.) were caused by incompatibility between Drizzle ORM's query building pattern and the Vercel Postgres adapter in serverless environments.
+
+**Solution:**
+1. We switched from the `@vercel/postgres` adapter to the Neon HTTP adapter (`@neondatabase/serverless`) which has better compatibility with serverless functions
+2. Updated `lib/database/drizzle.ts` to use the Neon HTTP adapter instead of Vercel Postgres
+3. Created a dedicated migration script (`scripts/migrate.ts`) using Neon's migrator
+4. Added testing scripts to verify the connection
+
+**Technical Explanation:**
+The error occurred because the minified function names in the compiled code for Vercel's serverless environment were not being properly resolved. Using Neon's direct HTTP adapter bypasses these issues as it's specifically designed for serverless environments and has fewer intermediate layers that could be affected by minification.
+
+**Impact:**
+This change allows the application to run correctly in Vercel's serverless environment while maintaining compatibility with the Neon Postgres database.
+
 ---
