@@ -3,7 +3,7 @@
 import { useSession as useNextAuthSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useState } from 'react';
 import api from '../api';
-import { UserRole } from '../lib/auth';
+import { UserRole } from '../auth';
 
 interface User {
   id: string;
@@ -54,9 +54,9 @@ export function useAuth(): UseAuthResult {
       // Fallback to API call if session doesn't have all the data
       const userData = await api.auth.getCurrentUser();
       setUser({
-        id: userData.userId || session.user.id,
+        id: userData?.userId || session.user.id,
         email: session.user.email,
-        role: userData.role || session.user.role || UserRole.USER,
+        role: userData?.role ?? session?.user?.role ?? (UserRole.USER as UserRole),
         name: session.user.name
       });
     } catch (error) {

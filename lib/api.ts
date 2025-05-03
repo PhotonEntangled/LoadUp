@@ -3,6 +3,8 @@
  * Handles all API requests to the backend
  */
 
+import { UserRole } from './auth';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
@@ -88,7 +90,7 @@ export const etlAPI = {
  * Auth API functions
  */
 export const authAPI = {
-  getCurrentUser: () => fetchAPI<{ userId: string; role: string }>('/api/auth'),
+  getCurrentUser: () => fetchAPI<{ userId: string; role: UserRole }>('/api/auth'),
 };
 
 export default {
