@@ -53,6 +53,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        logger.info("[Authorize Callback] ENTERED");
         // --- DB Connection Test --- 
         try {
           logger.info("[Authorize] Attempting simple DB query to test connection...");
@@ -137,6 +138,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, account, profile, isNewUser }) {
+        logger.info("[JWT Callback] ENTERED");
         // The `user` object is passed only on initial sign-in.
         // `account` and `profile` are from OAuth providers.
         logger.debug(`[Callback JWT] Fired. User present: ${!!user}, Token received: ${JSON.stringify(token)}`);
@@ -157,6 +159,7 @@ export const authOptions: NextAuthOptions = {
         return token; // The token is now the source of truth for the session
     },
     async session({ session, token, user }) {
+       logger.info("[Session Callback] ENTERED");
       // `user` argument is generally not available with JWT strategy, rely on `token`.
       logger.info(`[Callback Session] Fired. Session received: ${JSON.stringify(session)}, Token received: ${JSON.stringify(token)}`);
 
