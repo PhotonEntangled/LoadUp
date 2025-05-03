@@ -1,378 +1,221 @@
-May 03 22:27:23.61
+May 03 22:45:18.89
 POST
 401
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /api/documents/alt-upload
-2
+5
 [WARN] API: Unauthorized alt-upload attempt (session or user missing).
-May 03 22:27:16.53
-POST
-401
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/api/documents
-2
-[WARN] API: Unauthorized upload attempt (session or user missing).
-May 03 22:25:59.91
-POST
-401
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/api/documents
-2
-[WARN] API: Unauthorized upload attempt (session or user missing).
-May 03 22:25:44.80
+May 03 22:42:25.49
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /api/documents
 5
 Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
-May 03 22:25:42.98
+May 03 22:39:50.75
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /dashboard/settings
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:42.94
+May 03 22:39:50.70
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /dashboard/reports
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:42.90
+May 03 22:39:50.66
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /dashboard/drivers
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:42.80
+May 03 22:39:50.61
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /dashboard/customers
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:42.74
+May 03 22:39:50.26
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /documents
-5
+4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:42.74
+May 03 22:39:50.26
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard
-6
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/simulation
+4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:42.74
+May 03 22:39:50.26
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/dashboard/shipments
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:39:50.26
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /tracking-stabilized
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:42.74
+May 03 22:39:50.26
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/simulation
-6
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/dashboard
+4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:42.74
+May 03 22:39:48.53
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/shipments
-5
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:25:40.59
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /
-6
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.19
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/settings
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.17
+May 03 22:38:14.85
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/reports
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.15
+May 03 22:36:22.24
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/drivers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.13
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /dashboard/customers
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.07
+May 03 22:36:22.22
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/simulation
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/dashboard/customers
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.07
+May 03 22:36:22.11
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /documents
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.07
+May 03 22:36:22.11
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/simulation
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:36:22.11
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /dashboard/shipments
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.07
+May 03 22:36:22.11
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/simulation
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:55.07
+May 03 22:36:22.11
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/dashboard/shipments
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:36:22.11
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/documents
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:36:22.11
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /tracking-stabilized
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:24:54.25
+May 03 22:36:22.11
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/tracking-stabilized
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:36:22.11
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/dashboard
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:36:22.10
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/dashboard
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:36:21.66
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
 /
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:06:55.65
-POST
-401
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/api/documents/alt-upload
-2
-[WARN] API: Unauthorized alt-upload attempt (session or user missing).
-May 03 22:06:52.77
-POST
-401
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/api/documents
-2
-[WARN] API: Unauthorized upload attempt (session or user missing).
-May 03 22:06:43.18
-POST
-401
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/api/documents/alt-upload
-5
-[WARN] API: Unauthorized alt-upload attempt (session or user missing).
-May 03 22:06:15.09
+May 03 22:36:21.56
 GET
 200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/api/documents
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/
 4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:36:21.11
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 03 22:36:21.10
+GET
+200
+load-nk76w4c3s-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+
+
+
+
+
+[INFO] Database connection initialized using neon-http adapter.
+[INFO] [Auth Options] Initializing DrizzleAdapter...
+[INFO] [Auth Options] DrizzleAdapter initialized.
 [INFO] API: GET /api/documents called (MINIMAL TEST)
-May 03 22:05:28.51
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/settings
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:28.47
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/reports
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:28.44
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/drivers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:28.40
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/customers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:28.12
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:28.12
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/simulation
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:28.12
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/documents
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:28.12
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/shipments
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:28.12
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/tracking-stabilized
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:26.63
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:05:13.90
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.73
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/shipments
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.73
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/documents
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.73
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/tracking-stabilized
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.73
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/simulation
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.73
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.69
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/customers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.58
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/simulation
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.58
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/documents
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.58
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/tracking-stabilized
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.58
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard/shipments
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.58
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/dashboard
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.11
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:30.05
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:29.55
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 03 22:04:29.49
-GET
-200
-load-20kvxmfa4-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
+
+
+
+[INFO] Database connection initialized using neon-http adapter.
+[INFO] [Auth Options] Initializing DrizzleAdapter...
+[INFO] [Auth Options] DrizzleAdapter initialized.
+[INFO] API: Received POST request for alt-upload
+[WARN] API: Unauthorized alt-upload attempt (session or user missing).
