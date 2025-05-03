@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { logger } from '@/utils/logger'; // Assuming client-side logger setup
 
 export default function SignInPage() {
@@ -66,11 +65,9 @@ export default function SignInPage() {
         </CardHeader>
         <CardContent>
           {error && (
-              <Alert variant="destructive" className="mb-4 bg-red-900 border-red-700 text-red-100">
-                {/* Optional: Add icon <AlertCircle className="h-4 w-4" /> */}
-                <AlertTitle>Sign In Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+            <p className="mb-4 rounded border border-red-700 bg-red-900 p-3 text-center text-sm text-red-100">
+              {error}
+            </p>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
