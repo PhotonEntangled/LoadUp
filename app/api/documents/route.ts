@@ -305,6 +305,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper function to determine DocumentType from filename
+// Force redeploy comment
 function determineDocumentType(filename: string | undefined): DocumentType {
     // --- Special Case for Mock File --- 
     if (filename === 'all_status_test_shipments.xlsx') {

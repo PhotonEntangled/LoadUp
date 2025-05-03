@@ -102,27 +102,27 @@
 16. **Refactor API Route & Log Set-Cookie:** Refactored `app/api/auth/[...nextauth]/route.ts` to use function handler. Added logging to inspect the `Set-Cookie` header in the response *after* `NextAuth()` executes. Added basic error handling. Rationale: Verify the session cookie is being correctly constructed and sent by the API route. **(Done - Failed, Caused HTTP 500)**
 17. **Revert API Route Handler:** Reverted `app/api/auth/[...nextauth]/route.ts` back to the simple `const handler = NextAuth(authOptions); export { handler as GET, handler as POST };` style. Rationale: Fix the critical HTTP 500 error introduced by the function handler refactor, which crashed when accessing `req.query.nextauth`. **(Done - Success, 500 fixed)**
 18. **Analyze Logs (Post-Revert):** Middleware logs show session cookie (`__Secure-next-auth.session-token`) is NOT received. Raw and Parsed token logs in middleware confirm `getToken` returns null. Session callback entry log is **still missing**. Rationale: Problem shifted to cookie setting/transmission, likely connected to session callback not running. **(Done)**
-19. **Simplify JWT Callback:** Temporarily commented out all custom logic in `jwt` callback (options.ts), returning only the default token. Rationale: Isolate if adding custom claims prevents the session callback execution. **(Done - commit pending)**
-20. **Next Step:** Commit and deploy. User re-tests login. Analyze Vercel logs *specifically* for the `[AUTH CALLBACK] === Session Callback ENTERED ===` log. If it appears, the custom JWT logic was the culprit. If not, the issue lies deeper in the NextAuth flow/config.
+19. **Simplify JWT Callback:** Temporarily commented out all custom logic in `jwt` callback (options.ts)... Rationale: Isolate if adding custom claims prevents the session callback execution. **(Done - Failed, Session Callback Still Missing)**
+20. **Identify Root Cause Candidate:** Discovered `NEXTAUTH_URL` environment variable in Vercel was incorrectly set to `http://localhost:3000`. Rationale: This breaks callback URL generation, origin matching, and potentially cookie security settings in the deployed environment. **(Identified)**
+21. **Correct `NEXTAUTH_URL`:** User updated `NEXTAUTH_URL` in Vercel Production environment variables to `https://load-up.vercel.app`. **(Done)**
+22. **Trigger New Deployment:** User triggered redeploy after updating env var. **(Done)**
+23. **Resolution:** Authentication now functions correctly. Middleware successfully finds and validates the token (`getToken` returns user data). Root cause was incorrect `NEXTAUTH_URL` in Vercel settings. **(RESOLVED)**
 
 ---
 
-## New Issue: Login Succeeds (Bypass Active) but Redirect Loop Back to Sign-in Page (Continued Again)
+## New Issue: API Failures After Fixing Auth (TypeError: $ is not a function)
 
 **Date:** [Current Date/Time]
 
-**Context:** Logging confirms `NEXTAUTH_SECRET` appears identical (start chars + length) in both API route (JWT callback) and Edge middleware. However, `getToken` in middleware *still* returns null, causing the redirect loop.
+**Symptoms:**
+*   Authentication is working.
+*   `/api/documents` (GET & POST) failing with HTTP 500 and `TypeError: $ is not a function`.
 
-**Troubleshooting Steps (Latest Attempt):**
+**Hypothesis:** Error likely in `app/api/documents/route.ts`, possibly related to Drizzle ORM (`db.query` syntax in a stale build?) or incorrect initialization.
 
-1.  **Simplify Cookie Config:** Reverted cookie settings in `app/api/auth/[...nextauth]/options.ts` to default behavior. Removed explicit `useSecureCookies: true` and changed `secure` attribute check back to `process.env.NODE_ENV === 'production'`. Rationale: Eliminate possibility that overrides were causing conflicts with default NextAuth secure cookie handling or environment detection between Node/Edge runtimes. **(Done - Failed)**
-2.  **Add Detailed Token Logging:** Added `console.log` for the raw value returned by `getToken` in `middleware.ts` and for the `token` object received by the `session` callback in `options.ts`. Rationale: Observe the exact state of the token object at different points to pinpoint where the data loss or invalidation occurs. **(Done - commit pending)**
-3.  **Log Raw Cookie/Token Values (Re-attempt):** Re-applied logging in `middleware.ts` to confirm presence of raw session cookie string and to log BOTH the parsed object (`getToken`) and the raw JWT string (`getToken({ raw: true })`). Confirmed session callback logging in `options.ts`. Rationale: Ensure logging wasn't missed and determine if the raw token exists even if parsing fails. **(Done - commit pending)**
-4.  **Add Session Callback Entry Log & Re-apply Middleware Logging:** Added log at start of `session` callback (options.ts). Re-re-applied middleware logging for raw cookie/token presence and parsed/raw `getToken` results. Rationale: Confirm session callback entry and ensure middleware logs are definitely included in deployment. **(Done - Failed, Raw Token Also Null)**
-5.  **Refactor API Route & Log Set-Cookie:** Refactored `app/api/auth/[...nextauth]/route.ts` to use function handler. Added logging to inspect the `Set-Cookie` header in the response *after* `NextAuth()` executes. Added basic error handling. Rationale: Verify the session cookie is being correctly constructed and sent by the API route. **(Done - Failed, Caused HTTP 500)**
-6.  **Revert API Route Handler:** Reverted `app/api/auth/[...nextauth]/route.ts` back to the simple `const handler = NextAuth(authOptions); export { handler as GET, handler as POST };` style. Rationale: Fix the critical HTTP 500 error introduced by the function handler refactor, which crashed when accessing `req.query.nextauth`. **(Done - Success, 500 fixed)**
-7.  **Analyze Logs (Post-Revert):** Middleware logs show session cookie (`__Secure-next-auth.session-token`) is NOT received. Raw and Parsed token logs in middleware confirm `getToken` returns null. Session callback entry log is **still missing**. Rationale: Problem shifted to cookie setting/transmission, likely connected to session callback not running. **(Done)**
-8.  **Simplify JWT Callback:** Temporarily commented out all custom logic in `jwt` callback (options.ts), returning only the default token. Rationale: Isolate if adding custom claims prevents the session callback execution. **(Done - commit pending)**
-9.  **Next Step:** Commit and deploy. User re-tests login. Analyze Vercel logs *specifically* for the `[AUTH CALLBACK] === Session Callback ENTERED ===` log. If it appears, the custom JWT logic was the culprit. If not, the issue lies deeper in the NextAuth flow/config.
+**Troubleshooting Steps:**
+1.  **Code Review:** Reviewed `app/api/documents/route.ts`. Active code paths use `db.select/insert/update`, not `db.query`. **(Done)**
+2.  **Force Redeploy (Cache Clear):** Pushed trivial comment change to `app/api/documents/route.ts` to trigger redeploy and potentially clear Vercel build cache. **(Done - commit pending)**
+3.  **Next Step:** Commit and deploy. User re-tests document GET/POST. If error persists, examine Drizzle init (`lib/database/drizzle.ts`) and `insertShipmentBundle` service.
 
 ---
