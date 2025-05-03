@@ -31,18 +31,19 @@ declare module "next-auth" {
   }
 }
 
+declare module "next-auth/jwt" {
+  // Add role and id to the JWT token type
+  interface JWT {
+    id: string;
+    role: UserRole | null;
+  }
+}
+
 // --- ACTUAL AUTH OPTIONS --- 
 export const authOptions: NextAuthOptions = { 
-  adapter: (() => { 
-      logger.info("[Auth Options] Initializing DrizzleAdapter...");
-      const adapter = DrizzleAdapter(db);
-      logger.info("[Auth Options] DrizzleAdapter initialized.");
-      return adapter;
-  })(),
   session: {
-    strategy: "database", // Explicitly set strategy if using adapter
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
+    strategy: "jwt", // SWITCHED to JWT strategy
+    maxAge: 30 * 24 * 60 * 60, // 30 days (JWT expiration handled separately in jwt callback? Check docs)
   },
   providers: [
     CredentialsProvider({
@@ -135,44 +136,45 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile, isNewUser }) {
+        // The `user` object is passed only on initial sign-in.
+        // `account` and `profile` are from OAuth providers.
         logger.debug(`[Callback JWT] Fired. User present: ${!!user}, Token received: ${JSON.stringify(token)}`);
-        // This callback is typically used with JWT strategy
-        // If using DB strategy, user info should be added in the session callback
+        
+        // Persist the necessary user info from the authorize result (passed as `user`) into the token
         if (user) {
-          // On sign in, add user properties to the token
           token.id = user.id;
-          // Safely assign role, providing a default if null/undefined
-          token.role = user.role ?? UserRole.USER; 
-          logger.debug(`[Callback JWT] Adding user info to token: ${JSON.stringify({id: user.id, role: token.role})}`); // Log the assigned role
+          token.role = user.role ?? UserRole.USER; // Ensure role is non-null in token
+          token.name = user.name;     // Add name if not already present
+          token.email = user.email;   // Add email if not already present
+          // We are NOT storing the password hash in the token!
+          logger.debug(`[Callback JWT] Added user info to token: ${JSON.stringify({id: token.id, role: token.role, name: token.name, email: token.email})}`);
         }
+
+        // TODO: Add token rotation / refresh token logic if needed for long sessions
+
         logger.debug(`[Callback JWT] Returning token: ${JSON.stringify(token)}`);
-        return token;
+        return token; // The token is now the source of truth for the session
     },
     async session({ session, token, user }) {
-      // The `user` object here comes from the adapter based on session ID
-      // The `token` object is only available if using JWT strategy (and jwt callback)
-      logger.info(`[Callback Session] Fired. Session received: ${JSON.stringify(session)}, User object (from adapter): ${JSON.stringify(user)}, Token object (JWT only): ${JSON.stringify(token)}`);
+      // `user` argument is generally not available with JWT strategy, rely on `token`.
+      logger.info(`[Callback Session] Fired. Session received: ${JSON.stringify(session)}, Token received: ${JSON.stringify(token)}`);
 
-      // Ensure session.user exists
-      if (session.user) {
-          // Add id and role from the user object (fetched by adapter) to the session
-          if (user) { // Check if user object from adapter exists
-            session.user.id = user.id;
-            session.user.role = user.role as UserRole | null;
-            logger.debug(`[Callback Session] Added id/role from adapter user: ${JSON.stringify({ id: user.id, role: user.role })}`);
-          } else {
-            // This case might happen if adapter fails or if JWT strategy is somehow mixed?
-            logger.warn(`[Callback Session] User object from adapter was missing. Session ID might be invalid or adapter failed.`);
-            // We might want to invalidate the session here by returning null or an empty session?
-            // For now, just log, session might still contain basic info like email/name
-          }
+      // Transfer properties from the JWT token (the source of truth) to the session object
+      if (token && session.user) {
+          session.user.id = token.id;
+          session.user.role = token.role; // Role should be non-null based on jwt callback
+          session.user.name = token.name;   // Ensure name is passed
+          session.user.email = token.email; // Ensure email is passed
+          logger.debug(`[Callback Session] Hydrated session.user from token: ${JSON.stringify(session.user)}`);
       } else {
-         logger.warn(`[Callback Session] Received session object without 'user' property.`);
+         logger.warn(`[Callback Session] Token or session.user was missing. Cannot hydrate session fully.`);
+         if (!token) logger.warn(`[Callback Session] Token was missing.`);
+         if (!session.user) logger.warn(`[Callback Session] session.user was missing.`);
       }
       
-      logger.info(`[Callback Session] Returning session: ${JSON.stringify(session)}`);
-      return session;
+      logger.info(`[Callback Session] Returning final session: ${JSON.stringify(session)}`);
+      return session; // Return the session object populated from the token
     },
   },
   pages: {
