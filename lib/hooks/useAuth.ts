@@ -3,19 +3,12 @@
 import { useSession as useNextAuthSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useState } from 'react';
 import api from '../api';
-// import { UserRole } from '@loadup/shared';
-
-// Define local UserRole enum until shared package is properly set up
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  DRIVER = 'DRIVER',
-  USER = 'USER'
-}
+import { UserRole } from '../lib/auth';
 
 interface User {
   id: string;
   email: string | null | undefined;
-  role: string;
+  role: UserRole | null;
   name?: string | null | undefined;
 }
 
