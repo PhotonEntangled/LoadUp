@@ -41,16 +41,14 @@ function determineDocumentType(filename: string | undefined): DocumentType {
 export async function POST(request: NextRequest) {
   logger.info('API: Received POST request for alt-upload');
 
-  // --- TEMPORARILY DISABLED AUTH CHECK ---
-  // const session = await auth();
-  // if (!session?.user?.id) {
-  //   logger.warn('API: Unauthorized upload attempt.');
-  //   return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  // }
-  // const userId = session.user.id;
-  const userId = 'mock-user-id-for-testing'; // Use a mock ID
-  logger.info(`[alt-upload] Auth bypassed, using mock userId: ${userId}`);
-  // --- END TEMPORARY DISABLE ---
+  // --- RE-ENABLE AUTH CHECK ---
+  const session = await auth();
+  if (!session || !session.user || !session.user.id) {
+    logger.warn('API: Unauthorized alt-upload attempt (session or user missing).');
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+  const userId = session.user.id; // Use the actual userId from session
+  // --- END RE-ENABLE ---
 
   let documentId: string | undefined;
   let filename: string | undefined;

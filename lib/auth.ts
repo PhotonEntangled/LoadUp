@@ -1,8 +1,10 @@
-// import NextAuth, { type NextAuthOptions } from 'next-auth'; // Commented out
-// import { DrizzleAdapter } from '@auth/drizzle-adapter'; // Commented out
-// import { db } from './database/drizzle'; // Assuming db is here
-
-// TODO: Re-enable and configure properly when auth is restored
+import NextAuth, { type DefaultSession, type NextAuthOptions } from 'next-auth'; 
+import { DrizzleAdapter } from '@auth/drizzle-adapter'; 
+import { db } from './database/drizzle'; // Assuming db is here
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from 'bcryptjs';
+import { users } from './database/schema';
+import { eq } from 'drizzle-orm';
 
 // Define user roles (Consider moving to a dedicated types file)
 export enum UserRole {
@@ -11,130 +13,193 @@ export enum UserRole {
   USER = "user",
 }
 
-// Example simplified auth setup (replace with actual options when re-enabled)
-// export const authOptions: NextAuthOptions = { 
-//   adapter: DrizzleAdapter(db),
-//   providers: [
-//     // Add providers like Credentials, Google, etc.
-//   ],
-//   // Add other options like pages, callbacks, secret etc.
-// };
-
-// Example simplified auth function (replace when re-enabled)
-export const auth = async () => {
-  // In a real scenario, this would call `getServerSession(authOptions)` or similar
-  // For testing without auth, return a mock session or null
-  // console.warn("[lib/auth] Auth is disabled. Returning null session.");
-  // return null; // Or return a mock session object if needed for UI testing
-  // /*
-  // Temporarily return the mock session object for testing API routes
-  return {
+// --- Type Augmentation for Session --- 
+// Add custom properties like 'role' and 'id' to the session user object
+declare module "next-auth" {
+  interface Session {
     user: {
-      id: 'mock-user-id-uuid-format', // USE A VALID UUID format if needed by DB
-      name: 'Mock User',
-      email: 'mock@example.com',
-      role: UserRole.ADMIN, // Or desired mock role
-    },
-    // expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // Add expires if needed by Session type
-  }; 
-  // */
-};
+      id: string;
+      role: UserRole | null;
+    } & DefaultSession["user"]; // Keep default fields like name, email, image
+  }
 
-// Existing auth logic (if any) would go here or be imported
-
-// --- Authentication Functions (Potentially use NextAuth.js) ---
-
-// Define a type for the auth object to ensure consistency
-type AuthFunctions = {
-  auth: () => Promise</*Session |*/ null>; // Commented out Session type
-  signIn: (provider?: string, options?: Record<string, unknown>) => Promise<any>; // Simplified type
-  signOut: (options?: Record<string, unknown>) => Promise<any>; // Simplified type
-};
-
-// Default object if auth is not initialized (prevents runtime errors)
-const defaultAuthObject: AuthFunctions = {
-  auth: async () => {
-    console.warn("Auth function called but NextAuth might not be initialized.");
-    return null;
-  },
-  signIn: async () => { throw new Error("Sign In not initialized"); },
-  signOut: async () => { throw new Error("Sign Out not initialized"); },
-};
-
-// Attempt to initialize auth, but catch errors if dependencies are missing
-let realAuthObject: AuthFunctions | null = null;
-try {
-    // Initialize NextAuth with options to get handlers/helpers
-    // const { handlers, auth, signIn, signOut } = NextAuth(authOptions); // Commented out
-    // Assign the actual functions to the realAuthObject
-    realAuthObject = {
-        auth: async () => null, // Mock implementation
-        signIn: async () => { throw new Error("Auth not initialized"); },
-        signOut: async () => { throw new Error("Auth not initialized"); },
-    };
-} catch (error) {
-  console.warn("Could not initialize NextAuth, using default auth stubs:", error);
-  // Fallback to default stubs if initialization fails
+  // You might also need to augment the User model if using database sessions extensively
+  interface User {
+     role?: UserRole | null;
+  }
 }
 
+// --- ACTUAL AUTH OPTIONS --- 
+export const authOptions: NextAuthOptions = { 
+  adapter: DrizzleAdapter(db),
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials.password) {
+          return null;
+        }
+        
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, credentials.email as string)
+        });
+
+        if (!user) {
+          console.log(`[Authorize] User not found: ${credentials.email}`);
+          return null;
+        }
+        
+        // If password bypass is active
+        if (process.env.NEXTAUTH_PASSWORD_BYPASS === "true") {
+             console.log(`[AUTH DEBUG] Bypassing password check for ${credentials.email}`);
+             // Use existing fields from schema
+             return { 
+                 id: user.id,
+                 name: user.name,
+                 email: user.email,
+                 role: user.role as UserRole, // Ensure role matches enum
+                 // image: user.image // REMOVED: image column doesn't exist in schema
+             }; 
+        }
+
+        // Regular password check
+        // Use the 'password' field from schema, assuming it holds the hash
+        if (!user.password) { 
+            console.log(`[Authorize] User ${credentials.email} has no password set.`);
+            return null;
+        }
+
+        const passwordMatch = await bcrypt.compare(credentials.password as string, user.password);
+        console.log(`[Authorize] Password match for ${credentials.email}: ${passwordMatch}`);
+
+        if (passwordMatch) {
+          // Return the user object expected by NextAuth, using fields from schema
+          return { 
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role as UserRole, // Ensure role matches enum
+            // image: user.image // REMOVED: image column doesn't exist in schema
+          }; 
+        } else {
+          return null;
+        }
+      }
+    })
+    // Add other providers like Google, etc. if needed
+  ],
+  session: { strategy: "jwt" }, // Use JWT for session strategy
+  pages: {
+    signIn: '/auth/sign-in', 
+    // error: '/auth/error', // Optional: Custom error page
+    // verifyRequest: '/auth/verify-request', // Optional: Email verification page
+    // newUser: '/auth/new-user' // Optional: Redirect new users
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      // If user object exists (occurs on sign in), add custom properties to the token
+      if (user) {
+        token.id = user.id;
+        token.role = (user as any).role; // Role might be directly on user or need casting
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Add custom properties from the token to the session object
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as UserRole;
+      }
+      return session;
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  // debug: process.env.NODE_ENV === 'development', // Enable debug logs in dev
+};
+
+// --- Get Server Session --- 
+// Standard way to get session in Server Components / API Routes
+import { getServerSession } from "next-auth/next"
+
+export const auth = () => getServerSession(authOptions);
+
+// --- Authentication Functions --- 
+// Use the actual NextAuth handlers/functions
+const { handlers, signIn, signOut } = NextAuth(authOptions);
+
+export { handlers, signIn, signOut };
+
+// Remaining helper functions (getCurrentUser, isAdmin, etc.) can stay the same
+// or be slightly adapted if needed based on the final Session type.
+
+// REMOVE the old stub/mock logic
+/*
+// Define a type for the auth object to ensure consistency
+type AuthFunctions = {
+// ... stubs ... 
+};
+// Default object if auth is not initialized (prevents runtime errors)
+const defaultAuthObject: AuthFunctions = {
+// ... stubs ... 
+};
+// Attempt to initialize auth, but catch errors if dependencies are missing
+let realAuthObject: AuthFunctions | null = null;
+// ... try/catch with stubs ... 
 // Export the correct auth functions (either real or stubs)
 const selectedAuth = realAuthObject || defaultAuthObject;
-
 // export const auth = selectedAuth.auth; // Already defined above
 export const signIn = selectedAuth.signIn;
 export const signOut = selectedAuth.signOut;
+*/
 
-// Additional helper functions (if any)
+// ... Keep getCurrentUser, isAdmin, createBypassAuth etc. ... 
+
 export async function getCurrentUser(): Promise<{ id: string; name: string; email: string; role: UserRole } | null> {
-  // Get session data (type is simplified as 'any' since NextAuth is removed)
-  const session: any | null = await auth(); 
+  // Get session data using the real auth function
+  const session = await auth(); 
   
   // Basic check if user data exists
   if (!session?.user) return null; 
 
   // Return mock or extracted user data
   return {
-    id: session.user.id || 'mock-id', 
-    name: session.user.name || 'Mock User',
-    email: session.user.email || 'mock@example.com',
-    role: session.user.role || UserRole.USER, 
+    id: session.user.id, // Should now be correctly typed from Session augmentation
+    name: session.user.name ?? 'N/A',
+    email: session.user.email ?? 'N/A',
+    role: session.user.role ?? UserRole.USER, // Provide default if role is unexpectedly null
   };
 }
 
-// Existing auth logic (if any) would go here or be imported
 export function isAdmin(role: UserRole | string | undefined): boolean {
   return role === UserRole.ADMIN;
 }
 
-// Add other permission checks as needed
-
-// Add development bypass for easier testing
 const createBypassAuth = () => {
-  // Mock session for development using the newly created user ID
+  // ... keep bypass logic if still needed for specific tests ...
   const mockSession = {
     user: {
-      id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", // <-- EDIT: Use the new user's UUID
-      name: "Dev Test User", // Using the name we inserted
-      email: "dev.test.user@example.com", // Using the email we inserted
+      id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", 
+      name: "Dev Test User",
+      email: "dev.test.user@example.com",
       role: UserRole.ADMIN, 
       image: null
     },
     expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
   };
 
-  // Create bypass functions
   return {
-    // Bypass auth() returns mock session or null
     auth: async (): Promise<any | null> => process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" ? mockSession : null,
-    // Bypass signIn takes args but just returns success
     signIn: async (provider?: string, options?: any): Promise<any> => {
         console.log("[AUTH BYPASS] signIn called");
-        return { success: true }; // Or mimic a redirect response if needed
+        return { success: true }; 
     },
-    // Bypass signOut takes args but just returns success
     signOut: async (options?: any): Promise<any> => {
         console.log("[AUTH BYPASS] signOut called");
-        return { success: true }; // Or mimic redirect
+        return { success: true };
     }
   };
 };
