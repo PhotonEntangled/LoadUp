@@ -324,7 +324,8 @@ export async function POST(request: NextRequest) {
   }
   const userId = session.user.id;
 
-  let docId: string | undefined = undefined; // Initialize as undefined
+  // Use const as docId is not reassigned in this test configuration
+  const docId: string | undefined = undefined; 
   let filename: string | undefined;
   let finalStatus: typeof documentStatusEnum.enumValues[number] = 'ERROR'; // Default to error
   let processedCount = 0;
@@ -364,7 +365,6 @@ export async function POST(request: NextRequest) {
     // 1. Create initial Document record (SIMPLIFIED INSERT - REMOVED .returning())
     logger.info(`API: Attempting simplified initial document record insert for ${filename}`);
     await db.insert(documents).values(valuesToInsert);
-    // .returning({ insertedId: documents.id }); <-- REMAINS REMOVED for testing
     
     logger.info(`API: Simplified insert executed for ${filename}. NOTE: Document ID not retrieved via .returning() in this test.`);
     
