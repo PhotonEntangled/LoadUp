@@ -1,3 +1,4 @@
+import 'server-only'; // Ensures this module only runs on the server
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { logger } from '@/utils/logger';
