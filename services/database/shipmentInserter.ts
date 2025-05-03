@@ -1,12 +1,8 @@
 import { db } from '@/lib/database/drizzle';
-import type { PgTransaction } from 'drizzle-orm/pg-core';
-// Corrected import for Neon HTTP transaction result type
-import type { NeonHttpQueryResultHKT } from 'drizzle-orm/neon-http'; 
 import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import * as schema from '@/lib/database/schema';
 import { type ParsedShipmentBundle } from '@/types/parser.types';
 import { eq, and, SQL } from 'drizzle-orm';
-import type { NeonHttpTransaction } from '@/types/database.types'; 
 import { logger } from '@/utils/logger';
 // ***** ADDED IMPORT for mock address resolver *****
 import { findOrCreateMockAddress } from '@/services/geolocation/mockAddressResolver'; 
@@ -100,7 +96,8 @@ export async function insertShipmentBundle(
   }
 
   try {
-    const result = await db.transaction(async (tx: any): Promise<InsertionResult> => { // TODO: Fix NeonHttpTransaction type mismatch
+    // Revert transaction parameter type back to any
+    const result = await db.transaction(async (tx: any): Promise<InsertionResult> => {
       console.log(`Starting transaction for ${identifier} from doc ${sourceDocId}`);
       logger.debug(`[TX ${identifier}] START`);
 
@@ -618,7 +615,7 @@ export async function insertShipmentBundle(
       logger.info(`[TX ${identifier}] COMMIT: Successfully completed transaction for ${identifier} (Shipment ID: ${shipmentId})`);
       return { success: true, shipmentId: shipmentId };
 
-    }); // End of db.transaction callback
+    });
     return result; 
 
   } catch (error: any) {
