@@ -1,174 +1,605 @@
 [INFO] [createSimulationStore] Creating new simulation store instance
-tracking-stabilized?_rsc=1wtp7:1 
+2117-3e99dc8d61e66d12.js:1 
             
             
-           Failed to load resource: the server responded with a status of 404 ()Understand this error
-dashboard/customers?_rsc=1wtp7:1 
+           GET https://load-foz3aqn63-photonentangleds-projects.vercel.app/tracking-stabilized?_rsc=xwp8u 404 (Not Found)
+s @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+enqueue @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+i @ 2117-3e99dc8d61e66d12.js:1
+a @ 2117-3e99dc8d61e66d12.js:1
+f @ 2117-3e99dc8d61e66d12.js:1
+action @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:2
+dispatch @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+t.startTransition @ 2117-3e99dc8d61e66d12.js:2
+prefetch @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+E @ 2972-ad8dc918fc057470.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+aW @ fd9d1056-2a2ffda1b6c9015e.js:1
+oe @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+id @ fd9d1056-2a2ffda1b6c9015e.js:1
+o @ fd9d1056-2a2ffda1b6c9015e.js:1
+T @ 2117-3e99dc8d61e66d12.js:1Understand this error
+2117-3e99dc8d61e66d12.js:1 
             
             
-           Failed to load resource: the server responded with a status of 404 ()Understand this error
-dashboard/drivers?_rsc=1wtp7:1 
+           GET https://load-foz3aqn63-photonentangleds-projects.vercel.app/dashboard/drivers?_rsc=xwp8u 404 (Not Found)
+s @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+await in u
+s @ 2117-3e99dc8d61e66d12.js:1
+enqueue @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+i @ 2117-3e99dc8d61e66d12.js:1
+a @ 2117-3e99dc8d61e66d12.js:1
+f @ 2117-3e99dc8d61e66d12.js:1
+action @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:2
+dispatch @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+t.startTransition @ 2117-3e99dc8d61e66d12.js:2
+prefetch @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+E @ 2972-ad8dc918fc057470.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+aW @ fd9d1056-2a2ffda1b6c9015e.js:1
+oe @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+id @ fd9d1056-2a2ffda1b6c9015e.js:1
+o @ fd9d1056-2a2ffda1b6c9015e.js:1
+T @ 2117-3e99dc8d61e66d12.js:1Understand this error
+2117-3e99dc8d61e66d12.js:1 
             
             
-           Failed to load resource: the server responded with a status of 404 ()Understand this error
-dashboard/reports?_rsc=1wtp7:1 
+           GET https://load-foz3aqn63-photonentangleds-projects.vercel.app/dashboard/customers?_rsc=xwp8u 404 (Not Found)
+s @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+await in u
+s @ 2117-3e99dc8d61e66d12.js:1
+enqueue @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+i @ 2117-3e99dc8d61e66d12.js:1
+a @ 2117-3e99dc8d61e66d12.js:1
+f @ 2117-3e99dc8d61e66d12.js:1
+action @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:2
+dispatch @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+t.startTransition @ 2117-3e99dc8d61e66d12.js:2
+prefetch @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+E @ 2972-ad8dc918fc057470.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+aW @ fd9d1056-2a2ffda1b6c9015e.js:1
+oe @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+id @ fd9d1056-2a2ffda1b6c9015e.js:1
+o @ fd9d1056-2a2ffda1b6c9015e.js:1
+T @ 2117-3e99dc8d61e66d12.js:1Understand this error
+2117-3e99dc8d61e66d12.js:1 
             
             
-           Failed to load resource: the server responded with a status of 404 ()Understand this error
-dashboard/settings?_rsc=1wtp7:1 
+           GET https://load-foz3aqn63-photonentangleds-projects.vercel.app/dashboard/reports?_rsc=xwp8u 404 (Not Found)
+s @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+await in u
+s @ 2117-3e99dc8d61e66d12.js:1
+enqueue @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+i @ 2117-3e99dc8d61e66d12.js:1
+a @ 2117-3e99dc8d61e66d12.js:1
+f @ 2117-3e99dc8d61e66d12.js:1
+action @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:2
+dispatch @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+t.startTransition @ 2117-3e99dc8d61e66d12.js:2
+prefetch @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+E @ 2972-ad8dc918fc057470.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+aW @ fd9d1056-2a2ffda1b6c9015e.js:1
+oe @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+id @ fd9d1056-2a2ffda1b6c9015e.js:1
+o @ fd9d1056-2a2ffda1b6c9015e.js:1
+T @ 2117-3e99dc8d61e66d12.js:1Understand this error
+2117-3e99dc8d61e66d12.js:1 
             
             
-           Failed to load resource: the server responded with a status of 404 ()Understand this error
+           GET https://load-foz3aqn63-photonentangleds-projects.vercel.app/dashboard/settings?_rsc=xwp8u 404 (Not Found)
+s @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+u @ 2117-3e99dc8d61e66d12.js:1
+await in u
+s @ 2117-3e99dc8d61e66d12.js:1
+enqueue @ 2117-3e99dc8d61e66d12.js:1
+s @ 2117-3e99dc8d61e66d12.js:1
+i @ 2117-3e99dc8d61e66d12.js:1
+a @ 2117-3e99dc8d61e66d12.js:1
+f @ 2117-3e99dc8d61e66d12.js:1
+action @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+i @ 2117-3e99dc8d61e66d12.js:2
+c @ 2117-3e99dc8d61e66d12.js:2
+Promise.then
+c @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:2
+dispatch @ 2117-3e99dc8d61e66d12.js:2
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2117-3e99dc8d61e66d12.js:1
+t.startTransition @ 2117-3e99dc8d61e66d12.js:2
+prefetch @ 2117-3e99dc8d61e66d12.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+E @ 2972-ad8dc918fc057470.js:1
+(anonymous) @ 2972-ad8dc918fc057470.js:1
+aW @ fd9d1056-2a2ffda1b6c9015e.js:1
+oe @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+or @ fd9d1056-2a2ffda1b6c9015e.js:1
+ol @ fd9d1056-2a2ffda1b6c9015e.js:1
+id @ fd9d1056-2a2ffda1b6c9015e.js:1
+o @ fd9d1056-2a2ffda1b6c9015e.js:1
+T @ 2117-3e99dc8d61e66d12.js:1Understand this error
+page-66d30eced028155a.js:1 [INFO] [SignInPage] Attempting sign in for: dev@loadup.com
+page-66d30eced028155a.js:1 [INFO] [SignInPage] signIn result: {"error":null,"status":200,"ok":true,"url":"https://load-foz3aqn63-photonentangleds-projects.vercel.app/auth/sign-in"}
+page-66d30eced028155a.js:1 [INFO] [SignInPage] signIn successful, redirecting to dashboard.
 page-9fda776ae3830a60.js:1 Initial fetch triggered
 page-9fda776ae3830a60.js:1 Fetching documents with search: '', status: 'all'
 page-9fda776ae3830a60.js:1 Fetching documents from: /api/documents?
-page-9fda776ae3830a60.js:1 Attempting to POST file to /api/documents: all_status_test_shipments.xlsx
-api/documents:1 
-            
-            
-           Failed to load resource: the server responded with a status of 401 ()Understand this error
-page-9fda776ae3830a60.js:1 Received response from /api/documents: 401
-hook.js:608 Backend error response: Object
-overrideMethod @ hook.js:608Understand this error
-hook.js:608 Error during file upload fetch to /api/documents: Error: Unauthorized
-    at E (page-9fda776ae3830a60.js:1:3783)
-overrideMethod @ hook.js:608Understand this error
-hook.js:608 Processing error: Error: Unauthorized
-    at E (page-9fda776ae3830a60.js:1:3783)
-overrideMethod @ hook.js:608Understand this error
-page-9fda776ae3830a60.js:1 Attempting to POST file to /api/documents: all_status_test_shipments.xlsx
-api/documents:1 
-            
-            
-           Failed to load resource: the server responded with a status of 401 ()Understand this error
-page-9fda776ae3830a60.js:1 Received response from /api/documents: 401
-hook.js:608 Backend error response: Object
-overrideMethod @ hook.js:608Understand this error
-hook.js:608 Error during file upload fetch to /api/documents: Error: Unauthorized
-    at E (page-9fda776ae3830a60.js:1:3783)
-overrideMethod @ hook.js:608Understand this error
-hook.js:608 Processing error: Error: Unauthorized
-    at E (page-9fda776ae3830a60.js:1:3783)
-overrideMethod @ hook.js:608Understand this error
 page-9fda776ae3830a60.js:1 Attempting to POST file to /api/documents/alt-upload: all_status_test_shipments.xlsx
-page-9fda776ae3830a60.js:1 
-            
-            
-           POST https://load-20kvxmfa4-photonentangleds-projects.vercel.app/api/documents/alt-upload 401 (Unauthorized)
-E @ page-9fda776ae3830a60.js:1
-a_ @ fd9d1056-2a2ffda1b6c9015e.js:1
-aR @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-sF @ fd9d1056-2a2ffda1b6c9015e.js:1
-sM @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-o4 @ fd9d1056-2a2ffda1b6c9015e.js:1
-iV @ fd9d1056-2a2ffda1b6c9015e.js:1
-sU @ fd9d1056-2a2ffda1b6c9015e.js:1
-uR @ fd9d1056-2a2ffda1b6c9015e.js:1
-uM @ fd9d1056-2a2ffda1b6c9015e.js:1Understand this error
-page-9fda776ae3830a60.js:1 Received response from /api/documents/alt-upload: 401
-2117-3e99dc8d61e66d12.js:1 Backend error response: {message: 'Unauthorized'}
-overrideMethod @ hook.js:608
-push.2304.window.console.error @ 2117-3e99dc8d61e66d12.js:1
-E @ page-9fda776ae3830a60.js:1
-await in E
-a_ @ fd9d1056-2a2ffda1b6c9015e.js:1
-aR @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-sF @ fd9d1056-2a2ffda1b6c9015e.js:1
-sM @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-o4 @ fd9d1056-2a2ffda1b6c9015e.js:1
-iV @ fd9d1056-2a2ffda1b6c9015e.js:1
-sU @ fd9d1056-2a2ffda1b6c9015e.js:1
-uR @ fd9d1056-2a2ffda1b6c9015e.js:1
-uM @ fd9d1056-2a2ffda1b6c9015e.js:1Understand this error
-2117-3e99dc8d61e66d12.js:1 Error during file upload fetch to /api/documents/alt-upload: Error: Unauthorized
-    at E (page-9fda776ae3830a60.js:1:3783)
-overrideMethod @ hook.js:608
-push.2304.window.console.error @ 2117-3e99dc8d61e66d12.js:1
-E @ page-9fda776ae3830a60.js:1
-await in E
-a_ @ fd9d1056-2a2ffda1b6c9015e.js:1
-aR @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-sF @ fd9d1056-2a2ffda1b6c9015e.js:1
-sM @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-o4 @ fd9d1056-2a2ffda1b6c9015e.js:1
-iV @ fd9d1056-2a2ffda1b6c9015e.js:1
-sU @ fd9d1056-2a2ffda1b6c9015e.js:1
-uR @ fd9d1056-2a2ffda1b6c9015e.js:1
-uM @ fd9d1056-2a2ffda1b6c9015e.js:1Understand this error
-2117-3e99dc8d61e66d12.js:1 Processing error: Error: Unauthorized
-    at E (page-9fda776ae3830a60.js:1:3783)
-overrideMethod @ hook.js:608
-push.2304.window.console.error @ 2117-3e99dc8d61e66d12.js:1
-onProcessingError @ page-9fda776ae3830a60.js:1
-E @ page-9fda776ae3830a60.js:1
-await in E
-a_ @ fd9d1056-2a2ffda1b6c9015e.js:1
-aR @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-sF @ fd9d1056-2a2ffda1b6c9015e.js:1
-sM @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-o4 @ fd9d1056-2a2ffda1b6c9015e.js:1
-iV @ fd9d1056-2a2ffda1b6c9015e.js:1
-sU @ fd9d1056-2a2ffda1b6c9015e.js:1
-uR @ fd9d1056-2a2ffda1b6c9015e.js:1
-uM @ fd9d1056-2a2ffda1b6c9015e.js:1Understand this error
-page-9fda776ae3830a60.js:1 Attempting to POST file to /api/documents/alt-upload: all_status_test_shipments.xlsx
-page-9fda776ae3830a60.js:1 
-            
-            
-           POST https://load-20kvxmfa4-photonentangleds-projects.vercel.app/api/documents/alt-upload 401 (Unauthorized)
-E @ page-9fda776ae3830a60.js:1
-a_ @ fd9d1056-2a2ffda1b6c9015e.js:1
-aR @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-sF @ fd9d1056-2a2ffda1b6c9015e.js:1
-sM @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-o4 @ fd9d1056-2a2ffda1b6c9015e.js:1
-iV @ fd9d1056-2a2ffda1b6c9015e.js:1
-sU @ fd9d1056-2a2ffda1b6c9015e.js:1
-uR @ fd9d1056-2a2ffda1b6c9015e.js:1
-uM @ fd9d1056-2a2ffda1b6c9015e.js:1Understand this error
-page-9fda776ae3830a60.js:1 Received response from /api/documents/alt-upload: 401
-2117-3e99dc8d61e66d12.js:1 Backend error response: {message: 'Unauthorized'}
-overrideMethod @ hook.js:608
-push.2304.window.console.error @ 2117-3e99dc8d61e66d12.js:1
-E @ page-9fda776ae3830a60.js:1
-await in E
-a_ @ fd9d1056-2a2ffda1b6c9015e.js:1
-aR @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-sF @ fd9d1056-2a2ffda1b6c9015e.js:1
-sM @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-o4 @ fd9d1056-2a2ffda1b6c9015e.js:1
-iV @ fd9d1056-2a2ffda1b6c9015e.js:1
-sU @ fd9d1056-2a2ffda1b6c9015e.js:1
-uR @ fd9d1056-2a2ffda1b6c9015e.js:1
-uM @ fd9d1056-2a2ffda1b6c9015e.js:1Understand this error
-2117-3e99dc8d61e66d12.js:1 Error during file upload fetch to /api/documents/alt-upload: Error: Unauthorized
-    at E (page-9fda776ae3830a60.js:1:3783)
-overrideMethod @ hook.js:608
-push.2304.window.console.error @ 2117-3e99dc8d61e66d12.js:1
-E @ page-9fda776ae3830a60.js:1
-await in E
-a_ @ fd9d1056-2a2ffda1b6c9015e.js:1
-aR @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-sF @ fd9d1056-2a2ffda1b6c9015e.js:1
-sM @ fd9d1056-2a2ffda1b6c9015e.js:1
-(anonymous) @ fd9d1056-2a2ffda1b6c9015e.js:1
-o4 @ fd9d1056-2a2ffda1b6c9015e.js:1
-iV @ fd9d1056-2a2ffda1b6c9015e.js:1
-sU @ fd9d1056-2a2ffda1b6c9015e.js:1
-uR @ fd9d1056-2a2ffda1b6c9015e.js:1
-uM @ fd9d1056-2a2ffda1b6c9015e.js:1Understand this error
-2117-3e99dc8d61e66d12.js:1 Processing error: Error: Unauthorized
-    at E (page-9fda776ae3830a60.js:1:3783)
+page-9fda776ae3830a60.js:1 Received response from /api/documents/alt-upload: 200
+page-9fda776ae3830a60.js:1 Backend success response: {message: 'Document processed successfully via alt-upload (DIRECT SQL)', documentId: '90e1ebcc-b497-47b1-8fb7-129c7bedd7db', filename: 'all_status_test_shipments.xlsx', totalBundlesFound: 6}
+page-9fda776ae3830a60.js:1 Processing complete, refreshing list []
+page-9fda776ae3830a60.js:1 Fetching documents with search: '', status: 'all'
+page-9fda776ae3830a60.js:1 Fetching documents from: /api/documents?

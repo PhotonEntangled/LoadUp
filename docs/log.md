@@ -1,418 +1,462 @@
-May 04 00:22:24.83
-GET
-500
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/api/auth/error
-[next-auth][error][CALLBACK_CREDENTIALS_JWT_ERROR] https://next-auth.js.org/errors#callback_credentials_jwt_error Signin in with credentials only supported if JWT strategy is enabled t [UnsupportedStrategyError]: Signin in with credentials only supported if JWT strategy is enabled at t.assertConfig (/var/task/.next/server/chunks/8653.js:1:110253) at g (/var/task/.next/server/chunks/8653.js:1:102565) at process.processTicksAndRejections (node:internal/process/task_queues:105:5) at async o (/var/task/.next/server/chunks/8653.js:25:19768) at async e.length.t (/var/task/.next/server/chunks/8653.js:25:21258) at async /var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411 at async e_.execute (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880) at async e_.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943) at async en (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:16:25592) at async ea.responseCache.get.routeKind (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:17:1028) { code: 'CALLBACK_CREDENTIALS_JWT_ERROR' }
-May 04 00:22:24.81
-POST
-500
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/api/auth/_log
-[next-auth][error][CALLBACK_CREDENTIALS_JWT_ERROR] https://next-auth.js.org/errors#callback_credentials_jwt_error Signin in with credentials only supported if JWT strategy is enabled t [UnsupportedStrategyError]: Signin in with credentials only supported if JWT strategy is enabled at t.assertConfig (/var/task/.next/server/chunks/8653.js:1:110253) at g (/var/task/.next/server/chunks/8653.js:1:102565) at process.processTicksAndRejections (node:internal/process/task_queues:105:5) at async o (/var/task/.next/server/chunks/8653.js:25:19768) at async e.length.t (/var/task/.next/server/chunks/8653.js:25:21258) at async /var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411 at async e_.execute (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880) at async e_.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943) at async en (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:16:25592) at async ea.responseCache.get.routeKind (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:17:1028) { code: 'CALLBACK_CREDENTIALS_JWT_ERROR' }
-May 04 00:22:24.32
-GET
-500
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/api/auth/providers
-4
-[next-auth][error][CALLBACK_CREDENTIALS_JWT_ERROR] https://next-auth.js.org/errors#callback_credentials_jwt_error Signin in with credentials only supported if JWT strategy is enabled t [UnsupportedStrategyError]: Signin in with credentials only supported if JWT strategy is enabled at t.assertConfig (/var/task/.next/server/chunks/8653.js:1:110253) at g (/var/task/.next/server/chunks/8653.js:1:102565) at process.processTicksAndRejections (node:internal/process/task_queues:105:5) at async o (/var/task/.next/server/chunks/8653.js:25:19768) at async e.length.t (/var/task/.next/server/chunks/8653.js:25:21258) at async /var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411 at async e_.execute (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880) at async e_.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943) at async en (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:16:25592) at async ea.responseCache.get.routeKind (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:17:1028) { code: 'CALLBACK_CREDENTIALS_JWT_ERROR' }
-May 04 00:22:12.98
-GET
-500
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/api/auth/error
-[next-auth][error][CALLBACK_CREDENTIALS_JWT_ERROR] https://next-auth.js.org/errors#callback_credentials_jwt_error Signin in with credentials only supported if JWT strategy is enabled t [UnsupportedStrategyError]: Signin in with credentials only supported if JWT strategy is enabled at t.assertConfig (/var/task/.next/server/chunks/8653.js:1:110253) at g (/var/task/.next/server/chunks/8653.js:1:102565) at process.processTicksAndRejections (node:internal/process/task_queues:105:5) at async o (/var/task/.next/server/chunks/8653.js:25:19768) at async e.length.t (/var/task/.next/server/chunks/8653.js:25:21258) at async /var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411 at async e_.execute (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880) at async e_.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943) at async en (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:16:25592) at async ea.responseCache.get.routeKind (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:17:1028) { code: 'CALLBACK_CREDENTIALS_JWT_ERROR' }
-May 04 00:22:12.95
-POST
-500
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/api/auth/_log
-[next-auth][error][CALLBACK_CREDENTIALS_JWT_ERROR] https://next-auth.js.org/errors#callback_credentials_jwt_error Signin in with credentials only supported if JWT strategy is enabled t [UnsupportedStrategyError]: Signin in with credentials only supported if JWT strategy is enabled at t.assertConfig (/var/task/.next/server/chunks/8653.js:1:110253) at g (/var/task/.next/server/chunks/8653.js:1:102565) at process.processTicksAndRejections (node:internal/process/task_queues:105:5) at async o (/var/task/.next/server/chunks/8653.js:25:19768) at async e.length.t (/var/task/.next/server/chunks/8653.js:25:21258) at async /var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411 at async e_.execute (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880) at async e_.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943) at async en (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:16:25592) at async ea.responseCache.get.routeKind (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:17:1028) { code: 'CALLBACK_CREDENTIALS_JWT_ERROR' }
-May 04 00:22:11.47
-GET
-500
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/api/auth/providers
-5
-[next-auth][error][CALLBACK_CREDENTIALS_JWT_ERROR] https://next-auth.js.org/errors#callback_credentials_jwt_error Signin in with credentials only supported if JWT strategy is enabled t [UnsupportedStrategyError]: Signin in with credentials only supported if JWT strategy is enabled at t.assertConfig (/var/task/.next/server/chunks/8653.js:1:110253) at g (/var/task/.next/server/chunks/8653.js:1:102565) at process.processTicksAndRejections (node:internal/process/task_queues:105:5) at async o (/var/task/.next/server/chunks/8653.js:25:19768) at async e.length.t (/var/task/.next/server/chunks/8653.js:25:21258) at async /var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411 at async e_.execute (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880) at async e_.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943) at async en (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:16:25592) at async ea.responseCache.get.routeKind (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:17:1028) { code: 'CALLBACK_CREDENTIALS_JWT_ERROR' }
-May 04 00:22:06.14
+May 04 01:36:33.08
 GET
 200
-load-o4z268nb6-photonentangleds-projects.vercel.app
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/documents
+[INFO] API: GET /api/documents called (MINIMAL TEST)
+May 04 01:36:32.36
+POST
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/documents/alt-upload
+256
+[WARN] [parserUtils:extractDateField:ENTRY] Field: 'promisedShipDate', Type: string, Value: "1/16/25"
+May 04 01:36:17.01
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/documents
+[INFO] API: GET /api/documents called (MINIMAL TEST)
+May 04 01:36:10.82
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:36:08.83
+POST
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/auth/callback/credentials
+14
+[INFO] [Event SignIn] User signed in: {"user":{"id":"7bf40d3c-4cd7-47e3-906f-3848488f7619","name":"Dev User","email":"dev@loadup.com","role":"ADMIN"},"account":{"providerAccountId":"7bf40d3c-4cd7-47e3-906f-3848488f7619","type":"credentials","provider":"credentials"}}
+May 04 01:36:08.57
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/auth/csrf
+May 04 01:36:07.61
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/auth/providers
+2
+Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
+May 04 01:36:01.79
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
 /dashboard/settings
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:06.13
+May 04 01:36:01.76
 GET
 200
-load-o4z268nb6-photonentangleds-projects.vercel.app
+load-foz3aqn63-photonentangleds-projects.vercel.app
 /dashboard/reports
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:06.12
+May 04 01:36:01.74
 GET
 200
-load-o4z268nb6-photonentangleds-projects.vercel.app
+load-foz3aqn63-photonentangleds-projects.vercel.app
 /dashboard/drivers
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:06.07
+May 04 01:36:01.72
 GET
 200
-load-o4z268nb6-photonentangleds-projects.vercel.app
+load-foz3aqn63-photonentangleds-projects.vercel.app
 /dashboard/customers
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:06.02
+May 04 01:36:01.68
 GET
 200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/documents
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:06.02
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/simulation
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:06.02
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/tracking-stabilized
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:06.02
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
+load-foz3aqn63-photonentangleds-projects.vercel.app
 /dashboard/shipments
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:06.02
+May 04 01:36:01.68
 GET
 200
-load-o4z268nb6-photonentangleds-projects.vercel.app
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/documents
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:36:01.67
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/simulation
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:36:01.67
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/tracking-stabilized
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:36:01.67
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
 /dashboard
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:22:04.88
+May 04 01:36:00.84
 GET
 200
-load-o4z268nb6-photonentangleds-projects.vercel.app
+load-foz3aqn63-photonentangleds-projects.vercel.app
 /auth/sign-in
 4
 [WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.38
+May 04 01:11:44.68
 GET
 200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.37
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/settings
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.35
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/reports
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.33
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/drivers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.29
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/customers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.24
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/shipments
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.24
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/tracking-stabilized
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.24
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/documents
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.24
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/simulation
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:52.24
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:51.97
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/auth/sing-in
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:37.29
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/settings
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:37.25
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/reports
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:37.20
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/drivers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:37.15
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/customers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:36.88
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/tracking-stabilized
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:36.88
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/simulation
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:36.88
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/documents
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:36.88
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/shipments
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:36.87
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:21:32.63
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:20:56.45
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.37
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/customers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.34
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/customers
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.22
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/shipments
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.22
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/tracking-stabilized
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.22
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/documents
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.22
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/simulation
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.21
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.20
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard/shipments
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.19
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/documents
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.19
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/simulation
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.19
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/tracking-stabilized
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:53.18
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/dashboard
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:52.65
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:52.62
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:52.25
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-May 04 00:12:52.14
-GET
-200
-load-o4z268nb6-photonentangleds-projects.vercel.app
-/
-4
-[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
-
-
-
-
-[INFO] Database connection initialized using neon-http adapter.
-[INFO] [Auth Options] Initializing DrizzleAdapter...
-[INFO] [Auth Options] DrizzleAdapter initialized.
-[next-auth][error][CALLBACK_CREDENTIALS_JWT_ERROR] 
-https://next-auth.js.org/errors#callback_credentials_jwt_error Signin in with credentials only supported if JWT strategy is enabled t [UnsupportedStrategyError]: Signin in with credentials only supported if JWT strategy is enabled
-    at t.assertConfig (/var/task/.next/server/chunks/8653.js:1:110253)
-    at g (/var/task/.next/server/chunks/8653.js:1:102565)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async o (/var/task/.next/server/chunks/8653.js:25:19768)
-    at async e.length.t (/var/task/.next/server/chunks/8653.js:25:21258)
-    at async /var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411
-    at async e_.execute (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880)
-    at async e_.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943)
-    at async en (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:16:25592)
-    at async ea.responseCache.get.routeKind (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:17:1028) {
-  code: 'CALLBACK_CREDENTIALS_JWT_ERROR'
-}
-
-
-
-
-
-[INFO] Database connection initialized using neon-http adapter.
-[INFO] [Auth Options] Initializing DrizzleAdapter...
-[INFO] [Auth Options] DrizzleAdapter initialized.
-[next-auth][error][CALLBACK_CREDENTIALS_JWT_ERROR] 
-https://next-auth.js.org/errors#callback_credentials_jwt_error Signin in with credentials only supported if JWT strategy is enabled t [UnsupportedStrategyError]: Signin in with credentials only supported if JWT strategy is enabled
-    at t.assertConfig (/var/task/.next/server/chunks/8653.js:1:110253)
-    at g (/var/task/.next/server/chunks/8653.js:1:102565)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async o (/var/task/.next/server/chunks/8653.js:25:19768)
-    at async e.length.t (/var/task/.next/server/chunks/8653.js:25:21258)
-    at async /var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411
-    at async e_.execute (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:27880)
-    at async e_.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943)
-    at async en (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:16:25592)
-    at async ea.responseCache.get.routeKind (/var/task/node_modules/next/dist/compiled/next-server/server.runtime.prod.js:17:1028) {
-  code: 'CALLBACK_CREDENTIALS_JWT_ERROR'
-}
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/documents
+3
 Warning: NODE_ENV was incorrectly set to "development", this value is being overridden to "production"
+May 04 01:11:43.72
+POST
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/documents/alt-upload
+256
+[WARN] [parserUtils:extractDateField:ENTRY] Field: 'promisedShipDate', Type: string, Value: "1/16/25"
+May 04 01:11:35.98
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/documents
+2
+[INFO] API: GET /api/documents called (MINIMAL TEST)
+May 04 01:11:31.54
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:30.25
+POST
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/auth/callback/credentials
+14
+[INFO] [Event SignIn] User signed in: {"user":{"id":"7bf40d3c-4cd7-47e3-906f-3848488f7619","name":"Dev User","email":"dev@loadup.com","role":"ADMIN"},"account":{"providerAccountId":"7bf40d3c-4cd7-47e3-906f-3848488f7619","type":"credentials","provider":"credentials"}}
+May 04 01:11:29.93
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/auth/csrf
+May 04 01:11:28.81
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/api/auth/providers
+[INFO] Database connection initialized using neon-http adapter.
+May 04 01:11:22.00
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/settings
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:22.00
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/reports
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:21.99
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/drivers
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:21.92
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/customers
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:21.87
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/documents
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:21.87
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/simulation
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:21.87
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/shipments
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:21.87
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:21.87
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/tracking-stabilized
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:20.98
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/auth/sign-in
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.76
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/settings
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.72
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/reports
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.68
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/drivers
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.65
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/customers
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.39
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/simulation
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.39
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/documents
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.39
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/tracking-stabilized
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.39
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/shipments
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:05.39
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:11:03.25
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:19.93
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/drivers
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:19.84
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/customers
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:19.82
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/documents
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:19.80
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/tracking-stabilized
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:19.80
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/simulation
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:19.80
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/shipments
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:19.50
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.06
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.06
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/tracking-stabilized
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.06
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/simulation
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.06
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/documents
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.06
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/shipments
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.06
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/simulation
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.06
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/documents
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.06
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard/shipments
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.05
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/tracking-stabilized
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:18.05
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/dashboard
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:17.74
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:17.67
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:17.58
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:17.47
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:17.10
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
+May 04 01:09:16.98
+GET
+200
+load-foz3aqn63-photonentangleds-projects.vercel.app
+/
+4
+[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.
