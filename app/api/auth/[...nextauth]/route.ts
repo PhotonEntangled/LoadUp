@@ -1,7 +1,6 @@
-import NextAuth from "next-auth";
-import { authOptions } from "./options"; // Import from local options file
+// import NextAuth from "next-auth"; // Commented out
+// import { authOptions } from "./options"; // Commented out
 
-const handler = NextAuth(authOptions);
+// const handler = NextAuth(authOptions); // Commented out
 
-// Export handler AND authOptions
-export { handler as GET, handler as POST, authOptions };
+// export { handler as GET, handler as POST }; // Commented out

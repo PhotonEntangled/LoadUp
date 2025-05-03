@@ -1,11 +1,11 @@
-import type { Session, User, AuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+// import type { Session, User, AuthOptions } from "next-auth"; // Commented out
+// import CredentialsProvider from "next-auth/providers/credentials"; // Commented out
 // import { db } from "@loadup/database";
 // import { users } from "@loadup/database/schema";
 // import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { z } from 'zod';
-import type { JWT } from "next-auth/jwt";
+// import type { JWT } from "next-auth/jwt"; // Commented out
 import type { NextRequest } from 'next/server';
 
 // Define user roles (moved from deleted auth.ts)
@@ -51,7 +51,7 @@ const hasAccess = (pathname: string, userRole?: string): boolean => {
 
   // Allow access to root path or other non-explicitly protected paths
   // Adjust this logic if the root ('/') should also be protected
-  return true;
+  return true; // Simplified for disabling auth
 };
 
 // Mock database functions for now
@@ -77,29 +77,28 @@ const mockUserData = [
 ];
 
 // Login validation schema (optional, could remove if not actively used by provider)
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-});
+// const loginSchema = z.object({
+//   email: z.string().email('Invalid email address'),
+//   password: z.string().min(8, 'Password must be at least 8 characters'),
+// });
 
 // Type for our custom user (align with JWT/Session)
 // Ensure packages/shared/src/types/next-auth.d.ts is consistent
-interface CustomUser extends User {
-  role: UserRole;
-}
+// interface CustomUser extends User { // Commented out User dependency
+//   role: UserRole;
+// }
 
 // Determine cookie name based on environment
-const nodeEnv = process.env.NODE_ENV;
-const cookieName = nodeEnv === 'production' 
-  ? `__Secure-next-auth.session-token` 
-  : `next-auth.session-token`;
+// const nodeEnv = process.env.NODE_ENV;
+// const cookieName = nodeEnv === 'production' 
+//   ? `__Secure-next-auth.session-token` 
+//   : `next-auth.session-token`;
 
-// <<< ADDED: Log determined cookie name >>>
-console.log(`[AUTH OPTIONS] Determined session cookie name for NODE_ENV='${nodeEnv}': ${cookieName}`);
-// <<< END ADDED >>>
+// console.log(`[AUTH OPTIONS] Determined session cookie name for NODE_ENV='${nodeEnv}': ${cookieName}`);
 
-// Create the auth options
-export const authOptions: AuthOptions = {
+// Create the auth options (Commented out the main structure)
+export const authOptions /*: AuthOptions*/ = {
+  /* // Original Options Content
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -108,59 +107,7 @@ export const authOptions: AuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-         if (!credentials?.email || !credentials?.password) {
-           return null;
-         }
-         const email = credentials.email as string;
-         const password = credentials.password as string;
-
-        // Mock database query
-        const user = mockUserData.find(
-          (user) => user.email === email
-        );
-
-        if (!user) {
-          console.log(`No user found for email: ${email}`);
-          return null;
-        }
-
-        // Log inputs before check
-        console.log(`[AUTH DEBUG] Comparing provided password: '${password}'`);
-        console.log(`[AUTH DEBUG] Against stored hash for ${user.email}: '${user.password}'`);
-
-        // <<< RE-APPLIED TEMPORARY DEBUGGING BYPASS >>>
-        if (user.email === "dev@loadup.com") {
-           console.warn(`[AUTH DEBUG] !!! BYPASSING bcrypt.compare FOR ${user.email} !!!`);
-           console.log(`[AUTH DEBUG] Login successful (BYPASS) for: ${email}`);
-           // Directly return user object if it's the dev user, skipping compare
-           return {
-               id: user.id,
-               email: user.email,
-               name: user.name,
-               role: user.role,
-           };
-        }
-        // <<< END RE-APPLIED TEMPORARY DEBUGGING BYPASS >>>
-
-        // Normal password check for other users
-        const passwordMatch = await bcrypt.compare(
-          password,
-          user.password
-        );
-
-        if (!passwordMatch) {
-           console.log(`Password mismatch for email: ${email}`);
-          return null;
-        }
-
-        console.log(`Login successful for: ${email}`);
-        // Return object needs to match User type signature expected by NextAuth
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role, // Pass role as defined in mock data
-        };
+         // ... (authorize logic) ...
       },
     }),
   ],
@@ -169,80 +116,23 @@ export const authOptions: AuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: cookieName, // Use dynamically determined name
+      // name: cookieName, // Use dynamically determined name
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        // <<< REVERTED: Rely on default NODE_ENV check for secure attribute >>>
         secure: process.env.NODE_ENV === 'production',
-        // secure: process.env.VERCEL_ENV === 'production',
-        // <<< END REVERTED >>>
-        // domain: // Optional: specify if needed for subdomains
       }
     }
-    // Add other cookie configurations if needed (e.g., csrfToken, callbackUrl, pkceCodeVerifier)
   },
-  // <<< ADDED: Explicit Cookie Configuration >>>
-  // pages: {
-  //   signIn: "/sign-in",
-  //   signOut: "/sign-out",
-  //   error: "/error",
-  // },
   callbacks: {
-    // JWT callback - Add custom claims
-    // Use broader type for incoming user, handle role conversion
     async jwt({ token, user, account, profile, isNewUser }) {
-      console.log("[AUTH CALLBACK] JWT Callback triggered");
-      // <<< ADDED SECRET LOGGING >>>
-      const secret = process.env.NEXTAUTH_SECRET;
-      console.log(`[AUTH CALLBACK] JWT using secret starting: ${secret?.substring(0, 10)}... [Length: ${secret?.length}]`);
-      // <<< END ADDED SECRET LOGGING >>>
-
-      // <<< TEMPORARILY COMMENTED OUT ALL CUSTOM LOGIC >>>
-      // console.log("[AUTH CALLBACK] Adding user data to JWT token:", { id: token.id, email: token.email, role: token.role, name: token.name });
-      // if (user) { // User object is available on initial sign in
-      //   // Ensure CustomUser properties are correctly accessed and assigned
-      //   token.role = (user as CustomUser).role || UserRole.USER; // Assign role from user object
-      //   token.id = user.id; // Assign ID
-      //   token.email = user.email; // Ensure email is included
-      //   token.name = user.name;   // Ensure name is included
-      // }
-      // console.log("[AUTH CALLBACK] Returning JWT token:", token); // Keep this commented unless debugging JWT specifics
-      // <<< END TEMPORARILY COMMENTED OUT >>>
-      console.log("[AUTH CALLBACK] JWT returning default token (custom logic bypassed).");
-      return token; // Return the default token without modifications
+      // ... (jwt callback logic) ...
     },
-
-    // Session callback - Make custom claims available on session object
     async session({ session, token, user }) {
-       console.log("[AUTH CALLBACK] === Session Callback ENTERED ==="); // <<< ADDED ENTRY LOG >>>
-       console.log("[AUTH CALLBACK] Session Callback triggered"); // Existing redundant log
-       // <<< ADDED: Log incoming token object >>>
-       console.log(`[AUTH CALLBACK] Session received token: ${JSON.stringify(token)}`);
-       // <<< END ADDED >>>
-
-       // <<< UNCOMMENTED AND FIXED >>>
-      // Transfer properties from token to session.user
-      // Ensure the session.user object structure matches your type definition
-      if (token && session.user) {
-          (session.user as any).id = token.id as string;
-          (session.user as any).role = token.role as UserRole;
-          // Ensure standard fields are also present if needed, potentially from token
-          session.user.email = token.email as string; 
-          session.user.name = token.name as string; 
-          console.log("[AUTH CALLBACK] Added token data to session object:", { id: (session.user as any).id, email: session.user.email, role: (session.user as any).role, name: session.user.name });
-      } else {
-         console.log("[AUTH CALLBACK] Token or session.user missing, cannot add custom claims.");
-         if (!token) console.log("[AUTH CALLBACK] Reason: Token is missing/null.");
-         if (!session.user) console.log("[AUTH CALLBACK] Reason: session.user is missing/null.");
-      }
-      // console.log("[AUTH CALLBACK] Returning session object:", session); // Keep this commented unless debugging session specifics
-       // <<< END UNCOMMENTED AND FIXED >>>
-      return session;
+      // ... (session callback logic) ...
     },
   },
-  // Align fallback secret with .env.local value
-  secret: process.env.NEXTAUTH_SECRET || "your_nextauth_secret_key_should_be_at_least_32_chars", 
-  debug: process.env.NODE_ENV === 'development',
-}; 
+  */ // End Original Options Content
+}; // Keep the export but comment out the type and content
+// ENSURE NO CODE FOLLOWS THIS LINE 

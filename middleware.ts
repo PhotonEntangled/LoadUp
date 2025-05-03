@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
     logger.error('[Middleware] FATAL: NEXTAUTH_SECRET is not set!');
     // Allow access but log error? Or redirect to an error page?
     // For now, let's allow access but this should be fixed.
-    return NextResponse.next(); 
+    return NextResponse.next();
   }
   logger.debug(`[Middleware] NEXTAUTH_SECRET found (Length: ${secret.length}).`);
 

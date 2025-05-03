@@ -39,15 +39,18 @@ function determineDocumentType(filename: string | undefined): DocumentType {
 
 // POST handler for /api/documents/alt-upload
 export async function POST(request: NextRequest) {
-  logger.info("API: POST /api/documents/alt-upload called (DIRECT SQL TEST)");
+  logger.info('API: Received POST request for alt-upload');
 
-  // User authentication
-  const session = await auth();
-  if (!session?.user?.id) {
-    logger.warn('API: Unauthorized upload attempt.');
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
-  const userId = session.user.id;
+  // --- TEMPORARILY DISABLED AUTH CHECK ---
+  // const session = await auth();
+  // if (!session?.user?.id) {
+  //   logger.warn('API: Unauthorized upload attempt.');
+  //   return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  // }
+  // const userId = session.user.id;
+  const userId = 'mock-user-id-for-testing'; // Use a mock ID
+  logger.info(`[alt-upload] Auth bypassed, using mock userId: ${userId}`);
+  // --- END TEMPORARY DISABLE ---
 
   let documentId: string | undefined;
   let filename: string | undefined;

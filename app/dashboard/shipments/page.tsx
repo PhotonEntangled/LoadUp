@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
+// import { useSession } from 'next-auth/react'; // Commented out
 import { useRouter } from 'next/navigation';
 import { 
   Card, 
@@ -35,7 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Search, Filter } from 'lucide-react';
 import { format } from 'date-fns';
-import { UserRole } from '@/lib/auth';
+import { UserRole } from '@/lib/auth'; // Keep UserRole if used elsewhere
 import { ShipmentTableView } from '@/components/logistics/shipments/ShipmentTableView';
 import { ShipmentCardView } from '@/components/logistics/shipments/ShipmentCardView';
 import { ShipmentData } from '@/types/shipment';
@@ -92,11 +92,11 @@ type ShipmentFilters = {
 };
 
 export default function ShipmentsPage() {
-  const { data: session, status: sessionStatus } = useSession();
+  // const { data: session, status: sessionStatus } = useSession(); // Commented out
   const router = useRouter();
   
   // State for shipments and loading
-  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [shipments, setShipments] = useState<Shipment[]>([]); // Kept type for structure
   const [loading, setLoading] = useState(true);
   const [totalShipments, setTotalShipments] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -203,39 +203,32 @@ export default function ShipmentsPage() {
     router.push('/dashboard/shipments/create');
   };
   
-  // Fetch shipments when filters change or on initial load
+  // Fetch shipments on initial load (simplified)
   useEffect(() => {
-    if (sessionStatus === 'authenticated') {
       fetchShipments();
-    }
-  }, [filters, sessionStatus]);
+    // Replace sessionStatus check with a simple fetch on mount
+    // if (sessionStatus === 'authenticated') { 
+    //   fetchShipments();
+    // }
+  }, [filters]); // Refetch when filters change
   
-  // Redirect if not authenticated
-  if (sessionStatus === 'loading') {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (sessionStatus === 'unauthenticated') {
-    router.push('/sign-in');
-    return null;
-  }
+  // --- Remove Authentication Checks ---
+  // if (sessionStatus === 'loading') { ... }
+  // if (sessionStatus === 'unauthenticated') { ... }
+  // --- End Remove Authentication Checks ---
   
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Shipments</h1>
         
-        {/* Only show create button for admins and customers */}
-        {(session?.user?.role === UserRole.ADMIN || session?.user?.role === UserRole.USER) && (
+        {/* TEMPORARILY allow create button for testing */}
+        {/* {(session?.user?.role === UserRole.ADMIN || session?.user?.role === UserRole.USER) && ( */}
           <Button onClick={handleCreateShipment}>
             <Plus className="h-4 w-4 mr-2" />
             Create Shipment
           </Button>
-        )}
+        {/* )} */}
       </div>
       
       <Card>
@@ -295,72 +288,14 @@ export default function ShipmentsPage() {
           </div>
           
           {/* Shipments table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tracking #</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Pickup</TableHead>
-                  <TableHead>Delivery</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                    </TableCell>
-                  </TableRow>
-                ) : shipments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10">
-                      No shipments found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  shipments.map((shipment) => (
-                    <TableRow key={shipment.id}>
-                      <TableCell className="font-medium">
-                        {shipment.trackingNumber}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[shipment.status] || 'bg-gray-500'}>
-                          {shipment.status.replace(/_/g, ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={priorityColors[shipment.priority] || 'bg-gray-500'}>
-                          {shipment.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {shipment.pickupAddress?.city}, {shipment.pickupAddress?.state}
-                      </TableCell>
-                      <TableCell>
-                        {shipment.deliveryAddress?.city}, {shipment.deliveryAddress?.state}
-                      </TableCell>
-                      <TableCell>
-                        {shipment.createdAt ? format(new Date(shipment.createdAt), 'MMM d, yyyy') : 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewShipment(shipment.id)}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ShipmentTableView shipments={shipments} />
+            // Or ShipmentCardView based on view state
+          )}
         </CardContent>
         
         <CardFooter className="flex justify-between">
