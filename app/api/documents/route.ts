@@ -178,42 +178,50 @@ function calculateAggregateStatus(
 
 // GET handler for /api/documents
 export async function GET(request: NextRequest) {
-  logger.info("API: GET /api/documents called (MINIMAL TEST)");
+  // logger.info("API: GET /api/documents called (MINIMAL TEST)"); // Can keep or remove this test log
 
   // --- START MINIMAL TEST --- 
   // Comment out all original logic to isolate the issue
-  /*
+  // /* // <--- REMOVE THIS COMMENT START
   try {
     const session = await auth();
     if (!session?.user?.id) {
+      logger.error("API GET /api/documents: Unauthorized access attempt.");
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
+    logger.info(`API GET /api/documents: Fetching documents for user ${userId}`);
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
+    // Optional: Verify user exists? Maybe not necessary if session guarantees it.
+    // const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
 
-  const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     const searchQuery = searchParams.get('search')?.trim();
-    const statusFilter = searchParams.get('status')?.trim();
+    const statusFilter = searchParams.get('status')?.trim(); // Keep status filter if implemented
 
-    logger.info(`API: Filtering with search: '${searchQuery || 'N/A'}', status: '${statusFilter || 'N/A'}`);
+    logger.info(`API: Filtering with search: '${searchQuery || 'N/A'}', status: '${statusFilter || 'N/A'}'`);
 
-    const baseCondition = eq(documents.uploadedById, userId);
+    // --- Ensure filtering by the CORRECT user ID --- 
+    const baseCondition = eq(documents.uploadedById, userId); 
     const conditions: SQL[] = [baseCondition];
-  if (searchQuery) {
-      conditions.push(like(documents.filename, `%${searchQuery}%`));
+
+    if (searchQuery) {
+      // Add case-insensitive search on filename
+      conditions.push(sql`lower(${documents.filename}) like lower(${'%' + searchQuery + '%'})`);
     }
+
+    // TODO: Implement status filtering based on `statusFilter` if needed
+    // This would likely involve joining shipments and checking their statuses
+    // based on the `statusFilter` value ('Needs Review', 'Delayed', etc.)
 
     const documentQuery = db
       .select({
         id: documents.id,
         filename: documents.filename,
         parsedDate: documents.parsedDate,
-        shipmentCount: documents.shipmentCount,
-        status: documents.status,
+        shipmentCount: documents.shipmentCount, // Assuming this is updated correctly elsewhere
+        status: documents.status, // Document-level status
         createdAt: documents.createdAt
       })
       .from(documents)
@@ -222,18 +230,19 @@ export async function GET(request: NextRequest) {
 
     logger.debug("Executing Drizzle document query:", documentQuery.toSQL());
     const dbDocuments: SelectedDocument[] = await documentQuery;
-    logger.info(`API: Found ${dbDocuments.length} documents matching basic criteria.`);
+    logger.info(`API: Found ${dbDocuments.length} documents matching basic criteria for user ${userId}.`);
 
     if (dbDocuments.length === 0) {
       return NextResponse.json([]);
     }
 
+    // --- Fetch Shipment Statuses for Aggregation --- 
     const documentIds = dbDocuments.map((doc: SelectedDocument) => doc.id);
 
     const shipmentStatusQuery = db
         .select({
             documentId: shipmentsErd.sourceDocumentId,
-            status: shipmentsErd.status
+            status: shipmentsErd.status // Get the specific DB status enum
         })
         .from(shipmentsErd)
         .where(inArray(shipmentsErd.sourceDocumentId, documentIds));
@@ -242,49 +251,61 @@ export async function GET(request: NextRequest) {
     const dbShipmentStatuses = await shipmentStatusQuery;
     logger.info(`API: Found ${dbShipmentStatuses.length} shipment status entries for ${documentIds.length} documents.`);
 
+    // Group shipment statuses by document ID
     const statusesByDocumentId: Record<string, (ShipmentStatus | null)[]> = {};
     for (const shipment of dbShipmentStatuses) {
         if (shipment.documentId) {
             if (!statusesByDocumentId[shipment.documentId]) {
                 statusesByDocumentId[shipment.documentId] = [];
             }
-            statusesByDocumentId[shipment.documentId].push(mapDbShipmentStatus(shipment.status));
+            // Map the DB status enum to the standardized ShipmentStatus type
+            const mappedStatus = mapDbShipmentStatus(shipment.status);
+            statusesByDocumentId[shipment.documentId].push(mappedStatus); 
         }
     }
 
-    let mappedResults: DocumentMetadata[] = dbDocuments.map((doc: SelectedDocument) => {
-        const shipmentStatuses = statusesByDocumentId[doc.id] || [];
-        const aggregateStatus = calculateAggregateStatus(shipmentStatuses, doc.status);
-
-        return {
-            id: doc.id,
-            filename: doc.filename || 'Unknown Filename',
-            dateParsed: formatDate(doc.parsedDate),
-            shipments: doc.shipmentCount ?? 0,
-            shipmentSummaryStatus: aggregateStatus,
-        };
+    // --- Map DB results to Frontend Metadata --- 
+    const results: DocumentMetadata[] = dbDocuments.map((doc: SelectedDocument) => {
+      const shipmentStatuses = statusesByDocumentId[doc.id] || [];
+      const aggregateStatus = calculateAggregateStatus(shipmentStatuses, doc.status);
+      
+      return {
+        id: doc.id,
+        filename: doc.filename || 'Unknown Filename',
+        dateParsed: formatDate(doc.parsedDate), 
+        shipments: doc.shipmentCount, // Use the count from the document table
+        shipmentSummaryStatus: aggregateStatus, 
+      };
     });
 
-  if (statusFilter && statusFilter !== 'all') {
-       logger.info(`API: Applying frontend status filter: '${statusFilter}'`);
-       mappedResults = mappedResults.filter(doc =>
-           doc.shipmentSummaryStatus.toLowerCase() === statusFilter.toLowerCase()
-       );
-       logger.info(`API: ${mappedResults.length} documents after applying status filter.`);
-    }
+    // Optional: Implement Status Filtering Logic Here
+    // If `statusFilter` is present, filter the `results` array based on `shipmentSummaryStatus`
+    // Example (Needs refinement based on actual filter values):
+    // let filteredResults = results;
+    // if (statusFilter && statusFilter !== 'all') {
+    //     filteredResults = results.filter(doc => doc.shipmentSummaryStatus.toLowerCase() === statusFilter.toLowerCase());
+    // }
 
-    logger.info(`API: Returning ${mappedResults.length} mapped and filtered documents.`);
-    return NextResponse.json(mappedResults);
+    logger.info(`API GET /api/documents: Returning ${results.length} formatted documents for user ${userId}.`);
+    return NextResponse.json(results); // Return the potentially filtered results
 
-  } catch (error: any) {
-    logger.error(`API: Error fetching documents: ${error.message}`, { stack: error.stack });
-    return NextResponse.json({ message: 'Error fetching documents', error: error.message }, { status: 500 });
+  } catch (error) {
+     logger.error('API GET /api/documents Error:', error);
+     // Consider more specific error checking if needed
+     if (error instanceof Error) {
+         logger.error(`Error Name: ${error.name}, Message: ${error.message}`);
+         // Check for specific Drizzle or Neon errors if applicable
+     } else {
+         logger.error("An unknown error object was caught.");
+     }
+     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-  */
-  // --- END MINIMAL TEST --- 
+  // */ // <--- REMOVE THIS COMMENT END
 
-  // Return empty array for testing purposes
-  return NextResponse.json([]);
+  // --- ADDED MINIMAL TEST RESPONSE --- 
+  // REMOVE THE LINE BELOW
+  // return NextResponse.json([]); 
+  // --- END MINIMAL TEST --- 
 }
 
 // Helper function to determine DocumentType from filename

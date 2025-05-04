@@ -228,24 +228,21 @@ We will start with **Step 1: Removing `next-auth`** as the most direct way to te
 
 **Date:** [Current Date/Time]
 
-**Summary:** After fixing the `NEXTAUTH_URL` issue and adding detailed logging, the core authentication callbacks (`authorize`, `jwt`, `session`) are confirmed to be executing successfully upon sign-in. The primary remaining issues are:
+**Summary:** Authentication flow appears mostly correct. Login succeeds, session token is set and recognized immediately post-login for the redirect to dashboard (`/`). However, manual navigation to protected routes (e.g., `/documents`) immediately after landing on the dashboard fails. Vercel & Browser logs confirm the middleware executes for the failed navigation, **does not find a valid token via `getToken`**, and issues a 307 redirect back to sign-in, causing the loop.
 
-1.  **Middleware Bypass:** A temporary fix (`[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken...`) remains in `middleware.ts`, preventing actual session validation on subsequent requests. This **must be removed** to restore proper authentication checks.
-2.  **Document Upload Success (Alternate Route):** Logs confirm that uploading via the `/api/documents/alt-upload` route (using direct SQL) works correctly within an authenticated context, and the server-side parsing logic (`ExcelParserService`) executes successfully. This rules out auth *directly* breaking the parsing steps.
-3.  **Frontend Display Failure:** Despite successful backend upload/parsing via the alternate route, the newly uploaded document does *not* appear automatically on the `app/documents/page.tsx`. This strongly suggests the **frontend refresh mechanism is broken or not being triggered**.
+**Root Cause Hypothesis:** The `__Secure-next-auth.session-token` cookie is either **not being sent correctly by the browser** on manual navigation requests OR **`getToken` is failing to validate/decode the token** correctly within the Vercel Edge middleware runtime during these subsequent requests, despite the token being present and valid immediately after login. **UPDATE:** This auth loop seems resolved after redeployment, but a "double login" may still occur.
+
+**New Confirmed Issue:** The frontend refresh mechanism *is* triggering correctly after a successful document upload (via alt-route). However, the subsequent `GET /api/documents` request, while successful (200 OK), returns an **empty array `[]`**, preventing the new document from appearing.
+
+**Revised Root Cause Hypothesis:** The primary issue preventing document display is within the **`GET /api/documents` API route handler**. It fails to retrieve the newly added (and potentially existing) documents from the database.
 
 **Revised Troubleshooting Steps:**
 
-1.  **Analyze Existing Refresh Logic:** Before modifying code, review `app/documents/page.tsx` and `components/logistics/LogisticsDocumentUploader.tsx` to understand how the post-upload refresh was originally designed to work. (✅ Done)
-2.  **Stabilize Authentication:** Remove the temporary bypass logic from `middleware.ts`. Deploy and test sign-in, sign-out, and navigation to protected routes thoroughly. (✅ Middleware code updated)
-3.  **Verify Upload & Logs:** Test upload again using the *alternate route checkbox*. Confirm successful API response (200 OK) in browser tools and successful parsing logs in Vercel for the `/api/documents/alt-upload` request.
-4.  **Debug Frontend Refresh:** Based on the analysis from Step 1, trace the execution flow after the successful upload API call in `LogisticsDocumentUploader.tsx`. Identify why the data refresh/state update in `app/documents/page.tsx` is failing.
-    *   **Verification Points:**
-        *   Does the `POST /api/documents/alt-upload` call complete successfully (200 OK) in the browser's Network tab?
-        *   Is the `onProcessingComplete` prop being called correctly by `LogisticsDocumentUploader.tsx`? (Check client console logs).
-        *   Is the `handleProcessingComplete` function in `app/documents/page.tsx` being executed? (Check client console logs).
-        *   Is the subsequent call to `fetchDocuments` within `handleProcessingComplete` triggering a new `GET /api/documents` request in the Network tab, and does that request succeed?
-    *   **Expected Outcome:** After a successful upload via the alternate route, the document list on the `/documents` page should automatically refresh, and the new document card should appear without requiring a manual page reload.
-5.  **Consolidate Upload Endpoint (Post-Fix):** Once the frontend refresh is fixed and the alternate route is confirmed reliable, consider replacing the original `/api/documents` POST handler with the direct SQL logic from `alt-upload` to avoid future confusion caused by the Drizzle/Vercel build issue.
+1.  ~~**Deploy & Retest:**~~ (Done - Auth loop resolved)
+2.  **Investigate `GET /api/documents`:** Analyze the code for the `GET` handler in `app/api/documents/route.ts` to understand its database query logic and identify why it's returning an empty list despite data existing.
+3.  **Fix `GET /api/documents`:** Modify the handler to correctly retrieve documents associated with the logged-in user.
+4.  **Test Document Display:** After fixing the GET handler, deploy and re-test the upload flow (using alternate route) to confirm the document card appears automatically.
+5.  **Address Double Login (Lower Priority):** Investigate why a second login might be required on client-side navigation.
+6.  **Consolidate Upload Endpoint (Post-Fix):** Once display is fixed, consider replacing original POST handler with direct SQL.
 
 ---
