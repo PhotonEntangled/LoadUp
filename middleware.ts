@@ -30,6 +30,9 @@ export async function middleware(req: NextRequest) {
   logger.info("--- MIDDLEWARE EXECUTION START ---");
   const pathname = req.nextUrl.pathname;
   logger.info(`[Middleware] Pathname: ${pathname}`);
+  logger.info(`[Middleware] Request Headers: ${JSON.stringify(req.headers)}`); // Log all headers
+  const rawCookieHeader = req.headers.get('cookie');
+  logger.info(`[Middleware] Raw Cookie Header: ${rawCookieHeader}`); // Log raw cookie header
 
   // Define public paths
   const publicPaths = ["/auth/sign-in", "/auth/sign-up", "/auth/forgot-password"];
@@ -43,23 +46,29 @@ export async function middleware(req: NextRequest) {
   
   // Check for session token on protected routes
   try {
-    // logger.warn("[Middleware] TEMP FIX: Skipping token retrieval via getToken. Relying on downstream auth checks.");
-    // logger.info(`[Middleware] Route ${pathname} is protected. TEMP FIX: Allowing access without token check.`);
-    // return NextResponse.next();
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) {
+      logger.error("[Middleware] FATAL: NEXTAUTH_SECRET is not set! Cannot verify token.");
+      // Redirect to sign-in as we cannot verify
+      const signInUrl = new URL("/api/auth/signin", req.url);
+      signInUrl.searchParams.set("callbackUrl", req.url);
+      return NextResponse.redirect(signInUrl);
+    }
 
-    // Original logic: Retrieve and validate the token
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    logger.info("[Middleware] Attempted to retrieve token.");
+    logger.info("[Middleware] Attempting to retrieve token using getToken...");
+    const token = await getToken({ req, secret: secret });
+    // Log the result of getToken immediately after calling it
+    logger.info(`[Middleware] Result of getToken: ${JSON.stringify(token)}`); 
 
     if (!token) {
-      logger.warn("[Middleware] No token found. Redirecting to sign-in page.");
+      logger.warn("[Middleware] No valid token found by getToken. Redirecting to sign-in page.");
       const signInUrl = new URL("/api/auth/signin", req.url);
-      signInUrl.searchParams.set("callbackUrl", req.url); // Use full requested URL
+      signInUrl.searchParams.set("callbackUrl", req.url);
       return NextResponse.redirect(signInUrl);
     }
 
     // Token exists, proceed to requested route
-    logger.info("[Middleware] Token found. Allowing access to protected route.", { userId: token.sub }); // Log user ID if available
+    logger.info("[Middleware] Valid token found. Allowing access to protected route.", { userId: token.sub }); // Log user ID if available
     return NextResponse.next();
 
   } catch (error) {
