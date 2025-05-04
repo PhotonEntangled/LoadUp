@@ -207,6 +207,45 @@ We will start with **Step 1: Removing `next-auth`** as the most direct way to te
 
 **Troubleshooting Steps:**
 1.  **Verify Logging Code:** Read `lib/auth.ts` to confirm `console.log`/`logger` statements exist within `authorize`, `jwt`, and `session` callbacks. **(Done - Logs confirmed to be present in code)**.
-2.  **Next Step:** Add an explicit `logger.info` call as the *very first line* inside each of the `authorize`, `jwt`, and `session` callback functions in `lib/auth.ts`. Rationale: To definitively confirm if these callbacks are being invoked at all. If the entry logs for `jwt` and `session` still don't appear after `authorize` runs, it proves they aren't being called, pointing to an issue in how `authorize` returns or how NextAuth handles the JWT flow post-authorization.
+2.  **Add Entry Logs:** Added an explicit `logger.info` call as the *very first line* inside each of the `authorize`, `jwt`, and `session` callback functions in `lib/auth.ts`. Rationale: To definitively confirm if these callbacks are being invoked at all. **(Done - Code pushed & deployed)**
+3.  **Test Login & Review Logs (Latest Attempt - ~15:18):**
+    *   **Browser Logs:** Confirmed via MCP tools that the browser *does* receive a `200 OK` for the sign-in attempt (`signIn result: {\"error\":null,\"status\":200,\"ok\":true,...}`) and attempts to redirect to the dashboard. However, subsequent API calls (e.g., document upload) fail with `401 Unauthorized` (confirmed via browser console errors).
+    *   **Vercel Logs (`docs/log.md` snippet):** 
+        *   Shows a failed attempt at `15:18:22` (`POST 401`, `Invalid password` log). This proves `authorize` *can* run but suggests bypass might have been off.
+        *   Shows a superficially successful attempt at `15:18:38` (`POST 200`, `[Event SignIn]`).
+        *   **CRITICAL:** For the `15:18:38` attempt, the expected `[Authorize Callback] ENTERED`, `[JWT Callback] ENTERED`, and `[Session Callback] ENTERED` logs are **MISSING** in the provided log snippet. The `[Event SignIn]` appears without the preceding callback entry logs.
+    *   **Current Status:** Authentication is failing because the session/token is not being established correctly. The browser gets a misleading `200 OK`, but the backend flow breaks after `authorize` (or potentially within it, before logging).
+4.  **Next Step:** **Crucially, we need COMPLETE Vercel logs corresponding *exactly* to the timeframe of a single, new login attempt.** 
+    *   Retry login.
+    *   Immediately get logs from Vercel for the `POST /api/auth/callback/credentials` request.
+    *   Verify if `[Authorize Callback] ENTERED` appears. Does it complete (log `Returning user...`)?
+    *   Verify if `[JWT Callback] ENTERED` and `[Session Callback] ENTERED` appear *after* authorize completes.
+    *   Also **re-verify** `NEXTAUTH_PASSWORD_BYPASS=true` is set in the Vercel deployment environment.
+
+---
+
+## Current State Analysis & Refined Plan (Post-Auth Debugging)
+
+**Date:** [Current Date/Time]
+
+**Summary:** After fixing the `NEXTAUTH_URL` issue and adding detailed logging, the core authentication callbacks (`authorize`, `jwt`, `session`) are confirmed to be executing successfully upon sign-in. The primary remaining issues are:
+
+1.  **Middleware Bypass:** A temporary fix (`[WARN] [Middleware] TEMP FIX: Skipping token retrieval via getToken...`) remains in `middleware.ts`, preventing actual session validation on subsequent requests. This **must be removed** to restore proper authentication checks.
+2.  **Document Upload Success (Alternate Route):** Logs confirm that uploading via the `/api/documents/alt-upload` route (using direct SQL) works correctly within an authenticated context, and the server-side parsing logic (`ExcelParserService`) executes successfully. This rules out auth *directly* breaking the parsing steps.
+3.  **Frontend Display Failure:** Despite successful backend upload/parsing via the alternate route, the newly uploaded document does *not* appear automatically on the `app/documents/page.tsx`. This strongly suggests the **frontend refresh mechanism is broken or not being triggered**.
+
+**Revised Troubleshooting Steps:**
+
+1.  **Analyze Existing Refresh Logic:** Before modifying code, review `app/documents/page.tsx` and `components/logistics/LogisticsDocumentUploader.tsx` to understand how the post-upload refresh was originally designed to work. (✅ Done)
+2.  **Stabilize Authentication:** Remove the temporary bypass logic from `middleware.ts`. Deploy and test sign-in, sign-out, and navigation to protected routes thoroughly. (✅ Middleware code updated)
+3.  **Verify Upload & Logs:** Test upload again using the *alternate route checkbox*. Confirm successful API response (200 OK) in browser tools and successful parsing logs in Vercel for the `/api/documents/alt-upload` request.
+4.  **Debug Frontend Refresh:** Based on the analysis from Step 1, trace the execution flow after the successful upload API call in `LogisticsDocumentUploader.tsx`. Identify why the data refresh/state update in `app/documents/page.tsx` is failing.
+    *   **Verification Points:**
+        *   Does the `POST /api/documents/alt-upload` call complete successfully (200 OK) in the browser's Network tab?
+        *   Is the `onProcessingComplete` prop being called correctly by `LogisticsDocumentUploader.tsx`? (Check client console logs).
+        *   Is the `handleProcessingComplete` function in `app/documents/page.tsx` being executed? (Check client console logs).
+        *   Is the subsequent call to `fetchDocuments` within `handleProcessingComplete` triggering a new `GET /api/documents` request in the Network tab, and does that request succeed?
+    *   **Expected Outcome:** After a successful upload via the alternate route, the document list on the `/documents` page should automatically refresh, and the new document card should appear without requiring a manual page reload.
+5.  **Consolidate Upload Endpoint (Post-Fix):** Once the frontend refresh is fixed and the alternate route is confirmed reliable, consider replacing the original `/api/documents` POST handler with the direct SQL logic from `alt-upload` to avoid future confusion caused by the Drizzle/Vercel build issue.
 
 ---
