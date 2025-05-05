@@ -318,3 +318,38 @@ We will start with **Step 1: Removing `next-auth`** as the most direct way to te
 4.  **Continue Live Tracking Plan.**
 
 ---
+
+## Issue: Upload Errors (207 Multi-Status) & "No transactions support in neon-http driver"
+
+**Date:** 2024-05-05
+
+**Symptoms:**
+- Uploading `all_status_test_shipments.xlsx` via alternate route resulted in HTTP 207 Multi-Status.
+- Browser Network tab showed the response body contained an `errors` array with multiple instances of `"No transactions support in neon-http driver"`.
+- Document card showed 'Error' status and '0' shipments.
+
+**Investigation:**
+- Confirmed the API route (`/api/documents/alt-upload`) correctly handled the insertion loop failure and returned the 207 status with detailed errors.
+- Reviewed `services/database/shipmentInserter.ts` and confirmed the `insertShipmentBundle` function wraps its database operations in `db.transaction(async (tx) => { ... })`.
+- Reviewed Drizzle connection setup in `lib/database/drizzle.ts` and confirmed it was using the `drizzle-orm/neon-http` adapter.
+- Searched Neon and Drizzle documentation regarding transaction support.
+
+**Root Cause:** The Neon Serverless driver, when used via the **HTTP adapter (`neon-http`)**, does not support database transactions. The `insertShipmentBundle` function's attempt to use `db.transaction()` failed because the underlying driver lacked the necessary capability over HTTP.
+
+**Resolution (2024-05-05):**
+- Switched the database driver configuration in `lib/database/drizzle.ts` from the HTTP adapter (`drizzle-orm/neon-http`) to the WebSocket adapter (`drizzle-orm/neon-serverless`).
+- Installed required dependencies (`ws`, `bufferutil`) for the WebSocket driver in Node.js environments.
+- Updated `lib/database/drizzle.ts` to import `Pool` and `neonConfig` from `@neondatabase/serverless`, configure `neonConfig.webSocketConstructor = ws`, create a `Pool`, and initialize Drizzle with the pool.
+
+**Hypothesis:** Using the WebSocket driver (`neon-serverless`) provides the necessary persistent connection to support database transactions, allowing `insertShipmentBundle` to execute correctly.
+
+**Next Steps:**
+1.  **Commit & Push Driver Change:** Deploy the updated Drizzle configuration.
+2.  **Full Test:** Perform a complete test cycle:
+    *   Sign in.
+    *   Upload `all_status_test_shipments.xlsx` using the alternate route.
+    *   **Expected Outcome:** The upload should now succeed with HTTP 200. The document card should show 'PROCESSED' status and the correct shipment count (6). All sub-pages (Shipment, Simulate, Track) should load correctly with data.
+3.  **Address Double Login (Lower Priority).**
+4.  **Continue Live Tracking Plan.**
+
+---
