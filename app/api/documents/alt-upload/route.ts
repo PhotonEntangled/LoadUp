@@ -158,8 +158,12 @@ export async function POST(request: NextRequest) {
     // --- END INSERT SHIPMENT DATA ---
 
     // Update document status based on insertion results
-    const finalStatus = failedInsertions > 0 ? 'PROCESSED_WITH_ERRORS' : 'PROCESSED';
-    const errorMessage = failedInsertions > 0 ? insertionErrors.join('; ') : null;
+    const finalStatus = failedInsertions > 0 ? 'ERROR' : 'PROCESSED';
+    const errorMessage = failedInsertions > 0 
+        ? `Processed with ${failedInsertions} shipment insertion errors: ${insertionErrors.join('; ')}` 
+        : null;
+
+    logger.info(`API: Preparing final document update. Status: ${finalStatus}, Error Msg: ${errorMessage}`);
 
     await sql`
       UPDATE documents 

@@ -280,3 +280,41 @@ We will start with **Step 1: Removing `next-auth`** as the most direct way to te
 6.  **Continue Live Tracking Plan:** Resume work on integrating the live tracking functionality as per `LoadUp_Live_Tracking_Plan.md`.
 
 ---
+
+## Issue: Inconsistent Document Upload & "Invalid input value for enum document_status" Error
+
+**Date:** 2024-05-05
+
+**Symptoms:**
+- Uploading via alternate route (`/api/documents/alt-upload`) sometimes shows "Processed with errors" UI message, sometimes fails with 500 Internal Server Error (visible in browser console).
+- Upload dialogue may not close automatically on error.
+- Refreshing `/documents` page shows the uploaded document card with an "Error" status badge, but "N/A" parsed date and "0 Shipments".
+- Subsequent navigation to Shipment/Simulation/Tracking pages shows no data for the document.
+
+**Investigation:**
+- Browser console logs clearly showed `POST /api/documents/alt-upload` returning 500.
+- The specific error message was `Invalid input value for enum document_status: "PROCESSED_WITH_ERRORS"`.
+- Vercel logs confirmed the 500 error.
+- Code review of `app/api/documents/alt-upload/route.ts` (commit `ca29755`) confirmed logic was added to set the final document status to `'PROCESSED_WITH_ERRORS'` if any individual `insertShipmentBundle` call failed within the loop.
+- Checked database schema (`lib/database/schema.ts`) and confirmed the `documentStatusEnum` only allows `'UPLOADED'`, `'PROCESSING'`, `'PROCESSED'`, `'ERROR'`. The value `'PROCESSED_WITH_ERRORS'` is not valid.
+
+**Root Cause:** The backend API route (`alt-upload`) attempted to update the `documents` table with an invalid status value (`'PROCESSED_WITH_ERRORS'`) when shipment insertions failed. The database rejected this invalid enum value, causing the final `UPDATE` statement to fail and resulting in a 500 error for the API request.
+
+**Resolution (2024-05-05):**
+- Modified `app/api/documents/alt-upload/route.ts` to set the `finalStatus` variable to `'ERROR'` (a valid enum value) when `failedInsertions > 0`.
+- Updated the logic generating the `errorMessage` to be more descriptive when setting the `'ERROR'` status.
+
+**Next Steps:**
+1.  **Commit & Push Fix:** Deploy the correction for the status enum value.
+2.  **Full Test:** Perform a complete test cycle:
+    *   Sign in.
+    *   Upload a document using the alternate route that is known to have some rows that *might* fail insertion (or use the standard test file).
+    *   Verify the document card appears on `/documents`.
+    *   Check the status badge on the card (should be 'Processed' if all bundles inserted, 'Error' if any failed).
+    *   Check the shipment count on the card.
+    *   Click the "Shipment", "Simulate", and "Track" buttons.
+    *   **Expected Outcome:** If processed successfully, sub-pages load with data. If status is 'Error', sub-pages might still load but potentially show fewer shipments than expected (reflecting only successful insertions), or the UI should gracefully handle the error state based on the document's status and error message.
+3.  **Address Double Login (Lower Priority).**
+4.  **Continue Live Tracking Plan.**
+
+---
