@@ -395,40 +395,44 @@ export const SimulationMap = React.memo(forwardRef<SimulationMapRef, SimulationM
 
         {/* Render Vehicle Markers */}
         {isMapLoaded && vehicleList.map((vehicle) => {
-            // --- BEGIN ADDED LOGGING ---
-            logger.debug(`[MapMarker Render] Processing vehicle: ${vehicle.id}, Status: ${vehicle.status}`);
-            // --- END ADDED LOGGING ---
-            if (!vehicle.currentPosition) {
-                logger.warn(`[MapMarker Render] Vehicle ${vehicle.id} has no currentPosition, skipping marker render.`);
-                return null;
+            // *** ADD CHECK: Only render marker if position is valid ***
+            if (
+              !vehicle.currentPosition ||
+              !vehicle.currentPosition.geometry ||
+              !Array.isArray(vehicle.currentPosition.geometry.coordinates) ||
+              vehicle.currentPosition.geometry.coordinates.length !== 2 ||
+              vehicle.currentPosition.geometry.coordinates.some(coord => typeof coord !== 'number' || !isFinite(coord))
+            ) {
+              // Optionally log if needed for debugging initial states
+              // logger.debug(`Skipping marker render for vehicle ${vehicle.id}: Invalid position`, vehicle.currentPosition);
+              return null; // Don't render marker if position is invalid
             }
+
+            // Position is valid, proceed with rendering
             const [longitude, latitude] = vehicle.currentPosition.geometry.coordinates;
-            // --- BEGIN ADDED LOGGING ---
-            if (longitude === undefined || latitude === undefined || !isFinite(longitude) || !isFinite(latitude)) {
-                logger.warn(`[MapMarker Render] Invalid coordinates for vehicle ${vehicle.id}: Lon=${longitude}, Lat=${latitude}. Skipping marker.`);
-                return null;
-            }
-            logger.debug(`[MapMarker Render] Rendering marker for ${vehicle.id} at Lon=${longitude}, Lat=${latitude}, Bearing=${vehicle.bearing}`);
-            // --- END ADDED LOGGING ---
+            const bearing = vehicle.bearing ?? 0; // Default bearing if null/undefined
             const isSelected = vehicle.id === selectedVehicleId;
-            const statusColor = getStatusColor(vehicle.status); // Get status color
+            const color = getStatusColor(vehicle.status); // Get color based on status
 
             return (
-                // --- BEGIN ADDED LOGGING ---
-                // Note: Cannot easily log *inside* JSX return block itself, logging just before is sufficient.
-                // --- END ADDED LOGGING ---
                 <Marker
                     key={vehicle.id}
                     longitude={longitude}
                     latitude={latitude}
                     anchor="center"
                     onClick={(e) => {
-                        e.originalEvent.stopPropagation(); // Prevent map click events
-                        handleMarkerClick(vehicle);
+                        e.originalEvent.stopPropagation(); // Prevent map click
+                        if (storeApi) { // Use storeApi directly
+                            storeApi.getState().setSelectedVehicleId(vehicle.id);
+                        }
+                        // Optional: Show popup or other interaction
+                        logger.info(`Clicked marker for vehicle ${vehicle.id}`);
                     }}
+                    rotation={bearing}
+                    style={{ cursor: 'pointer' }}
                 >
                    {/* Apply rotation via CSS transform to an inner wrapper, with offset */}
-                   <div style={{ transform: `rotate(${ (vehicle.bearing || 0) - 90 }deg)` }}>
+                   <div style={{ transform: `rotate(${ (bearing || 0) - 90 }deg)` }}>
                      {/* Sizing div - Apply conditional highlighting here */}
                      <div style={{
                          width: '32px',
@@ -440,7 +444,7 @@ export const SimulationMap = React.memo(forwardRef<SimulationMapRef, SimulationM
                       }}>
                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%">
                          {/* Main body - Apply dynamic status color */}
-                         <path d="M0 0 C0.66 0 1.32 0 2 0 C2 0.99 2 1.98 2 3 C2.94875 2.938125 3.8975 2.87625 4.875 2.8125 C5.90625 2.874375 6.9375 2.93625 8 3 C10.84799817 7.27199725 10.33018316 10.97798285 10.3125 16 C10.32861328 16.91523438 10.34472656 17.83046875 10.36132812 18.7734375 C10.36197266 19.65257813 10.36261719 20.53171875 10.36328125 21.4375 C10.36626221 22.24058594 10.36924316 23.04367188 10.37231445 23.87109375 C9.90941468 26.51796982 9.13462297 27.40861466 7 29 C4.3125 29.1875 4.3125 29.1875 2 29 C2 29.99 2 30.98 2 32 C1.34 32 0.68 32 0 32 C0 31.01 0 30.02 0 29 C-2.97 29 -5.94 29 -9 29 C-9 29.66 -9 30.32 -9 31 C-18.57 31 -28.14 31 -38 31 C-38 21.1 -38 11.2 -38 1 C-28.43 1 -18.86 1 -9 1 C-9 1.66 -9 2.32 -9 3 C-6.03 3 -3.06 3 0 3 C0 2.01 0 1.02 0 0 Z " fill={statusColor} transform="translate(38,9)"/>
+                         <path d="M0 0 C0.66 0 1.32 0 2 0 C2 0.99 2 1.98 2 3 C2.94875 2.938125 3.8975 2.87625 4.875 2.8125 C5.90625 2.874375 6.9375 2.93625 8 3 C10.84799817 7.27199725 10.33018316 10.97798285 10.3125 16 C10.32861328 16.91523438 10.34472656 17.83046875 10.36132812 18.7734375 C10.36197266 19.65257813 10.36261719 20.53171875 10.36328125 21.4375 C10.36626221 22.24058594 10.36924316 23.04367188 10.37231445 23.87109375 C9.90941468 26.51796982 9.13462297 27.40861466 7 29 C4.3125 29.1875 4.3125 29.1875 2 29 C2 29.99 2 30.98 2 32 C1.34 32 0.68 32 0 32 C0 31.01 0 30.02 0 29 C-2.97 29 -5.94 29 -9 29 C-9 29.66 -9 30.32 -9 31 C-18.57 31 -28.14 31 -38 31 C-38 21.1 -38 11.2 -38 1 C-28.43 1 -18.86 1 -9 1 C-9 1.66 -9 2.32 -9 3 C-6.03 3 -3.06 3 0 3 C0 2.01 0 1.02 0 0 Z " fill={color} transform="translate(38,9)"/>
                          {/* Other parts (windshield, wheels) - keep original fills */}
                          <path d="M0 0 C2.875 -0.1875 2.875 -0.1875 6 0 C6.66 0.99 7.32 1.98 8 3 C5.36 3 2.72 3 0 3 C0 2.01 0 1.02 0 0 Z " fill="#EF5A4A" transform="translate(40,16)"/> { /* Example: Assuming this was red trailer part */}
                          <path d="M0 0 C2.64 0 5.28 0 8 0 C7.01 1.485 7.01 1.485 6 3 C2.875 3.1875 2.875 3.1875 0 3 C0 2.01 0 1.02 0 0 Z " fill="#6CAEEB" transform="translate(31,33)"/> { /* Windshield */}
