@@ -416,7 +416,7 @@ export const SimulationMap = React.memo(forwardRef<SimulationMapRef, SimulationM
 
             // Log the bearing value being used
             if (isSelected) {
-              logger.debug(`[SimulationMap Marker] Applying rotation for ${vehicle.id}: Bearing=${bearing}, Offset=+180`);
+              logger.debug(`[SimulationMap Marker] Applying rotation for ${vehicle.id}: Bearing=${bearing}`);
             }
 
             return (
@@ -436,8 +436,8 @@ export const SimulationMap = React.memo(forwardRef<SimulationMapRef, SimulationM
                     rotation={bearing}
                     style={{ cursor: 'pointer' }}
                 >
-                   {/* Apply rotation via CSS transform, adding 180 degree offset */}
-                   <div style={{ transform: `rotate(${bearing + 180}deg)` }}>
+                   {/* Apply rotation via CSS transform - NO OFFSET */}
+                   <div style={{ transform: `rotate(${bearing}deg)` }}>
                      {/* Sizing div - Apply conditional highlighting here */}
                      <div style={{
                          width: '32px',

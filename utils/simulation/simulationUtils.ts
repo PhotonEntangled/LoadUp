@@ -47,8 +47,8 @@ export function calculateNewPosition(
     // Calculate bearing (direction) - requires looking slightly ahead or behind
     let bearing = vehicle.bearing; // Default to current bearing
     if (newTraveledDistanceMeters < totalRouteDistanceMeters) {
-        // Look slightly ahead to get bearing
-        const lookAheadDistance = Math.min(newTraveledDistanceMeters + 5, totalRouteDistanceMeters); // Look 5m ahead or to end
+        // Look slightly ahead to get bearing - REDUCE LOOKAHEAD
+        const lookAheadDistance = Math.min(newTraveledDistanceMeters + 1, totalRouteDistanceMeters); // Look 1m ahead or to end
         const lookAheadPoint = turf.along(routeLine, lookAheadDistance, { units: 'meters' });
         bearing = turf.bearing(newPositionFeature, lookAheadPoint);
     } else {
