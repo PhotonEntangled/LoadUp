@@ -414,6 +414,11 @@ export const SimulationMap = React.memo(forwardRef<SimulationMapRef, SimulationM
             const isSelected = vehicle.id === selectedVehicleId;
             const color = getStatusColor(vehicle.status); // Get color based on status
 
+            // Log the bearing value being used
+            if (isSelected) {
+              logger.debug(`[SimulationMap Marker] Applying rotation for ${vehicle.id}: Bearing=${bearing}, Offset=+180`);
+            }
+
             return (
                 <Marker
                     key={vehicle.id}
