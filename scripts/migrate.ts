@@ -1,7 +1,10 @@
-import { db } from '@/lib/database/drizzle';
-import { migrate } from 'drizzle-orm/neon-http/migrator';
+import { config } from 'dotenv';
+import { db, pool } from '../lib/database/drizzle';
+import { migrate } from 'drizzle-orm/neon-serverless/migrator';
 
-async function main() {
+config({ path: '.env' });
+
+async function runMigrations() {
   try {
     console.log('Starting database migration...');
     await migrate(db, { migrationsFolder: './drizzle' });
@@ -12,4 +15,4 @@ async function main() {
   }
 }
 
-main(); 
+runMigrations();

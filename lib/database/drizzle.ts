@@ -21,7 +21,7 @@ if (!connectionString) {
 neonConfig.webSocketConstructor = ws;
 
 // Create a connection pool
-const pool = new Pool({ connectionString });
+export const pool = new Pool({ connectionString });
 
 // Initialize Drizzle with the pool
 export const db = drizzle(pool, { schema, logger: true });

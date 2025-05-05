@@ -353,3 +353,38 @@ We will start with **Step 1: Removing `next-auth`** as the most direct way to te
 4.  **Continue Live Tracking Plan.**
 
 ---
+
+## Issue: Vercel Build Failure - Migration Script Type Error
+
+**Date:** 2024-05-05
+
+**Symptoms:**
+- Vercel build failed after switching DB driver to `neon-serverless`.
+- Error log: `Type error: Argument of type 'NeonDatabase<...> & { $client: Pool; }' is not assignable to parameter of type 'NeonHttpDatabase<...>'` in `scripts/migrate.ts`.
+
+**Investigation:**
+- Reproduced error with local `npm run build`.
+- Initial hypothesis: `migrate` function imported in `scripts/migrate.ts` was still the `neon-http` version.
+- Corrected import path for `migrate` to `drizzle-orm/neon-serverless/migrator`. **Error persisted.**
+- Second hypothesis: `migrate` function (serverless version) required the raw `Pool` object, not the Drizzle `db` instance.
+- Modified `scripts/migrate.ts` to pass `pool` to `migrate`. Introduced new linter error (`pool` not exported from `drizzle.ts`) and then a *new* type error (`Argument of type 'Pool' is not assignable to parameter of type 'NeonDatabase<...>'`).
+
+**Root Cause:** Initial diagnosis was partially correct (wrong migrator import), but the follow-up was an overcorrection. The `migrate` function from `drizzle-orm/neon-serverless/migrator` *does* expect the Drizzle `db` instance created from the Pool, not the raw Pool itself. The persistent error after fixing the import was likely due to linter/build cache or apply model issues during debugging.
+
+**Resolution (2024-05-05):**
+- Confirmed `lib/database/drizzle.ts` uses `neon-serverless` driver and exports both `db` (Drizzle instance) and `pool` (Neon Pool instance).
+- Corrected `scripts/migrate.ts` to:
+    - Import `migrate` from `drizzle-orm/neon-serverless/migrator`.
+    - Import `db` from `lib/database/drizzle.ts`.
+    - Call `await migrate(db, { migrationsFolder: './drizzle' });` (passing the `db` instance).
+- Verified fix with successful local `npm run build`.
+
+**Next Steps:**
+1.  **Commit & Push Migration Script Fix:** Deploy the corrected migration script configuration.
+2.  **Full Test (Post-Deploy):** Perform a complete test cycle for document upload (alternate route) with `all_status_test_shipments.xlsx`.
+    *   **Expected Outcome:** Upload succeeds (HTTP 200), document card shows 'PROCESSED' and 6 shipments, sub-pages load correctly with data.
+3.  **Address Build Warnings (Lower Priority).**
+4.  **Address Double Login (Lower Priority).**
+5.  **Continue Live Tracking Plan.**
+
+---
