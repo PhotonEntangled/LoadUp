@@ -436,8 +436,8 @@ export const SimulationMap = React.memo(forwardRef<SimulationMapRef, SimulationM
                     rotation={bearing}
                     style={{ cursor: 'pointer' }}
                 >
-                   {/* Apply rotation via CSS transform, subtracting 120 degree offset based on baseline test */}
-                   <div style={{ transform: `rotate(${bearing - 120}deg)` }}>
+                   {/* Apply rotation via CSS transform, adjusting offset to -145 degrees */}
+                   <div style={{ transform: `rotate(${bearing - 145}deg)` }}>
                      {/* Sizing div - Apply conditional highlighting here */}
                      <div style={{
                          width: '32px',
