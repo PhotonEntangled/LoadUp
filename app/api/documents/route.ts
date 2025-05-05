@@ -196,17 +196,17 @@ export async function GET(request: NextRequest) {
     // Optional: Verify user exists? Maybe not necessary if session guarantees it.
     // const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
 
-    const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
     const searchQuery = searchParams.get('search')?.trim();
     const statusFilter = searchParams.get('status')?.trim(); // Keep status filter if implemented
 
     logger.info(`API: Filtering with search: '${searchQuery || 'N/A'}', status: '${statusFilter || 'N/A'}'`);
 
     // --- Ensure filtering by the CORRECT user ID --- 
-    const baseCondition = eq(documents.uploadedById, userId); 
+    const baseCondition = eq(documents.uploadedById, userId);
     const conditions: SQL[] = [baseCondition];
 
-    if (searchQuery) {
+  if (searchQuery) {
       // Add case-insensitive search on filename
       conditions.push(sql`lower(${documents.filename}) like lower(${'%' + searchQuery + '%'})`);
     }
@@ -266,16 +266,16 @@ export async function GET(request: NextRequest) {
 
     // --- Map DB results to Frontend Metadata --- 
     const results: DocumentMetadata[] = dbDocuments.map((doc: SelectedDocument) => {
-      const shipmentStatuses = statusesByDocumentId[doc.id] || [];
-      const aggregateStatus = calculateAggregateStatus(shipmentStatuses, doc.status);
-      
-      return {
-        id: doc.id,
-        filename: doc.filename || 'Unknown Filename',
-        dateParsed: formatDate(doc.parsedDate), 
+        const shipmentStatuses = statusesByDocumentId[doc.id] || [];
+        const aggregateStatus = calculateAggregateStatus(shipmentStatuses, doc.status);
+
+        return {
+            id: doc.id,
+            filename: doc.filename || 'Unknown Filename',
+            dateParsed: formatDate(doc.parsedDate),
         shipments: doc.shipmentCount, // Use the count from the document table
-        shipmentSummaryStatus: aggregateStatus, 
-      };
+            shipmentSummaryStatus: aggregateStatus,
+        };
     });
 
     // Optional: Implement Status Filtering Logic Here

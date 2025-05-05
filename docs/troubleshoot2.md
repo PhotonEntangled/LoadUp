@@ -236,13 +236,47 @@ We will start with **Step 1: Removing `next-auth`** as the most direct way to te
 
 **Revised Root Cause Hypothesis:** The primary issue preventing document display is within the **`GET /api/documents` API route handler**. It fails to retrieve the newly added (and potentially existing) documents from the database.
 
+**Resolution (2024-05-05):** The core logic within the `GET /api/documents` handler in `app/api/documents/route.ts` was found to be commented out during previous debugging efforts. Uncommenting the logic and removing a hardcoded empty array return resolved the issue. Documents now appear correctly after upload and refresh.
+
 **Revised Troubleshooting Steps:**
 
 1.  ~~**Deploy & Retest:**~~ (Done - Auth loop resolved)
-2.  **Investigate `GET /api/documents`:** Analyze the code for the `GET` handler in `app/api/documents/route.ts` to understand its database query logic and identify why it's returning an empty list despite data existing.
-3.  **Fix `GET /api/documents`:** Modify the handler to correctly retrieve documents associated with the logged-in user.
-4.  **Test Document Display:** After fixing the GET handler, deploy and re-test the upload flow (using alternate route) to confirm the document card appears automatically.
-5.  **Address Double Login (Lower Priority):** Investigate why a second login might be required on client-side navigation.
+2.  ~~**Investigate `GET /api/documents`:**~~ (Done - Found commented-out code)
+3.  **Fix `GET /api/documents`:** Uncommented logic
+4.  **Resume Live Tracking Testing (Phase 9.9):** With document display fixed, proceed with testing the live tracking page (`/tracking/[documentId]`) functionality as outlined in `LoadUp_Live_Tracking_Plan.md`, starting with Task 9.9.2 (Happy Path functional testing).
+5.  **Address Double Login (Lower Priority):** Investigate why a second login might be required.
 6.  **Consolidate Upload Endpoint (Post-Fix):** Once display is fixed, consider replacing original POST handler with direct SQL.
+
+---
+
+## New Issue (2024-05-05): Shipments Not Found on Sub-Pages
+
+**Date:** [Current Date/Time]
+
+**Symptoms:**
+- Although document cards appear correctly, clicking the "Shipment", "Simulate", or "Track" buttons leads to pages indicating no shipments are found for the corresponding document ID.
+
+**Root Cause:** The `POST /api/documents/alt-upload` route was successfully parsing the uploaded document (`.xlsx`) and updating the `documents` table entry, but it **failed to call the necessary function (`insertShipmentBundle`)** to actually insert the parsed shipment data into the `shipments` (and related) tables.
+
+**Resolution (2024-05-05):** Modified `app/api/documents/alt-upload/route.ts` to:
+1.  Import `insertShipmentBundle` from `@/services/database/shipmentInserter.ts`.
+2.  Iterate through the `parsedBundles` array after successful parsing.
+3.  Call `await insertShipmentBundle(bundle)` for each bundle within the loop.
+4.  Handle potential errors during individual bundle insertions.
+5.  Update the final document status to `PROCESSED_WITH_ERRORS` if any bundle insertion fails.
+
+**Next Steps:**
+
+1.  ~~Deploy & Retest~~ (Done - Auth loop resolved)
+2.  ~~Investigate Frontend Refresh~~ (Done - `GET /api/documents` logic restored)
+3.  **Commit & Push Shipment Insertion Fix:** Deploy the changes to `alt-upload`.
+4.  **Full Test:** Perform a complete test cycle:
+    *   Sign in.
+    *   Upload a document using the alternate route.
+    *   Verify the document card appears on `/documents`.
+    *   Click the "Shipment", "Simulate", and "Track" buttons on the card.
+    *   **Expected Outcome:** The respective pages should now load and display the data associated with the shipments parsed from the uploaded document.
+5.  **Address Double Login:** Investigate why a second login might be required when navigating directly to protected pages after the initial dashboard redirect (Lower priority).
+6.  **Continue Live Tracking Plan:** Resume work on integrating the live tracking functionality as per `LoadUp_Live_Tracking_Plan.md`.
 
 ---

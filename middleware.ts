@@ -41,7 +41,7 @@ export async function middleware(req: NextRequest) {
   // Allow access to API auth routes and public paths
   if (pathname.startsWith(apiAuthPrefix) || publicPaths.includes(pathname)) {
     logger.info(`[Middleware] Route ${pathname} is public or auth API. Allowing access.`);
-    return NextResponse.next();
+    return NextResponse.next(); 
   }
   
   // Check for session token on protected routes

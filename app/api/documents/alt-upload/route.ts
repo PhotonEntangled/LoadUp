@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { ExcelParserService } from '@/services/excel/ExcelParserService';
 import { DocumentType } from '@/types/shipment';
 import * as dotenv from 'dotenv';
+import { insertShipmentBundle } from '@/services/database/shipmentInserter';
 
 // Load environment variables
 dotenv.config({ path: '.env.local' });
@@ -124,19 +125,67 @@ export async function POST(request: NextRequest) {
     
     logger.info(`API: Parsed ${parsedBundles.length} shipment bundles from document ${documentId}`);
 
-    // Update document status with direct SQL
+    // --- INSERT SHIPMENT DATA (Looping) ---
+    let successfulInsertions = 0;
+    let failedInsertions = 0;
+    const insertionErrors: string[] = [];
+
+    if (parsedBundles.length > 0) {
+      logger.info(`API: Attempting to insert ${parsedBundles.length} shipment bundles into database for document ${documentId}`);
+      for (const bundle of parsedBundles) {
+        try {
+          // Ensure the sourceDocumentId is correctly set on the bundle metadata
+          if (bundle.metadata) {
+              bundle.metadata.sourceDocumentId = documentId;
+          }
+          const insertionResult = await insertShipmentBundle(bundle);
+          if (insertionResult.success) {
+            successfulInsertions++;
+          } else {
+            failedInsertions++;
+            insertionErrors.push(insertionResult.error || `Row ${bundle.metadata?.originalRowIndex}: Unknown insertion error`);
+            logger.error(`API: Failed to insert bundle for Row ${bundle.metadata?.originalRowIndex} from doc ${documentId}: ${insertionResult.error}`);
+          }
+        } catch (insertionError: any) {
+          failedInsertions++;
+          const errorMsg = `Row ${bundle.metadata?.originalRowIndex}: ${insertionError.message}`;
+          insertionErrors.push(errorMsg);
+          logger.error(`API: Exception during insertShipmentBundle call for Row ${bundle.metadata?.originalRowIndex} from doc ${documentId}: ${errorMsg}`, { error: insertionError });
+        }
+      }
+      logger.info(`API: Finished inserting bundles for doc ${documentId}. Success: ${successfulInsertions}, Failures: ${failedInsertions}`);
+    }
+    // --- END INSERT SHIPMENT DATA ---
+
+    // Update document status based on insertion results
+    const finalStatus = failedInsertions > 0 ? 'PROCESSED_WITH_ERRORS' : 'PROCESSED';
+    const errorMessage = failedInsertions > 0 ? insertionErrors.join('; ') : null;
+
     await sql`
       UPDATE documents 
       SET 
-        status = 'PROCESSED', 
-        shipment_count = ${parsedBundles.length},
-        parsed_date = NOW()
+        status = ${finalStatus}, 
+        shipment_count = ${successfulInsertions}, -- Count only successful ones?
+        parsed_date = NOW(),
+        error_message = ${errorMessage} -- Store aggregate errors
       WHERE id = ${documentId}
     `;
     
-    logger.info(`API: Updated document ${documentId} status to PROCESSED with ${parsedBundles.length} shipments`);
+    logger.info(`API: Updated document ${documentId} status to ${finalStatus} with ${successfulInsertions} successful shipments.`);
 
-    // Return success response
+    // Adjust final response based on insertion outcome
+    if (failedInsertions > 0) {
+         return NextResponse.json({
+            message: `Document processed with ${failedInsertions} errors out of ${parsedBundles.length} total bundles.`,
+            documentId: documentId,
+            filename: filename,
+            successfulBundles: successfulInsertions,
+            failedBundles: failedInsertions,
+            errors: insertionErrors
+        }, { status: 207 }); // 207 Multi-Status might be appropriate
+    }
+
+    // Original success response if all insertions worked
     return NextResponse.json({
       message: `Document processed successfully via alt-upload (DIRECT SQL)`,
       documentId: documentId,
